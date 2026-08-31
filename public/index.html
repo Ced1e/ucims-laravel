@@ -1,0 +1,803 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UCIMS-University of Southeastern Philippines Clinic</title>
+<link rel="stylesheet" href="assets/css/main.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+</head>
+<body>
+
+<div class="page active" id="page-home">
+  <div class="home-wrap">
+
+    <div class="home-topbar">
+      <img src="./assets/img/logoHeader.jpg" class="home-header-logo" alt="USeP — We Build Dreams Without Limits">
+      <nav class="home-nav">
+        <a href="#section-services" class="home-nav-link" onclick="scrollToSection('section-services')">Services</a>
+        <a href="#section-about" class="home-nav-link" onclick="scrollToSection('section-about')">About</a>
+        <a href="#section-socials" class="home-nav-link" onclick="scrollToSection('section-socials')">Contact</a>
+        <a class="home-nav-link" style="color: var(--gold); border-color: var(--gold); cursor: pointer;" onclick="showPage('page-tv-queue'); initTVQueue();"><i class="bi bi-tv"></i> Live Queue</a>
+      </nav>
+    </div>
+
+    <div class="home-body" id="section-hero">
+      <div class="home-container" style="display:flex; flex-direction:column; align-items:center; max-width:800px; text-align:center; margin: 0 auto;">
+        <div class="home-center" style="width:100%; display:flex; flex-direction:column; align-items:center;">
+          <div class="home-univ" style="font-size:1.4rem; margin-bottom:8px;">University of Southeastern Philippines</div>
+          <div class="home-system" style="font-size:3.8rem; margin-bottom:20px;">Clinic Information<br>Management System</div>
+          <div class="home-tagline-sub" style="margin-bottom:35px; max-width:600px;">A centralized digital platform for managing clinic visits, patient records, consultations, and health documentation securely.</div>
+          <div class="home-btns" style="justify-content:center; margin-bottom: 40px; width: 100%; display: flex; gap: 20px; max-width: 500px;">
+            <button class="btn btn-white btn-lg" style="flex:1;" onclick="showPage('page-login');setRole('patient')"><i class="bi bi-person"></i> Patient Login</button>
+            <button class="btn btn-white-outline btn-lg" style="flex:1;" onclick="showPage('page-login');setRole('staff')"><i class="bi bi-shield-lock"></i> Staff Login</button>
+          </div>
+        </div>
+        <div class="home-info" style="width:100%; max-width: 800px; margin-top: 10px;">
+          <div class="home-info-card" style="padding: 28px 40px; background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.25); border-radius: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); backdrop-filter: blur(4px);">
+            <div class="home-info-icon" style="font-size: 1.8rem; margin-bottom: 8px; color: var(--gold);"><i class="bi bi-bullseye"></i></div>
+            <div class="home-info-title" style="font-size: 1.15rem; font-weight: 700; margin-bottom: 10px; color: #ffffff; text-transform: uppercase; letter-spacing: 1px;">System Objective</div>
+            <div class="home-info-text" style="font-size: 0.95rem; text-align: center; color: rgba(255,255,255,0.95); line-height: 1.6;">
+              The general objective of the proposed University Clinic Information Management System (UCIMS) is to develop a web-based, role-based platform that streamlines and automates the operational workflow of the university clinic, enhancing the efficiency of patient registration, consultation management, and clinical documentation while ensuring data integrity and user-specific access control.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section class="home-section" id="section-services">
+      <div class="home-section-inner">
+        <div class="home-section-label">What We Offer</div>
+        <h2 class="home-section-title">Services Offered</h2>
+        <p class="home-section-sub">The USeP University Clinic provides comprehensive health services to students and personnel.</p>
+        <div class="services-grid">
+          <div class="service-card">
+            <div class="service-icon"><i class="bi bi-heart-pulse"></i></div>
+            <div class="service-name">Check-Up</div>
+            <div class="service-desc">General medical consultations and physical examinations conducted by licensed clinic physicians and nurses for students and staff.</div>
+          </div>
+          <div class="service-card">
+            <div class="service-icon"><i class="bi bi-capsule"></i></div>
+            <div class="service-name">Medicine Request</div>
+            <div class="service-desc">Patients may request available medicines from the clinic's pharmacy for treatment of minor illnesses and health conditions.</div>
+          </div>
+          <div class="service-card">
+            <div class="service-icon"><i class="bi bi-calendar-check"></i></div>
+            <div class="service-name">Follow-Up Consultation</div>
+            <div class="service-desc">Scheduled follow-up visits to monitor ongoing health conditions and review treatment progress after an initial consultation.</div>
+          </div>
+          <div class="service-card">
+            <div class="service-icon"><i class="bi bi-file-earmark-medical"></i></div>
+            <div class="service-name">Medical Certificate Request</div>
+            <div class="service-desc">Issuance of official medical certificates for school, employment, OJT clearance, sick leave, and return-to-work or school purposes.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="home-section home-section-dark" id="section-about">
+      <div class="home-section-inner">
+        <div class="about-layout">
+          <div class="about-left">
+            <div class="home-section-label" style="color:var(--gold-light);">Background</div>
+            <h2 class="home-section-title about-section-title">About the System</h2>
+            <div class="about-rule"></div>
+            <div class="about-text">
+              <p>The <strong>University Clinic Information Management System (UCIMS)</strong> is a web-based information system developed to serve as a <strong>centralized digital registry</strong> for the healthcare services of the University of Southeastern Philippines.</p>
+              <p>The project aims to <strong>modernize the management of clinic operations</strong> by integrating patient registration, consultation documentation, medical history tracking, and certificate processing into a <strong>unified digital platform</strong>. By replacing traditional paper-based documentation with a secure and responsive system, UCIMS provides an efficient solution for organizing clinical data and improving the accessibility of health records.</p>
+              <p>Ultimately, UCIMS supports the delivery of <strong>quality healthcare services</strong> within the university — ensuring that every student and personnel receives timely, well-documented, and properly managed clinical care.</p>
+            </div>
+          </div>
+          <div class="about-photo-col">
+            <img src="./assets/img/team.jpg" class="about-photo" alt="UCIMS Research Team">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="home-section home-section-socials" id="section-socials">
+      <div class="home-section-inner home-section-inner-center">
+        <div class="home-section-label">Get in Touch</div>
+        <h2 class="home-section-title">Connect With Us</h2>
+        <p class="home-section-sub home-section-sub-center">Reach out to the University of Southeastern Philippines through our official channels.</p>
+        <div class="socials-grid">
+          <a class="social-card" href="https://www.facebook.com/USePofficial" target="_blank" rel="noopener">
+            <div class="social-icon facebook"><i class="bi bi-facebook"></i></div>
+            <div class="social-text"><div class="social-name">Facebook</div><div class="social-handle">@USePofficial</div></div>
+          </a>
+          <a class="social-card" href="https://www.instagram.com/usepofficial/" target="_blank" rel="noopener">
+            <div class="social-icon instagram"><i class="bi bi-instagram"></i></div>
+            <div class="social-text"><div class="social-name">Instagram</div><div class="social-handle">@usepofficial</div></div>
+          </a>
+          <a class="social-card" href="mailto:pad@usep.edu.ph">
+            <div class="social-icon email"><i class="bi bi-envelope-fill"></i></div>
+            <div class="social-text"><div class="social-name">Email</div><div class="social-handle">pad@usep.edu.ph</div></div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <footer class="home-footer">
+      <span>© 2026 University of Southeastern Philippines — University Clinic Information Management System</span>
+    </footer>
+
+  </div>
+</div>
+
+<script>
+function scrollToSection(id) {
+  event.preventDefault();
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+// Password toggle helper (used in login form)
+function togglePwd(inputId, iconEl) {
+  const input = document.getElementById(inputId);
+  if (input.type === 'password') {
+    input.type = 'text';
+    iconEl.classList.remove('bi-eye-slash');
+    iconEl.classList.add('bi-eye');
+  } else {
+    input.type = 'password';
+    iconEl.classList.remove('bi-eye');
+    iconEl.classList.add('bi-eye-slash');
+  }
+}
+</script>
+
+<div class="page" id="page-login">
+  <div class="auth-bg">
+    <div class="auth-card">
+      <div class="auth-logo-row">
+        <img src="./assets/img/logo.png" class="logo-img" alt="USeP Logo">
+        <div class="auth-univ-name">University of Southeastern Philippines</div>
+        <div class="auth-sys-name">Clinic Information Management System</div>
+      </div>
+      <hr class="auth-divider">
+
+      <div class="role-tabs">
+        <button class="role-tab active" onclick="setRole('patient')">Patient</button>
+        <button class="role-tab" onclick="setRole('staff')">Staff</button>
+      </div>
+
+      <div id="login-pat-fields">
+        <div class="field"><label>USeP Email Address</label><input type="email" id="login-email" placeholder="e.g. juan@usep.edu.ph"></div>
+        <div class="field"><label>Student / Faculty ID</label><input type="text" id="login-idnum" placeholder="e.g. P-001 or 2024-0001"></div>
+      </div>
+
+      <div id="login-staff-fields" style="display:none;">
+        <div class="field"><label>Clinic ID Number</label><input type="text" id="login-clinicid" placeholder="e.g. N-001"></div>
+        <div class="field">
+          <label>Password</label>
+          <div class="pwd-wrapper">
+            <input type="password" id="login-staffpw" placeholder="e.g. Nurs3!23">
+            <i class="bi bi-eye-slash pwd-toggle" onclick="togglePwd('login-staffpw', this)"></i>
+          </div>
+        </div>
+      </div>
+
+      <div class="alert alert-danger" id="login-error" style="display:none;"></div>
+      <button class="btn btn-primary btn-block" onclick="doLogin()">Log In</button>
+
+      <div id="login-register-link" style="text-align:center;margin-top:18px; font-size: 0.85rem;">
+        <span class="text-muted">Have not registered yet?</span> <span class="link" style="color: var(--blue); font-weight: 600;" onclick="goSignup()">Register</span>
+      </div>
+
+      <div style="margin-top:20px;background:#f9f8f6;border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
+        <div class="text-xs fw6 text-muted" style="text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">Demo Credentials</div>
+        <div class="text-xs text-muted" style="line-height:1.9;">
+          <b>Patient:</b> maria@usep.edu.ph + P-001<br>
+          <b>Nurse:</b> N-001 / Nurs3!23 &nbsp; <b>Doctor:</b> D-001 / DocT0r!23 &nbsp; <b>Admin:</b> A-001 / Adm1n!23
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:16px;">
+        <span class="link text-xs" onclick="showPage('page-home')"><i class="bi bi-arrow-left"></i> Back to Home</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-signup">
+  <div class="auth-bg" style="align-items:flex-start;padding:40px 20px;overflow-y:auto;">
+    <div class="auth-card" style="width:900px;max-width:100%; padding: 40px 50px;">
+      
+      <div style="background: #ffffff; padding: 20px 24px; border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.03); border-left: 6px solid var(--maroon); display: flex; align-items: center; gap: 18px;">
+        <img src="./assets/img/logo.png" class="logo-img" alt="USeP" style="width:56px;height:56px;border-radius:50%;border:2px solid var(--gold);flex-shrink:0;">
+        <div>
+          <h1 style="font-family: 'DM Serif Display', serif; font-size: 1.6rem; color: var(--maroon); margin-bottom: 4px; line-height: 1.1;">Patient Registration</h1>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin:0;">Create your Permanent Patient Record for the University of Southeastern Philippines Clinic.</p>
+        </div>
+      </div>
+
+      <div class="steps" id="ppr-steps-container">
+        <div class="step active" id="ppr-step-1">1 · Personal Info</div>
+        <div class="step" id="ppr-step-2">2 · Health Record</div>
+        <div class="step" id="ppr-step-3">3 · Questionnaire</div>
+        <div class="step" id="ppr-step-4">4 · Females Only</div>
+        <div class="step" id="ppr-step-5">5 · Account Setup</div>
+      </div>
+
+      <div class="alert alert-danger" id="ppr-err" style="display:none;margin-bottom:14px;"></div>
+
+      <div id="ppr-sec-1">
+        <div class="card-title" style="font-size:1.1rem;margin-bottom:16px;"><i class="bi bi-person-fill"></i> Section 1: Personal Information</div>
+        <div class="grid3">
+          <div class="field"><label>Surname *</label><input id="ppr-surname" placeholder="dela Cruz"></div>
+          <div class="field"><label>First Name *</label><input id="ppr-firstname" placeholder="Juan"></div>
+          <div class="field"><label>Middle Name</label><input id="ppr-midname" placeholder="Santos"></div>
+        </div>
+        <div class="grid3">
+          <div class="field"><label>Age *</label><input type="number" id="ppr-age" placeholder="e.g. 21"></div>
+          <div class="field"><label>Sex *</label>
+            <select id="ppr-sex" onchange="pprToggleFemale()">
+              <option value="" disabled selected hidden>— Select —</option>
+              <option value="Male">Male</option><option value="Female">Female</option>
+            </select>
+          </div>
+          <div class="field"><label>Civil Status *</label>
+            <select id="ppr-status">
+              <option value="" disabled selected hidden>— Select —</option>
+              <option>Single</option><option>Married</option><option>Widowed</option><option>Separated</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="grid3">
+          <div class="field"><label>College / Designation *</label>
+  <select id="ppr-course">
+    <option value="" disabled selected hidden>— Select —</option>
+    <option value="CIC">College of Information and Computing (CIC)</option>
+    <option value="CT">College of Technology (CT)</option>
+    <option value="COE">College of Engineering (COE)</option>
+    <option value="CAS">College of Arts and Sciences (CAS)</option>
+    <option value="CAEC">College of Applied Economics (CAEC)</option>
+    <option value="CBA">College of Business Administration (CBA)</option>
+    <option value="CED">College of Education (CED)</option>
+    <option value="Faculty/Staff">Faculty / Staff</option>
+  </select>
+</div>
+          <div class="field"><label>Year Level</label>
+            <select id="ppr-yearlevel">
+              <option value="" disabled selected hidden>— Select —</option>
+              <option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option><option>5th Year</option><option>N/A</option>
+            </select>
+          </div>
+          <div class="field"><label>Religion</label><input id="ppr-religion" placeholder="e.g. Roman Catholic"></div>
+        </div>
+
+        <div class="grid2">
+          <div class="field"><label>Birthdate *</label><input type="date" id="ppr-birthdate"></div>
+          <div class="field"><label>Birthplace *</label><input id="ppr-birthplace" placeholder="City / Municipality, Province"></div>
+        </div>
+        <div class="field"><label>City Address *</label><input id="ppr-city-address" placeholder="Street, Barangay, City"></div>
+        <div class="field"><label>Provincial Address</label><input id="ppr-prov-address" placeholder="Municipality, Province"></div>
+        <div class="grid2">
+          <div class="field"><label>USeP Email Address *</label><input type="email" id="ppr-email" placeholder="you@usep.edu.ph"></div>
+          <div class="field"><label>Your Contact No. *</label><input type="tel" id="ppr-contact" placeholder="09xx-xxx-xxxx"></div>
+        </div>
+        <hr class="div">
+        <div class="card-title" style="font-size:1.1rem;margin-bottom:16px;">Emergency Contact</div>
+        <div class="grid3">
+          <div class="field"><label>Name</label><input id="ppr-emname" placeholder="Full name"></div>
+          <div class="field"><label>Contact No.</label><input id="ppr-emcontact" placeholder="09xx-xxx-xxxx"></div>
+          <div class="field"><label>Relationship</label><input id="ppr-emrel" placeholder="e.g. Mother"></div>
+        </div>
+      </div>
+
+      <div id="ppr-sec-2" style="display:none;">
+        <div class="card-title" style="font-size:1.1rem;margin-bottom:16px;"><i class="bi bi-clipboard2-pulse"></i> Section 2: Patient Health Record</div>
+        <div class="field"><label>General Appearance</label><input id="ppr-gen-appearance" placeholder="e.g. Conscious, coherent, not in distress..."></div>
+        
+        <div class="text-xs fw6 text-muted mt16 mb8" style="text-transform:uppercase;letter-spacing:1px;">Vital Signs</div>
+        <div class="grid3">
+          <div class="field"><label>Height (cm)</label><input type="number" id="ppr-height" placeholder="e.g. 165"></div>
+          <div class="field"><label>Weight (kg)</label><input type="number" id="ppr-weight" placeholder="e.g. 60"></div>
+          <div class="field"><label>Pulse Rate (bpm)</label><input type="number" id="ppr-pr" placeholder="e.g. 72"></div>
+          <div class="field"><label>Resp. Rate (/min)</label><input type="number" id="ppr-rr" placeholder="e.g. 18"></div>
+          <div class="field"><label>Temperature (°C)</label><input type="number" id="ppr-temp" step="0.1" placeholder="e.g. 36.5"></div>
+          <div class="field"><label>Blood Pressure</label><input id="ppr-bp" placeholder="e.g. 120/80"></div>
+        </div>
+        <div class="grid2">
+          <div class="field"><label>Cardiac Rate — At Rest (bpm)</label><input type="number" id="ppr-cr-rest" placeholder="e.g. 70"></div>
+          <div class="field"><label>Cardiac Rate — After Activity (bpm)</label><input type="number" id="ppr-cr-activity" placeholder="e.g. 98"></div>
+        </div>
+
+        <div class="text-xs fw6 text-muted mt16 mb8" style="text-transform:uppercase;letter-spacing:1px;">Medical History</div>
+        <div class="grid3">
+          <div class="field"><label>Infectious Diseases</label><textarea id="ppr-infectious" placeholder="Prior or current diseases..."></textarea></div>
+          <div class="field"><label>Social History</label><textarea id="ppr-social-hx" placeholder="Smoking, alcohol, lifestyle..."></textarea></div>
+          <div class="field"><label>Family History</label><textarea id="ppr-family-hx" placeholder="e.g. Hypertension (father)..."></textarea></div>
+        </div>
+
+        <div class="text-xs fw6 text-muted mt16 mb8" style="text-transform:uppercase;letter-spacing:1px;">System Review (Findings or 'Unremarkable')</div>
+        <div class="grid3">
+          <div class="field"><label>Skin</label><input id="ppr-sr-skin" placeholder="Unremarkable"></div>
+          <div class="field"><label>Lymph Nodes</label><input id="ppr-sr-lymph" placeholder="Unremarkable"></div>
+          <div class="field"><label>Integument System</label><input id="ppr-sr-integument" placeholder="Unremarkable"></div>
+          <div class="field"><label>Circulatory System</label><input id="ppr-sr-circulatory" placeholder="Unremarkable"></div>
+          <div class="field"><label>Endocrine System</label><input id="ppr-sr-endocrine" placeholder="Unremarkable"></div>
+          <div class="field"><label>Allergic / Immunologic</label><input id="ppr-sr-allergic" placeholder="Unremarkable"></div>
+          <div class="field"><label>HEENT</label><input id="ppr-sr-heent" placeholder="Unremarkable"></div>
+          <div class="field"><label>Mouth</label><input id="ppr-sr-mouth" placeholder="Unremarkable"></div>
+          <div class="field"><label>Breast</label><input id="ppr-sr-breast" placeholder="Unremarkable"></div>
+          <div class="field"><label>Respiratory System</label><input id="ppr-sr-respiratory" placeholder="Unremarkable"></div>
+          <div class="field"><label>Cardiovascular System</label><input id="ppr-sr-cardiovascular" placeholder="Unremarkable"></div>
+          <div class="field"><label>Gastrointestinal System</label><input id="ppr-sr-gastrointestinal" placeholder="Unremarkable"></div>
+          <div class="field"><label>Genitourinary Tract</label><input id="ppr-sr-genitourinary" placeholder="Unremarkable"></div>
+          <div class="field"><label>Psychiatric History</label><input id="ppr-sr-psychiatric" placeholder="Unremarkable"></div>
+        </div>
+      </div>
+
+      <div id="ppr-sec-3" style="display:none;">
+        <div class="card-title" style="font-size:1.1rem;margin-bottom:16px;"><i class="bi bi-list-check"></i> Section 3: Applicant Questionnaire</div>
+
+        <div class="card card-sm">
+          <div class="field"><label>1. Have you ever been admitted / hospitalized?</label>
+            <div class="flex gap14">
+              <label class="field-check"><input type="radio" name="ppr-q-hosp" value="Yes" onchange="pprToggleQ('q-hosp-details','Yes')"> Yes</label>
+              <label class="field-check"><input type="radio" name="ppr-q-hosp" value="No" onchange="pprToggleQ('q-hosp-details','No')" checked> No</label>
+            </div>
+          </div>
+          <div id="q-hosp-details" class="grid2" style="display:none; background:#f9f8f6; padding:12px; border-radius:8px;">
+            <div class="field mb0"><label>Illness / Reason</label><input id="ppr-hosp-illness" placeholder="e.g. Dengue Fever"></div>
+            <div class="field mb0"><label>When</label><input id="ppr-hosp-when" placeholder="e.g. March 2019"></div>
+          </div>
+        </div>
+
+        <div class="card card-sm">
+          <div class="field"><label>2. Have you ever had a surgical operation?</label>
+            <div class="flex gap14">
+              <label class="field-check"><input type="radio" name="ppr-q-surg" value="Yes" onchange="pprToggleQ('q-surg-details','Yes')"> Yes</label>
+              <label class="field-check"><input type="radio" name="ppr-q-surg" value="No" onchange="pprToggleQ('q-surg-details','No')" checked> No</label>
+            </div>
+          </div>
+          <div id="q-surg-details" class="grid2" style="display:none; background:#f9f8f6; padding:12px; border-radius:8px;">
+            <div class="field mb0"><label>Type of Operation</label><input id="ppr-surg-type" placeholder="e.g. Appendectomy"></div>
+            <div class="field mb0"><label>When</label><input id="ppr-surg-when" placeholder="e.g. 2020"></div>
+          </div>
+        </div>
+
+        <div class="card card-sm">
+          <div class="field"><label>3. Have you had any of the following infectious diseases?</label>
+            <div class="grid3 mt8">
+              <label class="field-check"><input type="checkbox" class="ppr-inf-chk" value="Measles"> Measles</label>
+              <label class="field-check"><input type="checkbox" class="ppr-inf-chk" value="German Measles"> German Measles</label>
+              <label class="field-check"><input type="checkbox" class="ppr-inf-chk" value="Chickenpox"> Chickenpox</label>
+              <label class="field-check"><input type="checkbox" class="ppr-inf-chk" value="Hepatitis A"> Hepatitis A</label>
+              <label class="field-check"><input type="checkbox" class="ppr-inf-chk" value="Tetanus"> Tetanus</label>
+              <label class="field-check"><input type="checkbox" class="ppr-inf-chk" value="PTB"> PTB</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card-sm">
+          <div class="field mb0"><label>4. Do you experience headache, dizziness, or syncope at any time?</label>
+            <div class="flex gap14 mt8">
+              <label class="field-check mb0"><input type="radio" name="ppr-q-syncope" value="Yes"> Yes</label>
+              <label class="field-check mb0"><input type="radio" name="ppr-q-syncope" value="No" checked> No</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="ppr-sec-4" style="display:none;">
+        <div class="card-title" style="font-size:1.1rem;margin-bottom:16px;"><i class="bi bi-gender-female"></i> Section 4: For Females Only</div>
+        
+        <div id="ppr-female-notice" class="alert alert-info text-sm" style="display:none;">
+          <i class="bi bi-info-circle"></i> This section is not applicable. Sex was set to Male. You may proceed to the next step.
+        </div>
+
+        <div id="ppr-female-fields">
+          <div class="grid2">
+            <div class="field"><label>Age at First Menstruation</label><input type="number" id="ppr-menarche" placeholder="e.g. 13"></div>
+            <div class="field"><label>How many periods per year?</label><input type="number" id="ppr-periods-year" placeholder="e.g. 12"></div>
+          </div>
+          
+          <div class="card card-sm">
+            <div class="field"><label>Do you have regular monthly periods?</label>
+              <div class="flex gap14">
+                <label class="field-check"><input type="radio" name="ppr-q-regular" value="Yes" onchange="pprToggleQ('ppr-irregular-detail','No')"> Yes</label>
+                <label class="field-check"><input type="radio" name="ppr-q-regular" value="No" onchange="pprToggleQ('ppr-irregular-detail','Yes')" checked> No</label>
+              </div>
+            </div>
+            <div id="ppr-irregular-detail" style="display:none; background:#f9f8f6; padding:12px; border-radius:8px;">
+              <div class="field mb0"><label>If No — please specify</label><input id="ppr-irregular-spec" placeholder="Describe irregularity..."></div>
+            </div>
+          </div>
+
+          <div class="card card-sm">
+            <div class="field mb0"><label>Do you experience dysmenorrhea (painful periods)?</label>
+              <div class="flex gap14 mt8">
+                <label class="field-check mb0"><input type="radio" name="ppr-q-dysmenorrhea" value="Yes"> Yes</label>
+                <label class="field-check mb0"><input type="radio" name="ppr-q-dysmenorrhea" value="No" checked> No</label>
+              </div>
+            </div>
+          </div>
+          <div class="field"><label>Other Premenstrual / Menstrual Symptoms</label><textarea id="ppr-menstrual-symptoms" placeholder="Describe any other symptoms experienced..."></textarea></div>
+        </div>
+      </div>
+
+      <div id="ppr-sec-5" style="display:none;">
+        <div class="card-title" style="font-size:1.1rem;margin-bottom:16px;"><i class="bi bi-pen"></i> Section 5: Confirmation & Account Setup</div>
+
+        <div class="alert alert-info text-sm" style="padding:18px 24px; line-height: 1.6;">
+          <strong>Sworn Statement:</strong> I hereby swear that the above information are true and correct to the best of my knowledge and belief. I further authorize the University Clinic of the University of Southeastern Philippines to use this information for medical and health service purposes, in strict compliance with the Data Privacy Act (RA 10173).
+        </div>
+
+        <div class="grid2">
+          <div class="field"><label>Digital Signature * <span class="text-muted text-xs">(Type full name)</span></label><input id="ppr-signature" placeholder="Juan dela Cruz"></div>
+          <div class="field"><label>Date *</label><input type="date" id="ppr-sign-date"></div>
+        </div>
+
+        <div class="field-check mt8"><input type="checkbox" id="ppr-sworn-chk"><label for="ppr-sworn-chk">I confirm that all information I have provided in this form is true and correct. *</label></div>
+        <div class="field-check"><input type="checkbox" id="ppr-privacy-chk"><label for="ppr-privacy-chk">I consent to the collection and processing of my personal and medical data for health service purposes. *</label></div>
+
+        <hr class="div" style="margin:24px 0;">
+        <div class="card-title" style="font-size:1.1rem;margin-bottom:16px;"><i class="bi bi-person-badge"></i> System Account Credentials</div>
+        <div class="alert alert-info text-xs mb12"><i class="bi bi-info-circle"></i> Your Student/Faculty ID and Email Address will be used to log in to the Patient Portal. No password is required.</div>
+        <div class="grid3">
+          <div class="field"><label>USeP Email Address *</label><input type="email" id="ppr-email-confirm" placeholder="Confirm your email"></div>
+          <div class="field"><label>Student / Faculty ID *</label><input id="ppr-studid" placeholder="e.g. 2024-00001"></div>
+          <div class="field"><label>Account Type *</label>
+            <select id="ppr-pattype">
+              <option value="" disabled selected hidden>— Select —</option>
+              <option>Student</option><option>Faculty</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;justify-content:space-between;gap:10px;margin-top:24px; border-top: 1px solid var(--border); padding-top: 20px;">
+        <button class="btn btn-outline btn-lg" id="ppr-nav-back" onclick="pprBack()" style="display:none;"><i class="bi bi-arrow-left"></i> Back</button>
+        <button class="btn btn-primary btn-lg" id="ppr-nav-next" onclick="pprNext()" style="margin-left:auto;">Next Step <i class="bi bi-arrow-right"></i></button>
+      </div>
+      <div class="center mt16"><span class="link text-sm" onclick="showPage('page-login')"><i class="bi bi-arrow-left"></i> Cancel & Return to Login</span></div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-patient">
+  <div class="layout">
+    <div class="sidebar">
+      <div class="sidebar-brand">
+        <img src="./assets/img/logo.png" class="logo-img" alt="USeP">
+        <div class="sidebar-brand-text"><div class="sh-title">USeP Clinic</div><div class="sh-sub">Patient Portal</div></div>
+      </div>
+      <div class="sidebar-nav">
+        <div class="sidebar-section">Visit</div>
+        <a onclick="patNav('visit')"><i class="bi bi-hospital nav-icon"></i> Visit Purpose Selection</a>
+      </div>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="sidebar-avatar" id="patient-tb-av">P</div>
+          <div><div class="sidebar-user-name" id="patient-tb-name">Patient</div><div class="sidebar-user-role" id="patient-tb-role">Patient Portal</div></div>
+        </div>
+        <button class="btn btn-outline btn-sm w100" onclick="logout()"><i class="bi bi-box-arrow-left"></i> Sign Out</button>
+      </div>
+    </div>
+    <div class="main-content" id="pat-main"></div>
+  </div>
+</div>
+
+<div class="page" id="page-nurse">
+  <div class="layout">
+    <div class="sidebar">
+      <div class="sidebar-brand">
+        <img src="./assets/img/logo.png" class="logo-img" alt="USeP">
+        <div class="sidebar-brand-text"><div class="sh-title">USeP Clinic</div><div class="sh-sub">Nurse Interface</div></div>
+      </div>
+      <div class="sidebar-nav">
+        <div class="sidebar-section">Queue</div>
+        <a id="nn-queue" onclick="nurseNav('queue')"><i class="bi bi-people nav-icon"></i> Queue Monitoring</a>
+        
+        <div class="sidebar-section">Services</div>
+        <a id="nn-services" onclick="nurseNav('services')"><i class="bi bi-capsule nav-icon"></i> Medicine Issuance</a>
+        <a id="nn-medcerts" onclick="nurseNav('medcerts')"><i class="bi bi-file-earmark-text nav-icon"></i> MedCert Requests</a>
+        
+        <div class="sidebar-section">Records</div>
+        <a id="nn-records" onclick="nurseNav('records')"><i class="bi bi-folder2-open nav-icon"></i> Record Management</a>
+        <a id="nn-daily-records" onclick="nurseNav('daily-records')"><i class="bi bi-clipboard-pulse nav-icon"></i> Daily Patient Records</a>
+        
+        <div class="sidebar-section">Logs</div>
+        <a id="nn-log" onclick="nurseNav('log')"><i class="bi bi-calendar3 nav-icon"></i> Daily Patient Log</a>
+      </div>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="sidebar-avatar" id="nurse-tb-av" style="background:var(--blue);">N</div>
+          <div><div class="sidebar-user-name" id="nurse-tb-name">Nurse</div><div class="sidebar-user-role" id="nurse-tb-role">Nurse Interface</div></div>
+        </div>
+        <button class="btn btn-outline btn-sm w100" onclick="logout()"><i class="bi bi-box-arrow-left"></i> Sign Out</button>
+      </div>
+    </div>
+    <div class="main-content" id="nurse-main"></div>
+  </div>
+</div>
+
+<div class="page" id="page-doctor">
+  <div class="layout">
+    <div class="sidebar">
+      <div class="sidebar-brand">
+        <img src="./assets/img/logo.png" class="logo-img" alt="USeP">
+        <div class="sidebar-brand-text"><div class="sh-title">USeP Clinic</div><div class="sh-sub">Doctor Interface</div></div>
+      </div>
+      <div class="sidebar-nav">
+        <div class="sidebar-section">Consultations</div>
+        <a id="dn-consult" onclick="docNav('consult')"><i class="bi bi-heart-pulse nav-icon"></i> Active Consultations</a>
+
+        <div class="sidebar-section">Services</div>
+        <a id="dn-medcerts" onclick="docNav('medcerts')">
+            <i class="bi bi-file-earmark-medical nav-icon"></i> MedCert Requests
+        </a>
+        <a id="dn-labs" onclick="docNav('labs')">
+            <i class="bi bi-droplet nav-icon"></i> Lab Requests
+        </a>
+        
+        <div class="sidebar-section">Records</div>
+        <a id="dn-records" onclick="docNav('records')"><i class="bi bi-folder2-open nav-icon"></i> Record Management</a>
+
+        <div class="sidebar-section">History</div>
+        <a id="dn-history" onclick="docNav('history')"><i class="bi bi-clock-history nav-icon"></i> Examination History</a>
+      </div>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="sidebar-avatar" id="doctor-tb-av" style="background:var(--green);">D</div>
+          <div><div class="sidebar-user-name" id="doctor-tb-name">Doctor</div><div class="sidebar-user-role" id="doctor-tb-role">Doctor Interface</div></div>
+        </div>
+        <button class="btn btn-outline btn-sm w100" onclick="logout()"><i class="bi bi-box-arrow-left"></i> Sign Out</button>
+      </div>
+    </div>
+    <div class="main-content" id="doctor-main"></div>
+  </div>
+</div>
+
+<div class="page" id="page-admin">
+  <div class="layout">
+    <div class="sidebar">
+      <div class="sidebar-brand">
+        <img src="./assets/img/logo.png" class="logo-img" alt="USeP">
+        <div class="sidebar-brand-text"><div class="sh-title">USeP Clinic</div><div class="sh-sub">Admin Interface</div></div>
+      </div>
+      <div class="sidebar-nav">
+        <div class="sidebar-section">Management</div>
+        <a id="an-stats" onclick="adminNav('stats')"><i class="bi bi-bar-chart-fill nav-icon"></i> Analytics & Stats</a>
+        <a id="an-accounts" onclick="adminNav('accounts')"><i class="bi bi-person-lines-fill nav-icon"></i> Account Management</a>
+        <a id="an-auth" onclick="adminNav('auth')"><i class="bi bi-shield-lock nav-icon"></i> Authorization Management</a>
+        <div class="sidebar-section">Validation</div>
+        <a id="an-validation" onclick="adminNav('validation')"><i class="bi bi-check2-all nav-icon"></i> Record Validation</a>
+      </div>
+      <div class="sidebar-footer">
+        <div class="sidebar-user">
+          <div class="sidebar-avatar" id="admin-tb-av" style="background:#555;">A</div>
+          <div><div class="sidebar-user-name" id="admin-tb-name">Admin</div><div class="sidebar-user-role" id="admin-tb-role">Admin Interface</div></div>
+        </div>
+        <button class="btn btn-outline btn-sm w100" onclick="logout()"><i class="bi bi-box-arrow-left"></i> Sign Out</button>
+      </div>
+    </div>
+    <div class="main-content" id="admin-main"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-triage">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-triage')"><i class="bi bi-x"></i></button>
+    <div class="modal-title"><i class="bi bi-clipboard2-pulse"></i> Triage Assessment</div>
+    <div class="text-sm text-muted mb8" id="triage-patient"></div>
+    <div class="card-title" style="font-size:.88rem;margin-bottom:10px;">Vital Signs</div>
+    <div class="field-row">
+      <div class="field"><label>Blood Pressure (mmHg) *</label><input id="tr-bp" placeholder="e.g. 120/80"></div>
+      <div class="field"><label>Heart Rate (bpm)</label><input id="tr-hr" placeholder="e.g. 78"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Temperature (°C)</label><input id="tr-temp" placeholder="e.g. 36.8"></div>
+      <div class="field"><label>Respiratory Rate</label><input id="tr-rr" placeholder="breaths/min"></div>
+    </div>
+    <div class="field-row3">
+      <div class="field"><label>O₂ Saturation (%)</label><input id="tr-o2" placeholder="e.g. 98"></div>
+      <div class="field"><label>Weight (kg)</label><input id="tr-weight" placeholder="e.g. 60"></div>
+      <div class="field"><label>Height (cm)</label><input id="tr-height" placeholder="e.g. 165"></div>
+    </div>
+    <hr class="div">
+    <div class="card-title" style="font-size:.88rem;margin-bottom:10px;">Chief Complaint & Assessment</div>
+    <div class="field"><label>Chief Complaint *</label><input id="tr-complaint" placeholder="Patient's primary concern"></div>
+    <div class="field"><label>Initial Assessment Notes</label><textarea id="tr-notes" placeholder="Nurse's initial observations..."></textarea></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('modal-triage')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTriage()"><i class="bi bi-save"></i> Save Triage</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-view">
+  <div class="modal" style="max-width: 800px; width: 90%;">
+    <div id="view-modal-content"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-services">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('modal-services')"><i class="bi bi-x"></i></button>
+    <div class="modal-title"><i class="bi bi-capsule"></i> Medicine Issuance</div>
+    <div class="text-sm text-muted mb8" id="svc-patient"></div>
+    
+    <div id="st-medicine">
+      <div class="field"><label>Medicine Name *</label><input id="svc-med-name" placeholder="Generic name"></div>
+      <div class="field-row">
+        <div class="field"><label>Dosage</label><input id="svc-med-dose" placeholder="e.g. 500mg"></div>
+        <div class="field"><label>Quantity Issued *</label><input id="svc-med-qty" placeholder="e.g. 10 tablets"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Frequency</label><input id="svc-med-freq" placeholder="e.g. 3x a day"></div>
+        <div class="field"><label>Duration</label><input id="svc-med-dur" placeholder="e.g. 7 days"></div>
+      </div>
+      <div class="field"><label>Additional Instructions</label><input id="svc-med-instr" placeholder="e.g. Take after meals"></div>
+      <div class="field"><label>Issued By</label><input id="svc-med-by" placeholder="Nurse name"></div>
+      <button class="btn btn-primary w100" onclick="saveMedicine()"><i class="bi bi-check-circle"></i> Record Medicine Issuance</button>
+    </div>
+    
+    <div id="svc-issued-list"></div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal('modal-services')">Close</button></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-exam">
+  <div class="modal modal-lg">
+    <button class="modal-close" onclick="closeModal('modal-exam')"><i class="bi bi-x"></i></button>
+    <div class="modal-title"><i class="bi bi-heart-pulse"></i> Medical Examination</div>
+    <div class="text-sm text-muted mb8" id="exam-modal-patient"></div>
+    <div class="tabs" id="exam-tabs">
+      <button class="tab active" onclick="examModalTab('triage-review')">1. Triage Assessment</button>
+      <button class="tab" onclick="examModalTab('diagnosis')">2. Physician Diagnosis</button>
+      <button class="tab" onclick="examModalTab('prescriptions')">3. Prescriptions</button>
+      <button class="tab" onclick="examModalTab('finalize')">4. Finalization</button>
+    </div>
+
+    <div class="tab-panel active" id="emt-triage-review">
+      <div id="triage-review-content"></div>
+      <div class="modal-footer" style="border:none;padding-top:8px;">
+        <button class="btn btn-primary" onclick="examModalTab('diagnosis')">Next: Physician Diagnosis <i class="bi bi-arrow-right"></i></button>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="emt-diagnosis">
+      <div class="field-row">
+        <div class="field"><label>General Appearance</label><input id="ex-general" placeholder="e.g. Conscious, coherent, not in distress"></div>
+        <div class="field"><label>HEENT</label><input id="ex-heent" placeholder="Head, Eyes, Ears, Nose, Throat"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Chest / Lungs</label><input id="ex-chest" placeholder="Auscultation findings"></div>
+        <div class="field"><label>Cardiovascular</label><input id="ex-cardio" placeholder="Heart sounds, pulses"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Abdomen</label><input id="ex-abdomen" placeholder="Soft, non-tender, etc."></div>
+        <div class="field"><label>Extremities</label><input id="ex-extremities" placeholder="Gross motor, sensation"></div>
+      </div>
+      <div class="field"><label>Neurological</label><input id="ex-neuro" placeholder="GCS, orientation..."></div>
+      <hr class="div">
+      <div class="field"><label>Diagnosis / Clinical Impression *</label><textarea id="ex-diagnosis" placeholder="Primary and secondary diagnoses..."></textarea></div>
+      <div class="field"><label>ICD-10 Code (optional)</label><input id="ex-icd" placeholder="e.g. J06.9"></div>
+      <div class="modal-footer" style="border:none;padding-top:8px;">
+        <button class="btn btn-outline" onclick="examModalTab('triage-review')"><i class="bi bi-arrow-left"></i> Back</button>
+        <button class="btn btn-primary" onclick="saveDiagnosis()">Save & Continue <i class="bi bi-arrow-right"></i></button>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="emt-prescriptions">
+      <div class="card-title" style="font-size:.88rem;margin-bottom:10px;">Laboratory Requests</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">
+        <label class="field-check"><input type="checkbox" class="lab-chk" value="CBC" style="width:auto;"> CBC</label>
+        <label class="field-check"><input type="checkbox" class="lab-chk" value="Urinalysis" style="width:auto;"> Urinalysis</label>
+        <label class="field-check"><input type="checkbox" class="lab-chk" value="Blood Chemistry" style="width:auto;"> Blood Chemistry</label>
+        <label class="field-check"><input type="checkbox" class="lab-chk" value="Chest X-Ray" style="width:auto;"> Chest X-Ray</label>
+        <label class="field-check"><input type="checkbox" class="lab-chk" value="ECG" style="width:auto;"> ECG</label>
+        <label class="field-check"><input type="checkbox" class="lab-chk" value="Fecalysis" style="width:auto;"> Fecalysis</label>
+      </div>
+      <div class="field"><label>Other Lab Requests</label><input id="ex-lab-other" placeholder="Specify other tests..."></div>
+      <hr class="div">
+      <div class="card-title" style="font-size:.88rem;margin-bottom:10px;">Prescriptions</div>
+      <div id="rx-list"></div>
+      <button class="btn btn-outline btn-sm mb8" onclick="addRx()"><i class="bi bi-plus"></i> Add Medication</button>
+      <hr class="div">
+      <div class="field"><label>Treatment Instructions / Referral</label><textarea id="ex-instructions" placeholder="Follow-up, referral, lifestyle advice..."></textarea></div>
+      <div class="modal-footer" style="border:none;padding-top:8px;">
+        <button class="btn btn-outline" onclick="examModalTab('diagnosis')"><i class="bi bi-arrow-left"></i> Back</button>
+        <button class="btn btn-primary" onclick="savePrescriptions()">Save & Continue <i class="bi bi-arrow-right"></i></button>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="emt-finalize">
+      <div class="alert alert-info text-sm"><i class="bi bi-info-circle"></i> Review the consultation summary. Saving will securely store your clinical findings and return the patient to the Nurse for checkout and issuance of requested services.</div>
+      <div id="finalize-summary" style="margin-top:12px;"></div>
+      
+      <div class="field" style="margin-top: 16px;">
+        <label><i class="bi bi-journal-text"></i> Final Remarks / Plan</label>
+        <textarea id="ex-notes" placeholder="Recommendations, rest advice, or follow-up plans..."></textarea>
+      </div>
+
+      <div class="modal-footer" style="border:none;padding-top:8px;">
+        <button class="btn btn-outline" onclick="examModalTab('prescriptions')"><i class="bi bi-arrow-left"></i> Back</button>
+        <button class="btn btn-primary" onclick="finalizeConsult()" style="flex:1;"><i class="bi bi-check-circle"></i> Save Findings & Return to Nurse</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-edit-staff">
+  <div class="modal modal-lg">
+    <button class="modal-close" onclick="closeModal('modal-edit-staff')"><i class="bi bi-x"></i></button>
+    <div class="modal-title"><i class="bi bi-person-lines-fill"></i> Edit Staff Profile</div>
+    <div class="text-sm text-muted mb16" id="edit-staff-id-label"></div>
+    
+    <div id="edit-staff-content" style="max-height: 55vh; overflow-y: auto; padding-right: 8px;">
+        </div>
+    
+    <div class="modal-footer" style="margin-top:20px; border-top:1px solid var(--border); padding-top:16px;">
+      <button class="btn btn-outline" onclick="closeModal('modal-edit-staff')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveStaffEdit()"><i class="bi bi-save"></i> Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-tv-queue">
+  <div style="background: #F5F4F0; color: #333; height: 100vh; display: flex; flex-direction: column; overflow: hidden;">
+    
+    <div style="padding: 12px 30px; background: var(--maroon); border-bottom: 4px solid var(--gold); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 15px rgba(0,0,0,0.15); flex-shrink: 0;">
+      <div style="display: flex; align-items: center; gap: 16px;">
+        <img src="./assets/img/logo.png" style="width: 50px; height: 50px; border-radius: 50%; border: 2px solid var(--gold); background: #fff;">
+        <div>
+          <div style="font-family: 'Barlow Condensed', sans-serif; font-size: 1.8rem; font-weight: 700; color: var(--gold); letter-spacing: 1px; text-transform: uppercase; line-height: 1;">USeP Clinic</div>
+          <div style="font-size: 0.9rem; color: #fff; opacity: 0.9; margin-top: 2px; letter-spacing: 1px;">Live Patient Queue Board</div>
+        </div>
+      </div>
+      <div style="text-align: right;">
+        <div id="tv-clock" style="font-family: monospace; font-size: 2rem; color: #fff; font-weight: bold; letter-spacing: 2px;"></div>
+        <button class="btn btn-outline btn-sm" style="color: #fff; border-color: rgba(255,255,255,0.4); background: rgba(0,0,0,0.2); margin-top: 4px; font-size: 0.75rem; padding: 4px 10px;" onclick="showPage('page-home')"><i class="bi bi-arrow-left"></i> Exit TV Mode</button>
+      </div>
+    </div>
+    
+    <div style="padding: 20px 30px; display: flex; flex-direction: column; gap: 16px; flex: 1; min-height: 0;">
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; flex: 1; min-height: 0;">
+        <div style="background: #ffffff; border-radius: 16px; border-top: 6px solid var(--gold); padding: 16px; display: flex; flex-direction: column; box-shadow: 0 4px 16px rgba(0,0,0,0.05); border: 1px solid var(--border);">
+          <div style="font-size: 1.2rem; font-weight: 700; color: var(--gold); margin-bottom: 12px; text-align: center; text-transform: uppercase; letter-spacing: 1px;"><i class="bi bi-hourglass-split"></i> Waiting Area</div>
+          <div id="tv-col-waiting" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 6px;"></div>
+        </div>
+        
+        <div style="background: #ffffff; border-radius: 16px; border-top: 6px solid var(--maroon); padding: 16px; display: flex; flex-direction: column; box-shadow: 0 4px 16px rgba(0,0,0,0.05); border: 1px solid var(--border);">
+          <div style="font-size: 1.2rem; font-weight: 700; color: var(--maroon); margin-bottom: 12px; text-align: center; text-transform: uppercase; letter-spacing: 1px;"><i class="bi bi-clipboard2-pulse"></i> Nurse Station</div>
+          <div id="tv-col-nurse" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 6px;"></div>
+        </div>
+        
+        <div style="background: #ffffff; border-radius: 16px; border-top: 6px solid var(--blue); padding: 16px; display: flex; flex-direction: column; box-shadow: 0 4px 16px rgba(0,0,0,0.05); border: 1px solid var(--border);">
+          <div style="font-size: 1.2rem; font-weight: 700; color: var(--blue); margin-bottom: 12px; text-align: center; text-transform: uppercase; letter-spacing: 1px;"><i class="bi bi-heart-pulse"></i> Doctor's Clinic</div>
+          <div id="tv-col-doctor" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 6px;"></div>
+        </div>
+      </div>
+      
+      <div style="background: #ffffff; border-radius: 16px; border-top: 6px solid var(--green); padding: 12px 20px; display: flex; flex-direction: column; box-shadow: 0 4px 16px rgba(0,0,0,0.05); border: 1px solid var(--border); flex-shrink: 0; height: 140px;">
+        <div style="font-size: 1.1rem; font-weight: 700; color: var(--green); margin-bottom: 10px; text-align: center; text-transform: uppercase; letter-spacing: 1px;"><i class="bi bi-check-circle"></i> Recently Completed</div>
+        <div id="tv-col-done" style="flex: 1; display: flex; flex-direction: row; gap: 16px; justify-content: center; align-items: center; overflow: hidden;"></div>
+      </div>
+      
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="assets/js/data.js"></script>
+<script src="assets/js/shared.js"></script>
+<script src="assets/js/auth.js"></script>
+<script src="assets/js/patient.js"></script>
+<script src="assets/js/nurse.js"></script>
+<script src="assets/js/doctor.js"></script>
+<script src="assets/js/admin.js"></script>
+<script src="assets/js/modals.js"></script>
+<script>
+// Final initialization: restore session and handle initial hash
+window.addEventListener('DOMContentLoaded', function() {
+    restoreSession();
+});
+</script>
+</body>
+</html>

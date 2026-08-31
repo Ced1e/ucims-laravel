@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\RecordController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ClinicQueueController;
 use App\Http\Controllers\TriageRecordController;
@@ -15,11 +16,13 @@ use App\Http\Controllers\PprHealthRecordController;
 use App\Http\Controllers\PprPermanentController;
 use App\Http\Controllers\StaffProfileController;
 use App\Http\Controllers\ConsultationController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\SyncController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
-// Public Welcome
+// Public Welcome[cite: 2]
 Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
@@ -29,7 +32,7 @@ Route::get('/', function () {
     ]);
 });
 
-// Role-Based Dashboards
+// Role-Based Dashboards[cite: 2]
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', function () {
         return Inertia::render('Dashboard');
@@ -52,7 +55,7 @@ Route::middleware(['auth'])->group(function () {
     })->name('patient.dashboard');
 });
 
-// All 14 Core System Modules (Resource Routes + Clone Actions)
+// All 14 Core System Modules (Resource Routes + Clone Actions)[cite: 2]
 Route::middleware(['auth'])->group(function () {
     // 1. Clinic Queue
     Route::resource('clinic-queue', ClinicQueueController::class);
@@ -109,3 +112,17 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('consultations', ConsultationController::class);
     Route::post('consultations/{consultation}/clone', [ConsultationController::class, 'clone'])->name('consultations.clone');
 });
+
+// Authentication API Routes
+Route::post('/api/auth/login', [AuthController::class, 'login']);
+Route::get('/api/auth/check', [AuthController::class, 'check']);
+Route::post('/api/auth/register', [AuthController::class, 'register']);
+Route::get('/api/auth/logout', [AuthController::class, 'logout']);
+
+// Data Sync Route
+Route::get('/api/sync/load', [SyncController::class, 'load']);
+Route::post('/api/sync/save', [SyncController::class, 'save']);
+
+// Record Fetching Routes
+Route::get('/api/records/patients', [RecordController::class, 'getPatients']);
+Route::get('/api/records/staff', [RecordController::class, 'getStaff']);
