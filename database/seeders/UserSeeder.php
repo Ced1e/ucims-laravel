@@ -3,6 +3,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
 {
@@ -13,7 +14,9 @@ class UserSeeder extends Seeder
             'firstname' => 'Admin',
             'lastname' => 'Maria',
             'usep_email' => 'admin@usep.edu.ph',
+            'clinic_id' => 'A-001',
             'role' => 'admin',
+            'password' => Hash::make('Password123!'),
         ]);
 
         // Create Doctor
@@ -21,7 +24,9 @@ class UserSeeder extends Seeder
             'firstname' => 'Jose',
             'lastname' => 'Cruz',
             'usep_email' => 'doctor@usep.edu.ph',
+            'clinic_id' => 'D-001',
             'role' => 'doctor',
+            'password' => Hash::make('Password123!'),
         ]);
 
         // Create Nurse
@@ -29,10 +34,20 @@ class UserSeeder extends Seeder
             'firstname' => 'Rosalyn',
             'lastname' => 'Reyes',
             'usep_email' => 'nurse@usep.edu.ph',
+            'clinic_id' => 'N-001',
             'role' => 'nurse',
+            'password' => Hash::make('Password123!'),
         ]);
 
-        // Generate fake patient records using the factory
+        User::create([
+            'firstname' => 'Maria',
+            'lastname' => 'Santos',
+            'usep_email' => 'patient@usep.edu.ph',
+            'clinic_id' => 'P-001',
+            'role' => 'patient',
+            'password' => Hash::make('Password123!'),
+        ]);
+
         User::factory()->count(5)->create(['role' => 'patient']);
     }
 }

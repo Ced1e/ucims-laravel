@@ -7,8 +7,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\ValidationException;
-use Inertia\Inertia;
+use Illuminate\Support\Facades\Route;
 use Inertia\Response;
 
 class AuthenticatedSessionController extends Controller
@@ -29,20 +28,18 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        $credentials = $request->validated();
-        
-        $loginField = filter_var($credentials['email'] ?? $credentials['login'] ?? '', FILTER_VALIDATE_EMAIL) ? 'email' : 'clinic_id';
-        $loginValue = $credentials['email'] ?? $credentials['login'] ?? '';
-
-        if (! Auth::attempt([$loginField => $loginValue, 'password' => $credentials['password']], $request->boolean('remember'))) {
-            throw ValidationException::withMessages([
-                'email' => __('auth.failed'),
-            ]);
-        }
-
+        $request->authenticate();
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        $destination = match (Auth::user()?->role) {
+            'admin' => route('admin.dashboard', absolute: false),
+            'doctor' => route('doctor.dashboard', absolute: false),
+            'nurse' => route('nurse.dashboard', absolute: false),
+            'patient' => route('patient.dashboard', absolute: false),
+            default => route('dashboard', absolute: false),
+        };
+
+        return redirect()->intended($destination);
     }
 
     /**

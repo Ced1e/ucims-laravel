@@ -83,8 +83,17 @@ function endorsePatient(qnum) {
     const e = queue.find(q => q.queueNum == qnum);
     if (!e) { toast('Queue entry not found.', 'error'); return; }
     if (!e.triaged) { toast('Please complete triage before endorsing.', 'error'); return; }
+    
+    // Grab the selected doctor's ID from the dropdown menu
+    // (Replace 'endorse-doc-select' with the actual HTML ID of your dropdown)
+    const selectedDocId = document.getElementById('endorse-doc-select').value;
+    
+    if (!selectedDocId) { toast('Please select a doctor first.', 'error'); return; }
+
     e.endorsed = true;
     e.status = 'with-doctor';
+    e.doctorId = parseInt(selectedDocId); // Attach the ID to the payload
+    
     saveData();
     toast(`${e.name} endorsed to the doctor.`);
     nurseNav('queue');

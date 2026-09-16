@@ -7,7 +7,7 @@ use App\Http\Requests\StorePprDemographicRequest;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
-class PprDemographicController extends Controller
+class PprDemographicsController extends Controller
 {
     public function index()
     {

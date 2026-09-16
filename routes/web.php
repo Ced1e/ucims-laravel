@@ -10,7 +10,7 @@ use App\Http\Controllers\LabRequestController;
 use App\Http\Controllers\MedicalCertificateController;
 use App\Http\Controllers\MedicineIssuanceController;
 use App\Http\Controllers\PatientAuthController;
-use App\Http\Controllers\PprDemographicController;
+use App\Http\Controllers\PprDemographicsController;
 use App\Http\Controllers\PprHealthQuestionnaireController;
 use App\Http\Controllers\PprHealthRecordController;
 use App\Http\Controllers\PprPermanentController;
@@ -30,7 +30,7 @@ Route::get('/', function () {
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
     ]);
-});
+})->name('home');
 
 // Role-Based Dashboards[cite: 2]
 Route::middleware(['auth'])->group(function () {
@@ -39,7 +39,7 @@ Route::middleware(['auth'])->group(function () {
     })->name('dashboard');
 
     Route::get('/doctor/dashboard', function () {
-        return Inertia::render('Doctor/Dashboard');
+        return Inertia::render('Doctor/Consultation');
     })->name('doctor.dashboard');
 
     Route::get('/nurse/dashboard', function () {
@@ -47,11 +47,11 @@ Route::middleware(['auth'])->group(function () {
     })->name('nurse.dashboard');
 
     Route::get('/admin/dashboard', function () {
-        return Inertia::render('Admin/Dashboard');
+        return Inertia::render('Admin/Analytics');
     })->name('admin.dashboard');
 
     Route::get('/patient/dashboard', function () {
-        return Inertia::render('Patient/Dashboard');
+        return Inertia::render('Patient/Portal');
     })->name('patient.dashboard');
 });
 
@@ -89,8 +89,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('patient-auth/{patient_auth}/clone', [PatientAuthController::class, 'clone'])->name('patient-auth.clone');
 
     // 9. PPR Demographics
-    Route::resource('ppr-demographics', PprDemographicController::class);
-    Route::post('ppr-demographics/{ppr_demographic}/clone', [PprDemographicController::class, 'clone'])->name('ppr-demographics.clone');
+    Route::resource('ppr-demographics', PprDemographicsController::class);
+    Route::post('ppr-demographics/{ppr_demographic}/clone', [PprDemographicsController::class, 'clone'])->name('ppr-demographics.clone');
 
     // 10. PPR Health Questionnaires
     Route::resource('ppr-health-questionnaires', PprHealthQuestionnaireController::class);
@@ -126,3 +126,5 @@ Route::post('/api/sync/save', [SyncController::class, 'save']);
 // Record Fetching Routes
 Route::get('/api/records/patients', [RecordController::class, 'getPatients']);
 Route::get('/api/records/staff', [RecordController::class, 'getStaff']);
+
+require __DIR__.'/settings.php';

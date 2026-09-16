@@ -19,7 +19,7 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'clinic_id' => ['required', 'string'],
+            'login' => ['required', 'string'],
             'password' => ['required', 'string'],
         ];
     }
@@ -28,12 +28,14 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        // This explicitly searches by clinic_id and password
-        if (! Auth::attempt($this->only('clinic_id', 'password'), $this->boolean('remember'))) {
+        $login = $this->string('login')->trim()->toString();
+        $field = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'usep_email' : 'clinic_id';
+
+        if (! Auth::attempt([$field => $login, 'password' => $this->string('password')->toString()], $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([
-                'clinic_id' => trans('auth.failed'),
+                'login' => trans('auth.failed'),
             ]);
         }
 
@@ -60,6 +62,6 @@ class LoginRequest extends FormRequest
 
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->string('clinic_id')).'|'.$this->ip());
+        return Str::transliterate(Str::lower($this->string('login')).'|'.$this->ip());
     }
 }

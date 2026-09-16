@@ -12,13 +12,23 @@ const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 void createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     resolve: (name: string) => {
-        const pages = import.meta.glob('./pages/**/*.tsx');
+        const pages = {
+            ...import.meta.glob('./pages/**/*.tsx'),
+            ...import.meta.glob('./pages/**/*.jsx'),
+        };
         
         let path = `./pages/${name}.tsx`;
         if (!pages[path]) {
             const lowerPath = `./pages/${name.toLowerCase()}.tsx`;
             const foundKey = Object.keys(pages).find((key) => key.toLowerCase() === lowerPath);
             if (foundKey) path = foundKey;
+        }
+
+        if (!pages[path]) {
+            const jsxPath = `./pages/${name}.jsx`;
+            const lowerPath = `./pages/${name.toLowerCase()}.jsx`;
+            const foundKey = Object.keys(pages).find((key) => key.toLowerCase() === lowerPath);
+            path = foundKey ?? jsxPath;
         }
 
         return resolvePageComponent(path, pages) as Promise<any>;
