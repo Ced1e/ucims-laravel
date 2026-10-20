@@ -11,10 +11,10 @@ class StorePprPermanentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => 'required|exists:users,user_id|unique:ppr_permanents,user_id',
-            'blood_type' => 'nullable|string|max:10',
-            'disability_info' => 'nullable|string',
-            'chronic_conditions' => 'nullable|string',
+            'patient_id' => 'required|exists:users,user_id|unique:ppr_permanent,patient_id',
+            'patient_type' => 'nullable|string|max:100',
+            'college_dept' => 'nullable|string|max:150',
+            'year_level' => 'nullable|string|max:50',
         ];
     }
 }

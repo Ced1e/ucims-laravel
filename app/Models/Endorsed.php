@@ -13,7 +13,21 @@ class Endorsed extends Model
     protected $primaryKey = 'endorsed_id';
     public $timestamps = false; // Uses database default for created_at
 
-    protected $guarded = [];
+    protected $fillable = [
+        'queue_id',
+        'doctor_id',
+        'exam_general',
+        'exam_heent',
+        'exam_chest',
+        'exam_cardio',
+        'exam_abdomen',
+        'exam_extremities',
+        'exam_neuro',
+        'diagnosis',
+        'icd_10_code',
+        'final_remarks',
+        'status',
+    ];
 
     public function queue()
     {

@@ -13,7 +13,19 @@ class TriageRecord extends Model
     protected $primaryKey = 'triage_id';
     public $timestamps = false; // Uses database default for created_at
 
-    protected $guarded = [];
+    protected $fillable = [
+        'queue_id',
+        'nurse_id',
+        'blood_pressure',
+        'heart_rate',
+        'temperature',
+        'resp_rate',
+        'o2_saturation',
+        'weight',
+        'height',
+        'chief_complaint',
+        'initial_notes',
+    ];
 
     public function queue()
     {

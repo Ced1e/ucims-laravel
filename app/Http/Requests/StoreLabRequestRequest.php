@@ -12,10 +12,8 @@ class StoreLabRequestRequest extends FormRequest
     {
         return [
             'endorsed_id' => 'required|exists:endorsed,endorsed_id',
-            'test_type' => 'required|string|max:255',
-            'notes' => 'nullable|string',
-            'result' => 'nullable|string',
-            'status' => 'nullable|string|max:50',
+            'laboratory_request' => 'required|string|max:255',
+            'attachments' => 'nullable|string',
         ];
     }
 }

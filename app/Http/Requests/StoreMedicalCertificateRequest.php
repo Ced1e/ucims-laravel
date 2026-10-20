@@ -11,10 +11,16 @@ class StoreMedicalCertificateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'endorsed_id' => 'required|exists:endorsed,endorsed_id',
-            'purpose' => 'required|string',
-            'recommendation' => 'nullable|string',
-            'date_issued' => 'nullable|string|max:50',
+            'queue_id' => 'nullable|exists:clinic_queue,queue_id',
+            'issued_by' => 'nullable|exists:users,user_id',
+            'diagnosis_reason' => 'required|string',
+            'date_from' => 'nullable|string|max:50',
+            'date_to' => 'nullable|string|max:50',
+            'additional_notes' => 'nullable|string',
+            'issued_date' => 'nullable|date',
+            'is_released' => 'boolean',
+            'findings' => 'nullable|string',
+            'medcert_attach' => 'nullable|string',
         ];
     }
 }

@@ -42,6 +42,13 @@ void createInertiaApp({
                 return AuthLayout;
             case lowerName.startsWith('settings/'):
                 return [AppLayout, SettingsLayout];
+            case lowerName.startsWith('nurse/'):
+            case lowerName.startsWith('doctor/'):
+            case lowerName.startsWith('admin/'):
+            case lowerName.startsWith('patient/'):
+                // Role dashboards bring their own full-page legacy-styled
+                // sidebar/layout, so they must not be nested inside AppLayout.
+                return null;
             default:
                 return AppLayout;
         }

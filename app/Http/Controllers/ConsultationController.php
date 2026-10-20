@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Consultation;
 use App\Http\Requests\StoreConsultationRequest;
+use App\Http\Requests\UpdateConsultationRequest;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Actions\CloneRecordAction;
 
 class ConsultationController extends Controller
 {
@@ -34,20 +36,20 @@ class ConsultationController extends Controller
         return Inertia::render('Consultations/Update', ['consultation' => $consultation]);
     }
 
-    public function update(Request $request, Consultation $consultation)
+    public function update(UpdateConsultationRequest $request, Consultation $consultation)
     {
-        $consultation->update($request->all());
+        $consultation->update($request->validated());
         return redirect()->route('consultations.index')->with('success', 'Consultation updated.');
     }
 
-    public function clone(Consultation $consultation)
+    public function clone(Consultation $consultation, CloneRecordAction $cloner)
     {
-        $clone = $consultation->replicate();
-        if (isset($clone->diagnosis)) {
-            $clone->diagnosis = $clone->diagnosis . ' (Copy)';
+        $overrides = [];
+        if ($consultation->diagnosis) {
+            $overrides['diagnosis'] = $consultation->diagnosis.' (Copy)';
         }
-        $clone->save();
 
+        $cloner->execute($consultation, $overrides);
         return redirect()->route('consultations.index')->with('success', 'Consultation cloned.');
     }
 

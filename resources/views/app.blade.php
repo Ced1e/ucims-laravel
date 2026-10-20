@@ -37,7 +37,13 @@
         @fonts
 
         @viteReactRefresh
-        @vite(['resources/css/app.css', 'resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
+        @php
+            // Pages may be .tsx or .jsx; only preload the file that actually exists.
+            $pageEntry = collect(['tsx', 'jsx'])
+                ->map(fn ($ext) => "resources/js/pages/{$page['component']}.{$ext}")
+                ->first(fn ($path) => file_exists(base_path($path)));
+        @endphp
+        @vite(array_values(array_filter(['resources/css/app.css', 'resources/js/app.tsx', $pageEntry])))
         <x-inertia::head>
             <title>{{ config('app.name', 'Laravel') }}</title>
         </x-inertia::head>

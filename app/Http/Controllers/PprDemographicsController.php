@@ -4,15 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\PprDemographic;
 use App\Http\Requests\StorePprDemographicRequest;
+use App\Http\Requests\UpdatePprDemographicsRequest;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Actions\CloneRecordAction;
 
 class PprDemographicsController extends Controller
 {
     public function index()
     {
-        $demographics = PprDemographic::with('user')->orderBy('demo_id', 'desc')->get();
-        return Inertia::render('PprDemographics/Index', ['demographics' => $demographics]);
+    $demographics = PprDemographic::with('user')->orderBy('demographics_id', 'desc')->get();
+    return Inertia::render('PprDemographics/Index', ['demographics' => $demographics]);
     }
 
     public function create()
@@ -31,16 +33,15 @@ class PprDemographicsController extends Controller
         return Inertia::render('PprDemographics/Update', ['demographic' => $pprDemographic]);
     }
 
-    public function update(Request $request, PprDemographic $pprDemographic)
+    public function update(UpdatePprDemographicsRequest $request, PprDemographic $pprDemographic)
     {
-        $pprDemographic->update($request->all());
-        return redirect()->route('ppr-demographics.index')->with('success', 'Demographics updated.');
+    $pprDemographic->update($request->validated());
+    return redirect()->route('ppr-demographics.index')->with('success', 'Demographics updated.');
     }
 
-    public function clone(PprDemographic $pprDemographic)
+    public function clone(PprDemographic $pprDemographic, CloneRecordAction $cloner)
     {
-        $clone = $pprDemographic->replicate();
-        $clone->save();
+        $cloner->execute($pprDemographic);
         return redirect()->route('ppr-demographics.index')->with('success', 'Demographics cloned.');
     }
 

@@ -13,7 +13,19 @@ class Consultation extends Model
     protected $primaryKey = 'consultation_id';
     public $timestamps = false;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'queue_id',
+        'doctor_id',
+        'consultation_date',
+        'diagnosis',
+        'treatment',
+        'notes',
+        'status',
+    ];
+
+    protected $casts = [
+        'consultation_date' => 'date',
+    ];
 
     public function queue()
     {

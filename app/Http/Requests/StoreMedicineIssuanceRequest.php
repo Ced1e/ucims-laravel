@@ -11,10 +11,15 @@ class StoreMedicineIssuanceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'endorsed_id' => 'required|exists:endorsed,endorsed_id',
+            'queue_id' => 'nullable|exists:clinic_queue,queue_id',
+            'nurse_id' => 'nullable|exists:users,user_id',
             'medicine_name' => 'required|string|max:255',
-            'quantity' => 'required|integer|min:1',
-            'date_issued' => 'nullable|string|max:50',
+            'dosage' => 'nullable|string|max:100',
+            'quantity' => 'nullable|string|max:50',
+            'instructions' => 'nullable|string',
+            'issued_date' => 'nullable|date',
+            'duration' => 'nullable|string|max:100',
+            'frequency' => 'nullable|string|max:100',
         ];
     }
 }

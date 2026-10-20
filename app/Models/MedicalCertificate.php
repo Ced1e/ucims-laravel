@@ -10,13 +10,38 @@ class MedicalCertificate extends Model
     use HasFactory;
 
     protected $table = 'medical_certificates';
-    protected $primaryKey = 'cert_id';
+    protected $primaryKey = 'certificate_id';
     public $timestamps = false;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'queue_id',
+        'issued_by',
+        'diagnosis_reason',
+        'date_from',
+        'date_to',
+        'additional_notes',
+        'issued_date',
+        'is_released',
+        'findings',
+        'medcert_attach',
+        'purpose',
+        'physician_name',
+        'license_no',
+        'exam_date',
+    ];
 
-    public function endorsed()
+    protected $casts = [
+        'issued_date' => 'datetime',
+        'is_released' => 'boolean',
+    ];
+
+    public function queue()
     {
-        return $this->belongsTo(Endorsed::class, 'endorsed_id', 'endorsed_id');
+        return $this->belongsTo(ClinicQueue::class, 'queue_id', 'queue_id');
+    }
+
+    public function issuer()
+    {
+        return $this->belongsTo(User::class, 'issued_by', 'user_id');
     }
 }

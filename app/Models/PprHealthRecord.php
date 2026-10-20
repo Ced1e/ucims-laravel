@@ -10,13 +10,41 @@ class PprHealthRecord extends Model
     use HasFactory;
 
     protected $table = 'ppr_health_records';
-    protected $primaryKey = 'health_record_id';
+    protected $primaryKey = 'hr_id';
     public $timestamps = false;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'patient_id',
+        'gen_appearance',
+        'height',
+        'weight',
+        'pulse_rate',
+        'resp_rate',
+        'temp',
+        'blood_pressure',
+        'cr_rest',
+        'cr_activity',
+        'infectious_diseases',
+        'social_hx',
+        'family_hx',
+        'sr_skin',
+        'sr_lymph',
+        'sr_integument',
+        'sr_circulatory',
+        'sr_endocrine',
+        'sr_allergic',
+        'sr_heent',
+        'sr_mouth',
+        'sr_breast',
+        'sr_respiratory',
+        'sr_cardiovascular',
+        'sr_gastrointestinal',
+        'sr_genitourinary',
+        'sr_psychiatric',
+    ];
 
     public function user()
     {
-        return $this->belongsTo(User::class, 'user_id', 'user_id');
+        return $this->belongsTo(User::class, 'patient_id', 'user_id');
     }
 }

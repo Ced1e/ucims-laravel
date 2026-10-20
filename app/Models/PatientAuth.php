@@ -13,7 +13,11 @@ class PatientAuth extends Model
     protected $primaryKey = 'patient_auth_id';
     public $timestamps = false;
 
-    protected $guarded = [];
+    protected $fillable = [
+    'user_id',
+    'univ_id',
+    'password_hash',
+    ];
 
     public function user()
     {

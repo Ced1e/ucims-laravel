@@ -2,28 +2,27 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdatePprDemographicsRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
-    public function authorize(): bool
-    {
-        return false;
-    }
+    public function authorize(): bool { return true; }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            //
+            'dob' => 'nullable|string|max:50',
+            'sex' => 'nullable|string|max:20',
+            'civil_status' => 'nullable|string|max:50',
+            'religion' => 'nullable|string|max:100',
+            'birthplace' => 'nullable|string|max:255',
+            'nationality' => 'nullable|string|max:100',
+            'city_address' => 'nullable|string',
+            'prov_address' => 'nullable|string',
+            'contact_no' => 'nullable|string|max:50',
+            'em_name' => 'nullable|string|max:150',
+            'em_contact' => 'nullable|string|max:50',
+            'em_rel' => 'nullable|string|max:50',
         ];
     }
 }

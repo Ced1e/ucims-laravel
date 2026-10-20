@@ -1,19 +1,20 @@
 import React from 'react';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, Link } from '@inertiajs/react';
 
 export default function Create() {
     const { data, setData, post, processing, errors } = useForm({
         clinic_id: '',
-        first_name: '',
-        last_name: '',
-        role: 'Doctor',
-        email: '',
-        password_hash: '',
+        firstname: '',
+        middlename: '',
+        lastname: '',
+        role: 'nurse',
+        usep_email: '',
+        password: '',
     });
 
     const submit = (e) => {
         e.preventDefault();
-        post(route('staff.store'));
+        post('/staff');
     };
 
     return (
@@ -21,14 +22,14 @@ export default function Create() {
             <Head title="Create Staff" />
             <h1 className="text-2xl font-bold mb-6">New Staff Member</h1>
 
-            <form onSubmit={submit} className="bg-white p-6 rounded shadow-sm border space-y-4">
+            <form onSubmit={submit} className="bg-white text-gray-900 p-6 rounded shadow-sm border space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="block mb-1 font-bold">Clinic ID</label>
-                        <input 
-                            type="text" 
-                            value={data.clinic_id} 
-                            onChange={e => setData('clinic_id', e.target.value)} 
+                        <input
+                            type="text"
+                            value={data.clinic_id}
+                            onChange={(e) => setData('clinic_id', e.target.value)}
                             className="w-full border rounded p-2"
                             placeholder="D-002"
                         />
@@ -36,64 +37,69 @@ export default function Create() {
                     </div>
                     <div>
                         <label className="block mb-1 font-bold">Role</label>
-                        <select 
-                            value={data.role} 
-                            onChange={e => setData('role', e.target.value)} 
-                            className="w-full border rounded p-2"
-                        >
-                            <option value="Doctor">Doctor</option>
-                            <option value="Nurse">Nurse</option>
-                            <option value="Admin">Admin</option>
+                        <select value={data.role} onChange={(e) => setData('role', e.target.value)} className="w-full border rounded p-2">
+                            <option value="doctor">Doctor</option>
+                            <option value="nurse">Nurse</option>
+                            <option value="admin">Admin</option>
                         </select>
+                        {errors.role && <div className="text-red-500 text-sm mt-1">{errors.role}</div>}
                     </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div>
                         <label className="block mb-1 font-bold">First Name</label>
-                        <input 
-                            type="text" 
-                            value={data.first_name} 
-                            onChange={e => setData('first_name', e.target.value)} 
+                        <input
+                            type="text"
+                            value={data.firstname}
+                            onChange={(e) => setData('firstname', e.target.value)}
                             className="w-full border rounded p-2"
                         />
+                        {errors.firstname && <div className="text-red-500 text-sm mt-1">{errors.firstname}</div>}
                     </div>
                     <div>
                         <label className="block mb-1 font-bold">Last Name</label>
-                        <input 
-                            type="text" 
-                            value={data.last_name} 
-                            onChange={e => setData('last_name', e.target.value)} 
+                        <input
+                            type="text"
+                            value={data.lastname}
+                            onChange={(e) => setData('lastname', e.target.value)}
                             className="w-full border rounded p-2"
                         />
+                        {errors.lastname && <div className="text-red-500 text-sm mt-1">{errors.lastname}</div>}
                     </div>
                 </div>
 
                 <div>
-                    <label className="block mb-1 font-bold">Email</label>
-                    <input 
-                        type="email" 
-                        value={data.email} 
-                        onChange={e => setData('email', e.target.value)} 
+                    <label className="block mb-1 font-bold">USeP Email</label>
+                    <input
+                        type="email"
+                        value={data.usep_email}
+                        onChange={(e) => setData('usep_email', e.target.value)}
                         className="w-full border rounded p-2"
                     />
-                    {errors.email && <div className="text-red-500 text-sm mt-1">{errors.email}</div>}
+                    {errors.usep_email && <div className="text-red-500 text-sm mt-1">{errors.usep_email}</div>}
                 </div>
 
                 <div>
                     <label className="block mb-1 font-bold">Password</label>
-                    <input 
-                        type="password" 
-                        value={data.password_hash} 
-                        onChange={e => setData('password_hash', e.target.value)} 
+                    <input
+                        type="password"
+                        value={data.password}
+                        onChange={(e) => setData('password', e.target.value)}
                         className="w-full border rounded p-2"
+                        placeholder="At least 8 characters"
                     />
-                    {errors.password_hash && <div className="text-red-500 text-sm mt-1">{errors.password_hash}</div>}
+                    {errors.password && <div className="text-red-500 text-sm mt-1">{errors.password}</div>}
                 </div>
 
-                <button disabled={processing} className="bg-blue-600 text-white px-4 py-2 rounded">
-                    Save Staff Member
-                </button>
+                <div className="flex items-center gap-3">
+                    <button disabled={processing} className="bg-blue-600 text-white px-4 py-2 rounded">
+                        {processing ? 'Saving…' : 'Save Staff Member'}
+                    </button>
+                    <Link href="/staff" className="text-gray-500 hover:underline">
+                        Cancel
+                    </Link>
+                </div>
             </form>
         </div>
     );

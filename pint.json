@@ -1,3 +1,13 @@
 {
-    "preset": "laravel"
+    "preset": "laravel",
+    "rules": {
+        "method_argument_space": {
+            "on_multiline": "ignore"
+        },
+        "trailing_comma_in_multiline": false,
+        "array_indentation": true,
+        "binary_operator_spaces": {
+            "default": "single_space"
+        }
+    }
 }

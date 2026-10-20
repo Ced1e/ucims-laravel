@@ -23,6 +23,12 @@ class StoreTriageRequest extends FormRequest
             'blood_pressure' => 'nullable|string|max:50',
             'heart_rate' => 'nullable|string|max:50',
             'temperature' => 'nullable|string|max:50',
+            'resp_rate' => 'nullable|string|max:50',
+            'o2_saturation' => 'nullable|string|max:50',
+            'weight' => 'nullable|string|max:50',
+            'height' => 'nullable|string|max:50',
+            'chief_complaint' => 'nullable|string',
+            'initial_notes' => 'nullable|string',
         ];
     }
 }

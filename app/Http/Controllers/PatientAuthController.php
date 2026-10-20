@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\PatientAuth;
 use App\Http\Requests\StorePatientAuthRequest;
+use App\Http\Requests\UpdatePatientAuthRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
+use App\Actions\CloneRecordAction;
 
 class PatientAuthController extends Controller
 {
@@ -35,20 +37,19 @@ class PatientAuthController extends Controller
         return Inertia::render('PatientAuth/Update', ['auth' => $patientAuth]);
     }
 
-    public function update(Request $request, PatientAuth $patientAuth)
+    public function update(UpdatePatientAuthRequest $request, PatientAuth $patientAuth)
     {
-        $data = $request->except(['password_hash']);
-        if ($request->filled('password_hash')) {
-            $data['password_hash'] = Hash::make($request->password_hash);
-        }
-        $patientAuth->update($data);
-        return redirect()->route('patient-auth.index')->with('success', 'Patient credentials updated.');
+    $data = $request->safe()->except(['password_hash']);
+    if ($request->filled('password_hash')) {
+        $data['password_hash'] = Hash::make($request->password_hash);
+    }
+    $patientAuth->update($data);
+    return redirect()->route('patient-auth.index')->with('success', 'Patient credentials updated.');
     }
 
-    public function clone(PatientAuth $patientAuth)
+    public function clone(PatientAuth $patientAuth, CloneRecordAction $cloner)
     {
-        $clone = $patientAuth->replicate();
-        $clone->save();
+        $cloner->execute($patientAuth);
         return redirect()->route('patient-auth.index')->with('success', 'Patient credentials cloned.');
     }
 

@@ -2,28 +2,28 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateEndorsedRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
-    public function authorize(): bool
-    {
-        return false;
-    }
+    public function authorize(): bool { return true; }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            //
+            'queue_id' => 'sometimes|exists:clinic_queue,queue_id',
+            'doctor_id' => 'nullable|exists:users,user_id',
+            'exam_general' => 'nullable|string',
+            'exam_heent' => 'nullable|string',
+            'exam_chest' => 'nullable|string',
+            'exam_cardio' => 'nullable|string',
+            'exam_abdomen' => 'nullable|string',
+            'exam_extremities' => 'nullable|string',
+            'exam_neuro' => 'nullable|string',
+            'diagnosis' => 'sometimes|string',
+            'icd_10_code' => 'nullable|string|max:100',
+            'final_remarks' => 'nullable|string',
+            'status' => 'nullable|string|max:50',
         ];
     }
 }

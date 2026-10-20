@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\TriageRecord;
 use App\Http\Requests\StoreTriageRecordRequest;
+use App\Http\Requests\UpdateTriageRecordRequest;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Actions\CloneRecordAction;
 
 class TriageRecordController extends Controller
 {
@@ -31,16 +33,15 @@ class TriageRecordController extends Controller
         return Inertia::render('TriageRecord/Update', ['record' => $triageRecord]);
     }
 
-    public function update(Request $request, TriageRecord $triageRecord)
+    public function update(UpdateTriageRecordRequest $request, TriageRecord $triageRecord)
     {
-        $triageRecord->update($request->all());
-        return redirect()->route('triage-records.index')->with('success', 'Triage record updated.');
+    $triageRecord->update($request->validated());
+    return redirect()->route('triage-records.index')->with('success', 'Triage record updated.');
     }
 
-    public function clone(TriageRecord $triageRecord)
+    public function clone(TriageRecord $triageRecord, CloneRecordAction $cloner)
     {
-        $clone = $triageRecord->replicate();
-        $clone->save();
+        $cloner->execute($triageRecord);
         return redirect()->route('triage-records.index')->with('success', 'Triage record cloned.');
     }
 

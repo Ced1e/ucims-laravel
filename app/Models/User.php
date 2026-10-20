@@ -22,6 +22,11 @@ class User extends Authenticatable
         'usep_email',
         'role',
         'password',
+        'is_active',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
     ];
 
     protected $hidden = [
@@ -37,5 +42,30 @@ class User extends Authenticatable
     public function username(): string
     {
         return 'clinic_id';
+    }
+
+    public function staffProfile()
+    {
+    return $this->hasOne(StaffProfile::class, 'user_id', 'user_id');
+    }
+
+    public function pprPermanent()
+    {
+        return $this->hasOne(PprPermanent::class, 'patient_id', 'user_id');
+    }
+
+    public function pprDemographic()
+    {
+        return $this->hasOne(PprDemographic::class, 'patient_id', 'user_id');
+    }
+
+    public function pprHealthRecord()
+    {
+        return $this->hasOne(PprHealthRecord::class, 'patient_id', 'user_id');
+    }
+
+    public function pprHealthQuestionnaire()
+    {
+        return $this->hasOne(PprHealthQuestionnaire::class, 'patient_id', 'user_id');
     }
 }

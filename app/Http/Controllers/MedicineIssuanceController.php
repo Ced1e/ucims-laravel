@@ -4,14 +4,27 @@ namespace App\Http\Controllers;
 
 use App\Models\MedicineIssuance;
 use App\Http\Requests\StoreMedicineIssuanceRequest;
+use App\Http\Requests\UpdateMedicineIssuanceRequest;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Actions\CloneRecordAction;
 
 class MedicineIssuanceController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $issuances = MedicineIssuance::with('endorsed')->orderBy('issuance_id', 'desc')->get();
+        $query = MedicineIssuance::with(['queue.patient', 'nurse'])->orderBy('issuance_id', 'desc');
+
+        if ($request->filled('queue_id')) {
+            $query->where('queue_id', $request->queue_id);
+        }
+
+        $issuances = $query->get();
+
+        if ($request->wantsJson()) {
+            return response()->json($issuances);
+        }
+
         return Inertia::render('MedicineIssuances/Index', ['issuances' => $issuances]);
     }
 
@@ -23,9 +36,15 @@ class MedicineIssuanceController extends Controller
     public function store(StoreMedicineIssuanceRequest $request)
     {
         $data = $request->validated();
-        $data['date_issued'] = $data['date_issued'] ?? now()->format('Y-m-d');
+        $data['issued_date'] = $data['issued_date'] ?? now()->format('Y-m-d H:i:s');
+        $data['nurse_id'] = $data['nurse_id'] ?? $request->user()?->user_id;
 
-        MedicineIssuance::create($data);
+        $issuance = MedicineIssuance::create($data);
+
+        if ($request->wantsJson()) {
+            return response()->json($issuance->load('nurse'), 201);
+        }
+
         return redirect()->route('medicine-issuances.index')->with('success', 'Medicine issuance logged.');
     }
 
@@ -34,17 +53,16 @@ class MedicineIssuanceController extends Controller
         return Inertia::render('MedicineIssuances/Update', ['issuance' => $medicineIssuance]);
     }
 
-    public function update(Request $request, MedicineIssuance $medicineIssuance)
+    public function update(UpdateMedicineIssuanceRequest $request, MedicineIssuance $medicineIssuance)
     {
-        $medicineIssuance->update($request->all());
-        return redirect()->route('medicine-issuances.index')->with('success', 'Medicine issuance updated.');
+    $medicineIssuance->update($request->validated());
+    return redirect()->route('medicine-issuances.index')->with('success', 'Medicine issuance updated.');
     }
 
-    public function clone(MedicineIssuance $medicineIssuance)
+    public function clone(MedicineIssuance $medicineIssuance, CloneRecordAction $cloner)
     {
-        $clone = $medicineIssuance->replicate();
-        $clone->save();
-        return redirect()->route('medicine-issuances.index')->with('success', 'Medicine issuance cloned.');
+    $cloner->execute($medicineIssuance);
+    return redirect()->route('medicine-issuances.index')->with('success', 'Medicine issuance cloned.');
     }
 
     public function destroy(MedicineIssuance $medicineIssuance)

@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\PprHealthQuestionnaire;
 use App\Http\Requests\StorePprHealthQuestionnaireRequest;
+use App\Http\Requests\UpdatePprHealthQuestionnaireRequest;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Actions\CloneRecordAction;
 
 class PprHealthQuestionnaireController extends Controller
 {
@@ -31,16 +33,15 @@ class PprHealthQuestionnaireController extends Controller
         return Inertia::render('PprHealthQuestionnaires/Update', ['questionnaire' => $pprHealthQuestionnaire]);
     }
 
-    public function update(Request $request, PprHealthQuestionnaire $pprHealthQuestionnaire)
+    public function update(UpdatePprHealthQuestionnaireRequest $request, PprHealthQuestionnaire $pprHealthQuestionnaire)
     {
-        $pprHealthQuestionnaire->update($request->all());
-        return redirect()->route('ppr-health-questionnaires.index')->with('success', 'Health questionnaire updated.');
+    $pprHealthQuestionnaire->update($request->validated());
+    return redirect()->route('ppr-health-questionnaires.index')->with('success', 'Health questionnaire updated.');
     }
 
-    public function clone(PprHealthQuestionnaire $pprHealthQuestionnaire)
+    public function clone(PprHealthQuestionnaire $pprHealthQuestionnaire, CloneRecordAction $cloner)
     {
-        $clone = $pprHealthQuestionnaire->replicate();
-        $clone->save();
+        $cloner->execute($pprHealthQuestionnaire);
         return redirect()->route('ppr-health-questionnaires.index')->with('success', 'Health questionnaire cloned.');
     }
 

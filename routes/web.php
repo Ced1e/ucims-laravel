@@ -34,8 +34,17 @@ Route::get('/', function () {
 
 // Role-Based Dashboards[cite: 2]
 Route::middleware(['auth'])->group(function () {
+    // Generic entry point: send each user to their own role's dashboard.
     Route::get('/dashboard', function () {
-        return Inertia::render('Dashboard');
+        $target = match (auth()->user()->role) {
+            'admin' => 'admin.dashboard',
+            'doctor' => 'doctor.dashboard',
+            'nurse' => 'nurse.dashboard',
+            'patient' => 'patient.dashboard',
+            default => null,
+        };
+
+        return $target ? redirect()->route($target) : Inertia::render('Dashboard');
     })->name('dashboard');
 
     Route::get('/doctor/dashboard', function () {
@@ -58,11 +67,13 @@ Route::middleware(['auth'])->group(function () {
 // All 14 Core System Modules (Resource Routes + Clone Actions)[cite: 2]
 Route::middleware(['auth'])->group(function () {
     // 1. Clinic Queue
-    Route::resource('clinic-queue', ClinicQueueController::class);
+    Route::resource('clinic-queue', ClinicQueueController::class)
+        ->parameters(['clinic-queue' => 'clinicQueue']);
 
     // 2. Triage Records
-    Route::resource('triage-records', TriageRecordController::class);
-    Route::post('triage-records/{triage_record}/clone', [TriageRecordController::class, 'clone'])->name('triage-records.clone');
+    Route::resource('triage-records', TriageRecordController::class)
+        ->parameters(['triage-records' => 'triageRecord']);
+    Route::post('triage-records/{triageRecord}/clone', [TriageRecordController::class, 'clone'])->name('triage-records.clone');
 
     // 3. Endorsed (Consultations)
     Route::resource('endorsed', EndorsedController::class);
@@ -73,44 +84,73 @@ Route::middleware(['auth'])->group(function () {
     Route::post('prescriptions/{prescription}/clone', [PrescriptionController::class, 'clone'])->name('prescriptions.clone');
 
     // 5. Lab Requests
-    Route::resource('lab-requests', LabRequestController::class);
-    Route::post('lab-requests/{lab_request}/clone', [LabRequestController::class, 'clone'])->name('lab-requests.clone');
+    Route::resource('lab-requests', LabRequestController::class)
+        ->parameters(['lab-requests' => 'labRequest']);
+    Route::post('lab-requests/{labRequest}/clone', [LabRequestController::class, 'clone'])->name('lab-requests.clone');
 
     // 6. Medical Certificates
-    Route::resource('medical-certificates', MedicalCertificateController::class);
-    Route::post('medical-certificates/{medical_certificate}/clone', [MedicalCertificateController::class, 'clone'])->name('medical-certificates.clone');
+    Route::resource('medical-certificates', MedicalCertificateController::class)
+        ->parameters(['medical-certificates' => 'medicalCertificate']);
+    Route::post('medical-certificates/{medicalCertificate}/clone', [MedicalCertificateController::class, 'clone'])->name('medical-certificates.clone');
 
     // 7. Medicine Issuances
-    Route::resource('medicine-issuances', MedicineIssuanceController::class);
-    Route::post('medicine-issuances/{medicine_issuance}/clone', [MedicineIssuanceController::class, 'clone'])->name('medicine-issuances.clone');
+    Route::resource('medicine-issuances', MedicineIssuanceController::class)
+        ->parameters(['medicine-issuances' => 'medicineIssuance']);
+    Route::post('medicine-issuances/{medicineIssuance}/clone', [MedicineIssuanceController::class, 'clone'])->name('medicine-issuances.clone');
 
     // 8. Patient Auth
-    Route::resource('patient-auth', PatientAuthController::class);
-    Route::post('patient-auth/{patient_auth}/clone', [PatientAuthController::class, 'clone'])->name('patient-auth.clone');
+    Route::resource('patient-auth', PatientAuthController::class)
+        ->parameters(['patient-auth' => 'patientAuth']);
+    Route::post('patient-auth/{patientAuth}/clone', [PatientAuthController::class, 'clone'])->name('patient-auth.clone');
 
     // 9. PPR Demographics
-    Route::resource('ppr-demographics', PprDemographicsController::class);
-    Route::post('ppr-demographics/{ppr_demographic}/clone', [PprDemographicsController::class, 'clone'])->name('ppr-demographics.clone');
+    Route::resource('ppr-demographics', PprDemographicsController::class)
+        ->parameters(['ppr-demographics' => 'pprDemographic']);
+    Route::post('ppr-demographics/{pprDemographic}/clone', [PprDemographicsController::class, 'clone'])->name('ppr-demographics.clone');
 
     // 10. PPR Health Questionnaires
-    Route::resource('ppr-health-questionnaires', PprHealthQuestionnaireController::class);
-    Route::post('ppr-health-questionnaires/{ppr_health_questionnaire}/clone', [PprHealthQuestionnaireController::class, 'clone'])->name('ppr-health-questionnaires.clone');
+    Route::resource('ppr-health-questionnaires', PprHealthQuestionnaireController::class)
+        ->parameters(['ppr-health-questionnaires' => 'pprHealthQuestionnaire']);
+    Route::post('ppr-health-questionnaires/{pprHealthQuestionnaire}/clone', [PprHealthQuestionnaireController::class, 'clone'])->name('ppr-health-questionnaires.clone');
 
     // 11. PPR Health Records
-    Route::resource('ppr-health-records', PprHealthRecordController::class);
-    Route::post('ppr-health-records/{ppr_health_record}/clone', [PprHealthRecordController::class, 'clone'])->name('ppr-health-records.clone');
+    Route::resource('ppr-health-records', PprHealthRecordController::class)
+        ->parameters(['ppr-health-records' => 'pprHealthRecord']);
+    Route::post('ppr-health-records/{pprHealthRecord}/clone', [PprHealthRecordController::class, 'clone'])->name('ppr-health-records.clone');
 
     // 12. PPR Permanents
-    Route::resource('ppr-permanents', PprPermanentController::class);
-    Route::post('ppr-permanents/{ppr_permanent}/clone', [PprPermanentController::class, 'clone'])->name('ppr-permanents.clone');
+    Route::resource('ppr-permanents', PprPermanentController::class)
+        ->parameters(['ppr-permanents' => 'pprPermanent']);
+    Route::post('ppr-permanents/{pprPermanent}/clone', [PprPermanentController::class, 'clone'])->name('ppr-permanents.clone');
 
     // 13. Staff Profiles & Auth
-    Route::resource('staff', StaffProfileController::class);
-    Route::post('staff/{staff}/clone', [StaffProfileController::class, 'clone'])->name('staff.clone');
+    // Staff account management is admin-only
+    Route::middleware('role:admin')->group(function () {
+        Route::resource('staff', StaffProfileController::class);
+        Route::post('staff/{staff}/clone', [StaffProfileController::class, 'clone'])->name('staff.clone');
+    });
 
     // 14. Consultations
     Route::resource('consultations', ConsultationController::class);
     Route::post('consultations/{consultation}/clone', [ConsultationController::class, 'clone'])->name('consultations.clone');
+
+    // Record Fetching Routes (moved inside auth — patient PII must not be publicly reachable)
+    // Patient records: clinic staff only (patients must never reach other patients' data)
+    Route::middleware('role:nurse,doctor,admin')->group(function () {
+        Route::get('/api/records/patients', [RecordController::class, 'getPatients']);
+        Route::get('/api/records/patients/{patient}', [RecordController::class, 'getPatientDetail']);
+        Route::get('/api/records/patients/{patient}/visits', [RecordController::class, 'getPatientVisits']);
+    });
+
+    // Admin-only record tools
+    Route::middleware('role:admin')->group(function () {
+        Route::get('/api/records/validation', [RecordController::class, 'getRecordValidation']);
+        Route::get('/api/records/staff', [RecordController::class, 'getStaff']);
+        Route::put('/api/records/staff/{user}', [RecordController::class, 'updateStaff']);
+        Route::put('/api/records/staff/{user}/role', [RecordController::class, 'updateStaffRole']);
+        Route::put('/api/records/staff/{user}/password', [RecordController::class, 'updateStaffPassword']);
+        Route::put('/api/records/staff/{user}/status', [RecordController::class, 'updateStaffStatus']);
+    });
 });
 
 // Authentication API Routes
@@ -122,9 +162,5 @@ Route::get('/api/auth/logout', [AuthController::class, 'logout']);
 // Data Sync Route
 Route::get('/api/sync/load', [SyncController::class, 'load']);
 Route::post('/api/sync/save', [SyncController::class, 'save']);
-
-// Record Fetching Routes
-Route::get('/api/records/patients', [RecordController::class, 'getPatients']);
-Route::get('/api/records/staff', [RecordController::class, 'getStaff']);
 
 require __DIR__.'/settings.php';

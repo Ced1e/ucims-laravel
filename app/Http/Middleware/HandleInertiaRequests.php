@@ -34,11 +34,19 @@ class HandleInertiaRequests extends Middleware
      * @return array<string, mixed>
      */
     public function share(Request $request): array
-{
-    return array_merge(parent::share($request), [
-        'auth' => [
-            'user' => $request->user(),
-        ],
-    ]);
-}
+    {
+        $user = $request->user();
+
+        return array_merge(parent::share($request), [
+            'auth' => [
+                // The UCIMS users table has firstname/lastname/usep_email, but the
+                // starter-kit components (user menu, settings) expect name/email,
+                // so provide both without changing the database.
+                'user' => $user ? array_merge($user->toArray(), [
+                    'name' => trim($user->firstname . ' ' . $user->lastname),
+                    'email' => $user->usep_email,
+                ]) : null,
+            ],
+        ]);
+    }
 }

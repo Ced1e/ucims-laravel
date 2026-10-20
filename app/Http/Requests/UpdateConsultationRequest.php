@@ -2,28 +2,24 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateConsultationRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
-        return false;
+        return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            //
+            'queue_id' => 'nullable|exists:clinic_queue,queue_id',
+            'doctor_id' => 'nullable|exists:users,user_id',
+            'diagnosis' => 'required|string|max:255',
+            'treatment' => 'required|string',
+            'notes' => 'nullable|string',
+            'consultation_date' => 'nullable|date',
         ];
     }
 }

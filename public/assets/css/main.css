@@ -718,3 +718,7 @@ select.ppr-input:disabled {
     appearance: none; /* Hides the dropdown arrow */
 }
 
+
+/* ── Spacing/utility classes referenced by the React pages but missing above ── */
+.mb4 { margin-bottom: 4px; } .mb12 { margin-bottom: 12px; } .mb16 { margin-bottom: 16px; }
+.p16 { padding: 16px; } .text-center { text-align: center; }

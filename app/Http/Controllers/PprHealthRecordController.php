@@ -4,15 +4,17 @@ namespace App\Http\Controllers;
 
 use App\Models\PprHealthRecord;
 use App\Http\Requests\StorePprHealthRecordRequest;
+use App\Http\Requests\UpdatePprHealthRecordRequest;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Actions\CloneRecordAction;
 
 class PprHealthRecordController extends Controller
 {
     public function index()
     {
-        $records = PprHealthRecord::with('user')->orderBy('health_record_id', 'desc')->get();
-        return Inertia::render('PprHealthRecords/Index', ['records' => $records]);
+    $records = PprHealthRecord::with('user')->orderBy('hr_id', 'desc')->get();
+    return Inertia::render('PprHealthRecords/Index', ['records' => $records]);
     }
 
     public function create()
@@ -22,11 +24,8 @@ class PprHealthRecordController extends Controller
 
     public function store(StorePprHealthRecordRequest $request)
     {
-        $data = $request->validated();
-        $data['date_recorded'] = $data['date_recorded'] ?? now()->format('Y-m-d');
-
-        PprHealthRecord::create($data);
-        return redirect()->route('ppr-health-records.index')->with('success', 'Health record created.');
+    PprHealthRecord::create($request->validated());
+    return redirect()->route('ppr-health-records.index')->with('success', 'Health record created.');
     }
 
     public function edit(PprHealthRecord $pprHealthRecord)
@@ -34,16 +33,15 @@ class PprHealthRecordController extends Controller
         return Inertia::render('PprHealthRecords/Update', ['record' => $pprHealthRecord]);
     }
 
-    public function update(Request $request, PprHealthRecord $pprHealthRecord)
+    public function update(UpdatePprHealthRecordRequest $request, PprHealthRecord $pprHealthRecord)
     {
-        $pprHealthRecord->update($request->all());
-        return redirect()->route('ppr-health-records.index')->with('success', 'Health record updated.');
+    $pprHealthRecord->update($request->validated());
+    return redirect()->route('ppr-health-records.index')->with('success', 'Health record updated.');
     }
 
-    public function clone(PprHealthRecord $pprHealthRecord)
+    public function clone(PprHealthRecord $pprHealthRecord, CloneRecordAction $cloner)
     {
-        $clone = $pprHealthRecord->replicate();
-        $clone->save();
+        $cloner->execute($pprHealthRecord);
         return redirect()->route('ppr-health-records.index')->with('success', 'Health record cloned.');
     }
 

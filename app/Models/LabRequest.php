@@ -9,11 +9,15 @@ class LabRequest extends Model
 {
     use HasFactory;
 
-    protected $table = 'lab_requests';
-    protected $primaryKey = 'lab_id';
+    protected $table = 'lab_request';
+    protected $primaryKey = 'lab_request_id';
     public $timestamps = false;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'endorsed_id',
+        'laboratory_request',
+        'attachments',
+    ];
 
     public function endorsed()
     {

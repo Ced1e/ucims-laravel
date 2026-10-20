@@ -13,10 +13,14 @@ class StaffAuth extends Model
     protected $primaryKey = 'staff_auth_id';
     public $timestamps = false;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'user_id',
+        'clinic_id',
+        'password_hash',
+    ];
 
     public function profile()
     {
-        return $this->belongsTo(StaffProfile::class, 'staff_id', 'staff_id');
+        return $this->belongsTo(StaffProfile::class, 'user_id', 'user_id');
     }
 }

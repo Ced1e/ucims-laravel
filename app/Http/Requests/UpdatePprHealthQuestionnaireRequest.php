@@ -2,28 +2,29 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdatePprHealthQuestionnaireRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
-    public function authorize(): bool
-    {
-        return false;
-    }
+    public function authorize(): bool { return true; }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
         return [
-            //
+            'hosp_admitted' => 'nullable|boolean',
+            'hosp_illness' => 'nullable|string',
+            'hosp_when' => 'nullable|string|max:100',
+            'surgery' => 'nullable|boolean',
+            'surg_type' => 'nullable|string',
+            'surg_when' => 'nullable|string|max:100',
+            'infectious_list' => 'nullable|string',
+            'syncope' => 'nullable|boolean',
+            'female_menarche' => 'nullable|string|max:50',
+            'female_periods_yr' => 'nullable|string|max:50',
+            'female_regular' => 'nullable|boolean',
+            'female_irregular_spec' => 'nullable|string',
+            'female_dysmenorrhea' => 'nullable|boolean',
+            'female_symptoms' => 'nullable|string',
         ];
     }
 }

@@ -1,53 +1,37 @@
 <?php
+
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
 use App\Models\User;
+use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
 
 class UserSeeder extends Seeder
 {
+    /**
+     * Safe to run repeatedly: the four named test accounts are created or
+     * refreshed (matched by email), and random patients are only added until
+     * there are 6 patients in total.
+     */
     public function run(): void
     {
-        // Create Admin
-        User::create([
-            'firstname' => 'Admin',
-            'lastname' => 'Maria',
-            'usep_email' => 'admin@usep.edu.ph',
-            'clinic_id' => 'A-001',
-            'role' => 'admin',
-            'password' => Hash::make('Password123!'),
-        ]);
+        $accounts = [
+            ['firstname' => 'Admin', 'lastname' => 'Maria', 'usep_email' => 'admin@usep.edu.ph', 'clinic_id' => 'A-001', 'role' => 'admin'],
+            ['firstname' => 'Jose', 'lastname' => 'Cruz', 'usep_email' => 'doctor@usep.edu.ph', 'clinic_id' => 'D-001', 'role' => 'doctor'],
+            ['firstname' => 'Rosalyn', 'lastname' => 'Reyes', 'usep_email' => 'nurse@usep.edu.ph', 'clinic_id' => 'N-001', 'role' => 'nurse'],
+            ['firstname' => 'Maria', 'lastname' => 'Santos', 'usep_email' => 'patient@usep.edu.ph', 'clinic_id' => 'P-001', 'role' => 'patient'],
+        ];
 
-        // Create Doctor
-        User::create([
-            'firstname' => 'Jose',
-            'lastname' => 'Cruz',
-            'usep_email' => 'doctor@usep.edu.ph',
-            'clinic_id' => 'D-001',
-            'role' => 'doctor',
-            'password' => Hash::make('Password123!'),
-        ]);
+        foreach ($accounts as $account) {
+            User::updateOrCreate(
+                ['usep_email' => $account['usep_email']],
+                $account + ['password' => Hash::make('Password123!')]
+            );
+        }
 
-        // Create Nurse
-        User::create([
-            'firstname' => 'Rosalyn',
-            'lastname' => 'Reyes',
-            'usep_email' => 'nurse@usep.edu.ph',
-            'clinic_id' => 'N-001',
-            'role' => 'nurse',
-            'password' => Hash::make('Password123!'),
-        ]);
-
-        User::create([
-            'firstname' => 'Maria',
-            'lastname' => 'Santos',
-            'usep_email' => 'patient@usep.edu.ph',
-            'clinic_id' => 'P-001',
-            'role' => 'patient',
-            'password' => Hash::make('Password123!'),
-        ]);
-
-        User::factory()->count(5)->create(['role' => 'patient']);
+        $missing = 6 - User::where('role', 'patient')->count();
+        if ($missing > 0) {
+            User::factory()->count($missing)->create(['role' => 'patient']);
+        }
     }
 }

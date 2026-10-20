@@ -11,14 +11,21 @@ class StorePprHealthQuestionnaireRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => 'required|exists:users,user_id|unique:ppr_health_questionnaires,user_id',
-            'has_allergies' => 'boolean',
-            'allergy_details' => 'nullable|string',
-            'has_maintenance_meds' => 'boolean',
-            'maintenance_med_details' => 'nullable|string',
-            'has_past_surgeries' => 'boolean',
-            'surgery_details' => 'nullable|string',
-            'family_medical_history' => 'nullable|string',
+            'patient_id' => 'required|exists:users,user_id|unique:ppr_health_questionnaire,patient_id',
+            'hosp_admitted' => 'nullable|boolean',
+            'hosp_illness' => 'nullable|string',
+            'hosp_when' => 'nullable|string|max:100',
+            'surgery' => 'nullable|boolean',
+            'surg_type' => 'nullable|string',
+            'surg_when' => 'nullable|string|max:100',
+            'infectious_list' => 'nullable|string',
+            'syncope' => 'nullable|boolean',
+            'female_menarche' => 'nullable|string|max:50',
+            'female_periods_yr' => 'nullable|string|max:50',
+            'female_regular' => 'nullable|boolean',
+            'female_irregular_spec' => 'nullable|string',
+            'female_dysmenorrhea' => 'nullable|boolean',
+            'female_symptoms' => 'nullable|string',
         ];
     }
 }

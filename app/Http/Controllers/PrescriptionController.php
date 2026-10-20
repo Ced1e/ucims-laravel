@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\Prescription;
 use App\Http\Requests\StorePrescriptionRequest;
+use App\Http\Requests\UpdatePrescriptionRequest;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
+use App\Actions\CloneRecordAction;
 
 class PrescriptionController extends Controller
 {
@@ -22,7 +24,12 @@ class PrescriptionController extends Controller
 
     public function store(StorePrescriptionRequest $request)
     {
-        Prescription::create($request->validated());
+        $prescription = Prescription::create($request->validated());
+
+        if ($request->wantsJson()) {
+            return response()->json($prescription, 201);
+        }
+
         return redirect()->route('prescriptions.index')->with('success', 'Prescription added.');
     }
 
@@ -31,22 +38,26 @@ class PrescriptionController extends Controller
         return Inertia::render('Prescriptions/Update', ['prescription' => $prescription]);
     }
 
-    public function update(Request $request, Prescription $prescription)
+    public function update(UpdatePrescriptionRequest $request, Prescription $prescription)
     {
-        $prescription->update($request->all());
-        return redirect()->route('prescriptions.index')->with('success', 'Prescription updated.');
+    $prescription->update($request->validated());
+    return redirect()->route('prescriptions.index')->with('success', 'Prescription updated.');
     }
 
-    public function clone(Prescription $prescription)
+    public function clone(Prescription $prescription, CloneRecordAction $cloner)
     {
-        $clone = $prescription->replicate();
-        $clone->save();
+        $cloner->execute($prescription);
         return redirect()->route('prescriptions.index')->with('success', 'Prescription cloned.');
     }
 
-    public function destroy(Prescription $prescription)
+    public function destroy(Request $request, Prescription $prescription)
     {
         $prescription->delete();
+
+        if ($request->wantsJson()) {
+            return response()->json(['message' => 'Prescription deleted.']);
+        }
+
         return redirect()->route('prescriptions.index')->with('success', 'Prescription deleted.');
     }
 }

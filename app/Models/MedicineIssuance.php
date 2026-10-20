@@ -9,14 +9,33 @@ class MedicineIssuance extends Model
 {
     use HasFactory;
 
-    protected $table = 'medicine_issuances';
+    protected $table = 'medicine_issuance';
     protected $primaryKey = 'issuance_id';
     public $timestamps = false;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'queue_id',
+        'nurse_id',
+        'medicine_name',
+        'dosage',
+        'quantity',
+        'instructions',
+        'issued_date',
+        'duration',
+        'frequency',
+    ];
 
-    public function endorsed()
+    protected $casts = [
+        'issued_date' => 'datetime',
+    ];
+
+    public function queue()
     {
-        return $this->belongsTo(Endorsed::class, 'endorsed_id', 'endorsed_id');
+        return $this->belongsTo(ClinicQueue::class, 'queue_id', 'queue_id');
+    }
+
+    public function nurse()
+    {
+        return $this->belongsTo(User::class, 'nurse_id', 'user_id');
     }
 }
