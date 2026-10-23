@@ -15,6 +15,7 @@ use App\Http\Controllers\PprHealthQuestionnaireController;
 use App\Http\Controllers\PprHealthRecordController;
 use App\Http\Controllers\PprPermanentController;
 use App\Http\Controllers\StaffProfileController;
+use App\Http\Controllers\PatientRegistrationController;
 use App\Http\Controllers\ConsultationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\SyncController;
@@ -31,6 +32,12 @@ Route::get('/', function () {
         'phpVersion' => PHP_VERSION,
     ]);
 })->name('home');
+
+// Patient self-registration (guests only). Throttled because it is a public form.
+Route::middleware('guest')->group(function () {
+    Route::get('/register', [PatientRegistrationController::class, 'create'])->name('register');
+    Route::post('/register', [PatientRegistrationController::class, 'store'])->middleware('throttle:6,1');
+});
 
 // Role-Based Dashboards[cite: 2]
 Route::middleware(['auth'])->group(function () {

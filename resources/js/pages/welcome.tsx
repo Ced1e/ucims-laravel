@@ -43,6 +43,12 @@ export default function Welcome() {
                                         </>
                                     )}
                                 </div>
+                                {!auth?.user && (
+                                    <p style={{ textAlign: 'center', marginTop: '-26px', marginBottom: '34px', color: 'rgba(255,255,255,0.88)', fontSize: '0.95rem' }}>
+                                        New patient?{' '}
+                                        <a href="/register" style={{ color: '#ffffff', fontWeight: 700, textDecoration: 'underline' }}>Register here</a>
+                                    </p>
+                                )}
                             </div>
 
                             <div className="home-info" style={{ width: "100%", maxWidth: "800px", marginTop: "10px" }}>

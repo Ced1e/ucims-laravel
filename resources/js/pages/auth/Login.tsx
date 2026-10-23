@@ -87,6 +87,12 @@ export default function Login({ status }: { status?: string }) {
                         {processing ? 'Authenticating...' : 'Sign In'}
                     </button>
                 </form>
+                <p className="mt-6 text-center text-sm text-gray-600">
+                    New patient?{' '}
+                    <a href="/register" className="font-semibold text-[#760000] hover:underline">
+                        Create your account
+                    </a>
+                </p>
                 </div>
             </div>
         </div>

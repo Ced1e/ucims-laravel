@@ -161,7 +161,7 @@ return [
     */
 
     'features' => [
-        Features::registration(),
+        // Features::registration(), // replaced by PatientRegistrationController (5-step PPR wizard)
         Features::resetPasswords(),
         Features::emailVerification(),
         Features::twoFactorAuthentication([
