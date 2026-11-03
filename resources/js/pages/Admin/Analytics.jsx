@@ -1,3 +1,5 @@
+import { localToday } from '@/lib/registration-validation.mjs';
+import PaginatedItems from '../../components/paginated-items.jsx';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Head, usePage, router } from '@inertiajs/react';
 import axios from 'axios';
@@ -404,7 +406,7 @@ function AnalyticsSection({ showToast }) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {table.map((g) => (
+                                {<PaginatedItems items={table} tableColumns={6} label="table">{(g) => (
                                     <tr key={g.key}>
                                         <td className="fw6">{g.key}</td>
                                         <td>
@@ -417,7 +419,7 @@ function AnalyticsSection({ showToast }) {
                                         <td>{g.followup}</td>
                                         <td>{g.medcert}</td>
                                     </tr>
-                                ))}
+                                )}</PaginatedItems>}
                             </tbody>
                         </table>
                     </div>
@@ -509,9 +511,9 @@ function EditStaffModal({ member, onClose, onSaved, showToast }) {
                         <i className="bi bi-person-badge"></i> 1. Personal &amp; Contact
                     </div>
                     <div className="grid3">
-                        <div className="field"><label>First Name *</label><input value={form.firstname} onChange={set('firstname')} /></div>
-                        <div className="field"><label>Middle Name</label><input value={form.middlename} onChange={set('middlename')} /></div>
-                        <div className="field"><label>Last Name *</label><input value={form.lastname} onChange={set('lastname')} /></div>
+                        <div className="field"><label>First Name *</label><input maxLength={100} value={form.firstname} onChange={set('firstname')} /></div>
+                        <div className="field"><label>Middle Name</label><input maxLength={100} value={form.middlename} onChange={set('middlename')} /></div>
+                        <div className="field"><label>Last Name *</label><input maxLength={100} value={form.lastname} onChange={set('lastname')} /></div>
                     </div>
                     <div className="grid3">
                         <div className="field">
@@ -521,24 +523,24 @@ function EditStaffModal({ member, onClose, onSaved, showToast }) {
                                 <option>Female</option>
                             </select>
                         </div>
-                        <div className="field"><label>Date of Birth *</label><input type="date" value={form.dob} onChange={set('dob')} /></div>
-                        <div className="field"><label>Mobile No. *</label><input value={form.mobile_no} onChange={set('mobile_no')} /></div>
+                        <div className="field"><label>Date of Birth *</label><input type="date" max={localToday()} value={form.dob} onChange={set('dob')} /></div>
+                        <div className="field"><label>Mobile No. *</label><input maxLength={20} value={form.mobile_no} onChange={set('mobile_no')} /></div>
                     </div>
                     <div className="grid2">
-                        <div className="field"><label>Landline No.</label><input value={form.landline_no} onChange={set('landline_no')} /></div>
-                        <div className="field"><label>USeP Email *</label><input type="email" value={form.usep_email} onChange={set('usep_email')} /></div>
+                        <div className="field"><label>Landline No.</label><input maxLength={20} value={form.landline_no} onChange={set('landline_no')} /></div>
+                        <div className="field"><label>USeP Email *</label><input type="email" maxLength={150} value={form.usep_email} onChange={set('usep_email')} /></div>
                     </div>
                     <div className="card-title mt16" style={{ fontSize: '.9rem', color: 'var(--maroon)' }}>
                         <i className="bi bi-geo-alt"></i> 2. Complete Address
                     </div>
                     <div className="grid3">
-                        <div className="field"><label>Block/House No.</label><input value={form.address_block} onChange={set('address_block')} /></div>
-                        <div className="field"><label>Street</label><input value={form.address_street} onChange={set('address_street')} /></div>
-                        <div className="field"><label>Barangay *</label><input value={form.address_brgy} onChange={set('address_brgy')} /></div>
+                        <div className="field"><label>Block/House No.</label><input maxLength={50} value={form.address_block} onChange={set('address_block')} /></div>
+                        <div className="field"><label>Street</label><input maxLength={100} value={form.address_street} onChange={set('address_street')} /></div>
+                        <div className="field"><label>Barangay *</label><input maxLength={100} value={form.address_brgy} onChange={set('address_brgy')} /></div>
                     </div>
                     <div className="grid2">
-                        <div className="field"><label>City/Municipality *</label><input value={form.address_city} onChange={set('address_city')} /></div>
-                        <div className="field"><label>Province</label><input value={form.address_province} onChange={set('address_province')} /></div>
+                        <div className="field"><label>City/Municipality *</label><input maxLength={100} value={form.address_city} onChange={set('address_city')} /></div>
+                        <div className="field"><label>Province</label><input maxLength={100} value={form.address_province} onChange={set('address_province')} /></div>
                     </div>
                     <div className="card-title mt16" style={{ fontSize: '.9rem', color: 'var(--maroon)' }}>
                         <i className="bi bi-briefcase"></i> 3. Employment Details
@@ -552,7 +554,7 @@ function EditStaffModal({ member, onClose, onSaved, showToast }) {
                                 <option>Contractual</option>
                             </select>
                         </div>
-                        <div className="field"><label>Schedule *</label><input value={form.schedule} onChange={set('schedule')} /></div>
+                        <div className="field"><label>Schedule *</label><input maxLength={255} value={form.schedule} onChange={set('schedule')} /></div>
                         <div className="field"><label>Role Description</label><input value={form.role_description} onChange={set('role_description')} /></div>
                     </div>
                 </div>
@@ -719,9 +721,9 @@ function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
                         <i className="bi bi-person-badge"></i> 1. Personal &amp; Contact
                     </div>
                     <div className="grid3">
-                        <div className="field"><label>First Name *</label><input placeholder="Juan" value={form.firstname} onChange={set('firstname')} /></div>
-                        <div className="field"><label>Middle Name</label><input placeholder="Santos" value={form.middlename} onChange={set('middlename')} /></div>
-                        <div className="field"><label>Last Name *</label><input placeholder="dela Cruz" value={form.lastname} onChange={set('lastname')} /></div>
+                        <div className="field"><label>First Name *</label><input placeholder="Juan" maxLength={100} value={form.firstname} onChange={set('firstname')} /></div>
+                        <div className="field"><label>Middle Name</label><input placeholder="Santos" maxLength={100} value={form.middlename} onChange={set('middlename')} /></div>
+                        <div className="field"><label>Last Name *</label><input placeholder="dela Cruz" maxLength={100} value={form.lastname} onChange={set('lastname')} /></div>
                     </div>
                     <div className="grid3">
                         <div className="field">
@@ -731,25 +733,25 @@ function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
                                 <option>Female</option>
                             </select>
                         </div>
-                        <div className="field"><label>Date of Birth *</label><input type="date" value={form.dob} onChange={set('dob')} /></div>
-                        <div className="field"><label>Mobile No. *</label><input placeholder="09xx-xxx-xxxx" value={form.mobile_no} onChange={set('mobile_no')} /></div>
+                        <div className="field"><label>Date of Birth *</label><input type="date" max={localToday()} value={form.dob} onChange={set('dob')} /></div>
+                        <div className="field"><label>Mobile No. *</label><input placeholder="09xx-xxx-xxxx" maxLength={20} value={form.mobile_no} onChange={set('mobile_no')} /></div>
                     </div>
                     <div className="grid2">
-                        <div className="field"><label>Landline No.</label><input placeholder="(082) xxx-xxxx" value={form.landline_no} onChange={set('landline_no')} /></div>
-                        <div className="field"><label>USeP Email *</label><input type="email" placeholder="staff@usep.edu.ph" value={form.usep_email} onChange={set('usep_email')} /></div>
+                        <div className="field"><label>Landline No.</label><input placeholder="(082) xxx-xxxx" maxLength={20} value={form.landline_no} onChange={set('landline_no')} /></div>
+                        <div className="field"><label>USeP Email *</label><input type="email" placeholder="staff@usep.edu.ph" maxLength={150} value={form.usep_email} onChange={set('usep_email')} /></div>
                     </div>
 
                     <div className="card-title mt16" style={{ fontSize: '.9rem', color: 'var(--maroon)' }}>
                         <i className="bi bi-geo-alt"></i> 2. Complete Address
                     </div>
                     <div className="grid3">
-                        <div className="field"><label>Block/House No.</label><input placeholder="Blk 1 Lot 2" value={form.address_block} onChange={set('address_block')} /></div>
-                        <div className="field"><label>Street</label><input placeholder="Main St." value={form.address_street} onChange={set('address_street')} /></div>
-                        <div className="field"><label>Barangay *</label><input placeholder="Obrero" value={form.address_brgy} onChange={set('address_brgy')} /></div>
+                        <div className="field"><label>Block/House No.</label><input placeholder="Blk 1 Lot 2" maxLength={50} value={form.address_block} onChange={set('address_block')} /></div>
+                        <div className="field"><label>Street</label><input placeholder="Main St." maxLength={100} value={form.address_street} onChange={set('address_street')} /></div>
+                        <div className="field"><label>Barangay *</label><input placeholder="Obrero" maxLength={100} value={form.address_brgy} onChange={set('address_brgy')} /></div>
                     </div>
                     <div className="grid2">
-                        <div className="field"><label>City/Municipality *</label><input placeholder="Davao City" value={form.address_city} onChange={set('address_city')} /></div>
-                        <div className="field"><label>Province</label><input placeholder="Davao del Sur" value={form.address_province} onChange={set('address_province')} /></div>
+                        <div className="field"><label>City/Municipality *</label><input placeholder="Davao City" maxLength={100} value={form.address_city} onChange={set('address_city')} /></div>
+                        <div className="field"><label>Province</label><input placeholder="Davao del Sur" maxLength={100} value={form.address_province} onChange={set('address_province')} /></div>
                     </div>
 
                     <div className="card-title mt16" style={{ fontSize: '.9rem', color: 'var(--maroon)' }}>
@@ -764,7 +766,7 @@ function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
                                 <option>Contractual</option>
                             </select>
                         </div>
-                        <div className="field"><label>Schedule *</label><input placeholder="MWF 8AM-5PM" value={form.schedule} onChange={set('schedule')} /></div>
+                        <div className="field"><label>Schedule *</label><input placeholder="MWF 8AM-5PM" maxLength={255} value={form.schedule} onChange={set('schedule')} /></div>
                         <div className="field"><label>Role Description</label><input placeholder="e.g. Triage Nurse" value={form.role_description} onChange={set('role_description')} /></div>
                     </div>
 
@@ -772,7 +774,7 @@ function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
                         <i className="bi bi-shield-lock"></i> 4. System Credentials
                     </div>
                     <div className="grid2 mb16">
-                        <div className="field mb0"><label>Clinic ID Number *</label><input placeholder="N-001" value={form.clinic_id} onChange={set('clinic_id')} /></div>
+                        <div className="field mb0"><label>Clinic ID Number *</label><input placeholder="N-001" maxLength={50} value={form.clinic_id} onChange={set('clinic_id')} /></div>
                         <div className="field mb0"><label>Password * (min 8)</label><input type="password" placeholder="••••••••" value={form.password} onChange={set('password')} /></div>
                     </div>
                     <button className="btn btn-primary w100" disabled={creating} onClick={handleCreate}>
@@ -803,7 +805,7 @@ function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
                                         <td colSpan={4} className="text-center text-muted p16">No staff found in database.</td>
                                     </tr>
                                 )}
-                                {staff.map((u) => {
+                                {<PaginatedItems items={staff} tableColumns={4} label="staff">{(u) => {
                                     const isMe = String(u.id) === String(myId);
                                     return (
                                         <tr key={u.id} style={u.is_active ? undefined : { opacity: 0.6 }}>
@@ -843,7 +845,7 @@ function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
                                             </td>
                                         </tr>
                                     );
-                                })}
+                                }}</PaginatedItems>}
                             </tbody>
                         </table>
                     </div>
@@ -1043,7 +1045,7 @@ function RecordValidation({ data, loading }) {
                                         <td colSpan={6} className="text-center text-muted p16">No patients registered.</td>
                                     </tr>
                                 )}
-                                {patients.map((p) => (
+                                {<PaginatedItems items={patients} tableColumns={6} label="patients">{(p) => (
                                     <tr key={p.id}>
                                         <td>
                                             <div className="fw6">{p.name}</div>
@@ -1057,7 +1059,7 @@ function RecordValidation({ data, loading }) {
                                             {p.complete ? <span className="badge b-green">Complete</span> : <span className="badge b-yellow">Incomplete</span>}
                                         </td>
                                     </tr>
-                                ))}
+                                )}</PaginatedItems>}
                             </tbody>
                         </table>
                     </div>

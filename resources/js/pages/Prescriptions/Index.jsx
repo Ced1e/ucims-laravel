@@ -1,3 +1,4 @@
+import PaginatedItems from '../../components/paginated-items.jsx';
 import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 
@@ -9,7 +10,7 @@ export default function Index({ prescriptions }) {
     };
 
     return (
-        <AppLayout>
+        <>
             <Head title="Prescriptions" />
             <div className="p-6 max-w-7xl mx-auto">
                 <div className="flex justify-between items-center mb-6">
@@ -28,20 +29,20 @@ export default function Index({ prescriptions }) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 text-sm">
-                            {prescriptions?.map((item) => (
-                                <tr key={item.id} className="hover:bg-gray-50/50">
-                                    <td className="p-4 font-medium text-gray-900">Prescription #{item.id}</td>
+                            {<PaginatedItems items={prescriptions} tableColumns={2} label="prescriptions">{(item) => (
+                                <tr key={item.prescription_id} className="hover:bg-gray-50/50">
+                                    <td className="p-4 font-medium text-gray-900">Prescription #{item.prescription_id}</td>
                                     <td className="p-4 text-right space-x-2">
-                                        <Link href={`/prescriptions/${item.id}/edit`} className="text-blue-600 hover:underline">Edit</Link>
-                                        <button onClick={() => handleClone(item.id)} className="text-amber-600 hover:underline">Clone</button>
-                                        <button onClick={() => destroy(`/prescriptions/${item.id}`)} className="text-red-600 hover:underline">Delete</button>
+                                        <Link href={`/prescriptions/${item.prescription_id}/edit`} className="text-blue-600 hover:underline">Edit</Link>
+                                        <button onClick={() => handleClone(item.prescription_id)} className="text-amber-600 hover:underline">Clone</button>
+                                        <button onClick={() => destroy(`/prescriptions/${item.prescription_id}`)} className="text-red-600 hover:underline">Delete</button>
                                     </td>
                                 </tr>
-                            ))}
+                            )}</PaginatedItems>}
                         </tbody>
                     </table>
                 </div>
             </div>
-        </AppLayout>
+        </>
     );
 }

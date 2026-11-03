@@ -18,10 +18,10 @@ export default function StepQuestionnaire({ data, set, errors }) {
             {data.hosp_admitted === 'Yes' && (
                 <div className="field-row">
                     <Field label="Illness / Reason" required error={errors.hosp_illness}>
-                        <input placeholder="e.g. Dengue Fever" value={data.hosp_illness} onChange={(e) => set('hosp_illness', e.target.value)} />
+                        <input placeholder="e.g. Dengue Fever" maxLength={255} value={data.hosp_illness} onChange={(e) => set('hosp_illness', e.target.value)} />
                     </Field>
                     <Field label="When" required error={errors.hosp_when}>
-                        <input placeholder="e.g. March 2019" value={data.hosp_when} onChange={(e) => set('hosp_when', e.target.value)} />
+                        <input placeholder="e.g. March 2019" maxLength={100} value={data.hosp_when} onChange={(e) => set('hosp_when', e.target.value)} />
                     </Field>
                 </div>
             )}
@@ -31,10 +31,10 @@ export default function StepQuestionnaire({ data, set, errors }) {
             {data.surgery === 'Yes' && (
                 <div className="field-row">
                     <Field label="Type of Operation" required error={errors.surg_type}>
-                        <input placeholder="e.g. Appendectomy" value={data.surg_type} onChange={(e) => set('surg_type', e.target.value)} />
+                        <input placeholder="e.g. Appendectomy" maxLength={255} value={data.surg_type} onChange={(e) => set('surg_type', e.target.value)} />
                     </Field>
                     <Field label="When" required error={errors.surg_when}>
-                        <input placeholder="e.g. 2020" value={data.surg_when} onChange={(e) => set('surg_when', e.target.value)} />
+                        <input placeholder="e.g. 2020" maxLength={100} value={data.surg_when} onChange={(e) => set('surg_when', e.target.value)} />
                     </Field>
                 </div>
             )}

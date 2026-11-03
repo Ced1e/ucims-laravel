@@ -6,7 +6,13 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateLabRequestRequest extends FormRequest
 {
-    public function authorize(): bool { return true; }
+    public function authorize(): bool
+    {
+        $record = $this->route('labRequest');
+
+        return $record instanceof \App\Models\LabRequest
+            && ($this->user()?->can('update', $record) ?? false);
+    }
 
     public function rules(): array
     {

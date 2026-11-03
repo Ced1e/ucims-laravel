@@ -1,3 +1,5 @@
+import { certificateRequestError, requestError } from '@/lib/clinical-validation.mjs';
+import PaginatedItems from '../../components/paginated-items.jsx';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Head, usePage, router } from '@inertiajs/react';
 import axios from 'axios';
@@ -240,8 +242,9 @@ function MedCertForm({ onBack, onSubmit, submitting }) {
     const [error, setError] = useState(null);
 
     function handleSubmit() {
-        if (!reason.trim()) {
-            setError('Please provide a reason for your request.');
+        const validationError = certificateRequestError(reason, dateFrom, dateTo);
+        if (validationError) {
+            setError(validationError);
             return;
         }
         onSubmit({ reason, dateFrom, dateTo, notes });
@@ -258,7 +261,7 @@ function MedCertForm({ onBack, onSubmit, submitting }) {
                 <div className="card-title">Request Form</div>
                 <div className="field">
                     <label>Reason / Purpose *</label>
-                    <textarea placeholder="Briefly explain why you need this certificate..." value={reason} onChange={(e) => setReason(e.target.value)} />
+                    <textarea maxLength={255} placeholder="Briefly explain why you need this certificate..." value={reason} onChange={(e) => setReason(e.target.value)} />
                 </div>
                 <div className="field-row">
                     <div className="field">
@@ -267,7 +270,7 @@ function MedCertForm({ onBack, onSubmit, submitting }) {
                     </div>
                     <div className="field">
                         <label>Date Needed To</label>
-                        <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+                        <input type="date" min={dateFrom || undefined} value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
                     </div>
                 </div>
                 <div className="field">
@@ -459,11 +462,12 @@ function QueueTicket({ entry, onRefresh, onLeave, refreshing, countdown }) {
                             </tr>
                         </thead>
                         <tbody>
-                            {active.map((q) => {
-                                const isMe = q.queue_id === entry.queue_id;
+                            {<PaginatedItems items={active} tableColumns={2} label="active">{(q) => {
+                                const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+                                const isMe = String(entry.date).slice(0, 10) === today && Number(q.queue_number) === Number(entry.queue_number);
                                 const st = STATUS_MAP[q.status] || { lbl: q.status, badge: 'b-gray' };
                                 return (
-                                    <tr key={q.queue_id} style={isMe ? { background: '#fdf5f5' } : undefined}>
+                                    <tr key={q.queue_number} style={isMe ? { background: '#fdf5f5' } : undefined}>
                                         <td style={isMe ? { fontWeight: 'bold', color: 'var(--maroon)' } : undefined}>
                                             <span className="num-badge" style={{ background: isMe ? 'var(--maroon)' : '#888' }}>
                                                 {q.queue_number}
@@ -475,7 +479,7 @@ function QueueTicket({ entry, onRefresh, onLeave, refreshing, countdown }) {
                                         </td>
                                     </tr>
                                 );
-                            })}
+                            }}</PaginatedItems>}
                         </tbody>
                     </table>
                 </div>
@@ -531,7 +535,7 @@ export default function PatientPortal() {
                 setMyEntry(null);
             }
         } catch (e) {
-            showToast('Failed to load your queue status.', 'error');
+            showToast(requestError(e, 'Failed to load your queue status.'), 'error');
         } finally {
             setLoading(false);
         }
@@ -570,7 +574,7 @@ export default function PatientPortal() {
             setMyEntry(res.data);
             showToast('You have joined the queue. Please wait in the clinic area.');
         } catch (e) {
-            showToast('Failed to join queue. Please try again.', 'error');
+            showToast(requestError(e, 'Failed to join queue. Please try again.'), 'error');
         } finally {
             setSubmitting(false);
         }
@@ -590,7 +594,7 @@ export default function PatientPortal() {
             });
             showToast('Request submitted. You have joined the queue.');
         } catch (e) {
-            showToast('Failed to submit request. Please try again.', 'error');
+            showToast(requestError(e, 'Failed to submit request. Please try again.'), 'error');
         } finally {
             setSubmitting(false);
         }

@@ -3,16 +3,20 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StorePprPermanentRequest extends FormRequest
 {
-    public function authorize(): bool { return true; }
+    public function authorize(): bool
+    {
+        return true;
+    }
 
     public function rules(): array
     {
         return [
-            'patient_id' => 'required|exists:users,user_id|unique:ppr_permanent,patient_id',
-            'patient_type' => 'nullable|string|max:100',
+            'patient_id' => ['required', 'unique:ppr_permanent,patient_id', Rule::exists('users', 'user_id')->where('role', 'patient')],
+            'patient_type' => 'nullable|in:Student,Faculty',
             'college_dept' => 'nullable|string|max:150',
             'year_level' => 'nullable|string|max:50',
         ];

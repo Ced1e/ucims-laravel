@@ -1,4 +1,5 @@
 import { Head, Link, usePage } from '@inertiajs/react';
+import '../../css/entry.css';
 
 export default function Welcome() {
     const { auth } = usePage().props;
@@ -33,22 +34,16 @@ export default function Welcome() {
                                 <div className="home-system" style={{ fontFamily: "'DM Serif Display', serif", fontSize: "3.8rem", color: "#fff", lineHeight: 1.1, marginBottom: "20px" }}>Clinic Information<br />Management System</div>
                                 <div className="home-tagline-sub" style={{ fontSize: "1.08rem", color: "rgba(255,255,255,0.72)", marginBottom: "35px", maxWidth: "600px", lineHeight: 1.65 }}>A centralized digital platform for managing clinic visits, patient records, consultations, and health documentation securely.</div>
                                 
-                                <div className="home-btns" style={{ justifyContent: "center", marginBottom: "40px", width: "100%", display: "flex", gap: "20px", maxWidth: "500px", position: "relative", zIndex: 999, pointerEvents: "auto" }}>
+                                <div className="clinic-home-actions">
                                     {auth?.user ? (
-                                        <a href="/dashboard" className="btn btn-white btn-lg" style={{ flex: 1, background: "#ffffff", color: "#560D0F", padding: "16px 38px", fontSize: "1.08rem", borderRadius: "10px", fontWeight: 600, textAlign: "center", textDecoration: "none", display: "inline-block", cursor: "pointer", pointerEvents: "auto" }}>Go to Dashboard</a>
+                                        <Link href="/dashboard" className="clinic-home-action clinic-home-action-primary">Go to Dashboard</Link>
                                     ) : (
                                         <>
-                                            <a href="/login" className="btn btn-white btn-lg" style={{ flex: 1, background: "#ffffff", color: "#560D0F", padding: "16px 38px", fontSize: "1.08rem", borderRadius: "10px", fontWeight: 600, textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px", textDecoration: "none", cursor: "pointer", pointerEvents: "auto" }}>👤 Patient Login</a>
-                                            <a href="/login" className="btn btn-white-outline btn-lg" style={{ flex: 1, background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.5)", color: "#ffffff", padding: "16px 38px", fontSize: "1.08rem", borderRadius: "10px", fontWeight: 600, textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "8px", textDecoration: "none", cursor: "pointer", pointerEvents: "auto" }}>🔒 Staff Login</a>
+                                            <Link href="/register" className="clinic-home-action clinic-home-action-primary">Register <span aria-hidden="true">↗</span></Link>
+                                            <Link href="/login" className="clinic-home-action clinic-home-action-secondary">Login <span aria-hidden="true">→</span></Link>
                                         </>
                                     )}
                                 </div>
-                                {!auth?.user && (
-                                    <p style={{ textAlign: 'center', marginTop: '-26px', marginBottom: '34px', color: 'rgba(255,255,255,0.88)', fontSize: '0.95rem' }}>
-                                        New patient?{' '}
-                                        <a href="/register" style={{ color: '#ffffff', fontWeight: 700, textDecoration: 'underline' }}>Register here</a>
-                                    </p>
-                                )}
                             </div>
 
                             <div className="home-info" style={{ width: "100%", maxWidth: "800px", marginTop: "10px" }}>

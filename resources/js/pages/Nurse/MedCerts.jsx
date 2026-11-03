@@ -1,3 +1,4 @@
+import PaginatedItems from '../../components/paginated-items.jsx';
 import React, { useState, useEffect } from 'react';
 import api from '@/services/api';
 
@@ -69,7 +70,7 @@ export default function MedicalCertificates() {
                             </tr>
                         </thead>
                         <tbody>
-                            {certificates.map((cert) => (
+                            {<PaginatedItems items={certificates} tableColumns={5} label="certificates">{(cert) => (
                                 <tr key={cert.id} className="border-b hover:bg-gray-50">
                                     <td className="p-3 font-bold text-maroon">#{cert.id}</td>
                                     <td className="p-3">{cert.queue?.patient?.firstname} {cert.queue?.patient?.lastname}</td>
@@ -77,7 +78,7 @@ export default function MedicalCertificates() {
                                     <td className="p-3">{cert.fit_to_return_date || '—'}</td>
                                     <td className="p-3">{cert.remarks || '—'}</td>
                                 </tr>
-                            ))}
+                            )}</PaginatedItems>}
                         </tbody>
                     </table>
                 </div>

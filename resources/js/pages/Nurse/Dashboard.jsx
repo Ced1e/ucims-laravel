@@ -1,6 +1,9 @@
+import { requestError } from '@/lib/clinical-validation.mjs';
+import PaginatedItems from '../../components/paginated-items.jsx';
 import { useState, useEffect, useCallback } from 'react';
 import { Head, usePage, router } from '@inertiajs/react';
 import axios from 'axios';
+import RecordDeletionRequests from './RecordDeletionRequests';
 
 // ─────────────────────────────────────────────────────────────
 // Display helpers (ported from legacy assets/js/shared.js + nurse.js)
@@ -42,6 +45,26 @@ function StatusBadge({ status }) {
 function patientName(patient) {
     if (!patient) return 'Unknown Patient';
     return [patient.firstname, patient.lastname].filter(Boolean).join(' ') || 'Unknown Patient';
+}
+
+// Abnormal vital signs are highlighted, as in the legacy getVitalStyle (shared.js).
+function vitalStyle(label, valStr) {
+    if (valStr == null || valStr === '' || valStr === '—' || String(valStr).includes('undefined')) return undefined;
+    const v = parseFloat(valStr);
+    let bad = false;
+    if (label.includes('BP') || label.includes('Blood Pressure')) {
+        const parts = String(valStr).split('/');
+        if (parts.length === 2) {
+            const sys = parseInt(parts[0], 10);
+            const dia = parseInt(parts[1], 10);
+            if (sys > 130 || sys < 90 || dia > 85 || dia < 60) bad = true;
+        }
+    }
+    if ((label.includes('HR') || label.includes('Heart')) && (v > 100 || v < 60)) bad = true;
+    if (label.includes('Temp') && (v >= 37.8 || v < 36.0)) bad = true;
+    if ((label.includes('RR') || label.includes('Resp')) && (v > 20 || v < 12)) bad = true;
+    if (label.includes('O₂') && v < 95) bad = true;
+    return bad ? { color: '#d32f2f', fontWeight: 800, background: '#ffebee', padding: '2px 6px', borderRadius: 4 } : undefined;
 }
 
 function nowTime() {
@@ -225,7 +248,7 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
     }, [item.queue_id, item.triaged]);
 
     async function handleSave() {
-        if (!form.blood_pressure || !form.chief_complaint) {
+        if (!form.blood_pressure.trim() || !form.chief_complaint.trim()) {
             setError('Blood pressure and chief complaint are required.');
             return;
         }
@@ -235,7 +258,7 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
             await axios.post('/api/v1/triage', { queue_id: item.queue_id, ...form });
             onSaved();
         } catch (e) {
-            setError(e.response?.data?.message || 'Failed to save triage assessment.');
+            setError(requestError(e, 'Failed to save triage assessment.'));
         } finally {
             setSaving(false);
         }
@@ -263,7 +286,7 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
               ['BP', existing.blood_pressure],
               ['HR', existing.heart_rate ? `${existing.heart_rate} bpm` : ''],
               ['Temp', existing.temperature ? `${existing.temperature}°C` : ''],
-              ['RR', existing.resp_rate || ''],
+              ['RR', existing.resp_rate ? `${existing.resp_rate} br/min` : ''],
               ['O₂', existing.o2_saturation ? `${existing.o2_saturation}%` : ''],
               ['Wt / Ht', `${existing.weight || '—'}kg / ${existing.height || '—'}cm`],
           ]
@@ -287,7 +310,9 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
                             {vitalRows.map(([l, v]) => (
                                 <div key={l} style={{ background: '#f9f8f6', padding: '10px 12px', borderRadius: 7 }}>
                                     <div className="text-xs text-muted">{l}</div>
-                                    <div className="fw6 text-sm mt4">{v || '—'}</div>
+                                    <div className="fw6 text-sm mt4">
+                                        <span style={vitalStyle(l, v)}>{v || '—'}</span>
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -316,7 +341,7 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
                                 <label>Blood Pressure (mmHg) *</label>
                                 <input
                                     placeholder="e.g. 120/80"
-                                    value={form.blood_pressure}
+                                    maxLength={50} value={form.blood_pressure}
                                     onChange={(e) => setForm({ ...form, blood_pressure: e.target.value })}
                                 />
                             </div>
@@ -324,7 +349,7 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
                                 <label>Heart Rate (bpm)</label>
                                 <input
                                     placeholder="e.g. 78"
-                                    value={form.heart_rate}
+                                    maxLength={50} inputMode="decimal" value={form.heart_rate}
                                     onChange={(e) => setForm({ ...form, heart_rate: e.target.value })}
                                 />
                             </div>
@@ -334,15 +359,15 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
                                 <label>Temperature (°C)</label>
                                 <input
                                     placeholder="e.g. 36.8"
-                                    value={form.temperature}
+                                    maxLength={50} inputMode="decimal" value={form.temperature}
                                     onChange={(e) => setForm({ ...form, temperature: e.target.value })}
                                 />
                             </div>
                             <div className="field">
-                                <label>Respiratory Rate</label>
+                                <label>Respiratory Rate (breaths/min)</label>
                                 <input
-                                    placeholder="e.g. 18 br/min"
-                                    value={form.resp_rate}
+                                    placeholder="e.g. 18"
+                                    maxLength={50} inputMode="decimal" value={form.resp_rate}
                                     onChange={(e) => setForm({ ...form, resp_rate: e.target.value })}
                                 />
                             </div>
@@ -352,7 +377,7 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
                                 <label>O₂ Saturation (%)</label>
                                 <input
                                     placeholder="e.g. 98"
-                                    value={form.o2_saturation}
+                                    maxLength={50} inputMode="decimal" value={form.o2_saturation}
                                     onChange={(e) => setForm({ ...form, o2_saturation: e.target.value })}
                                 />
                             </div>
@@ -360,7 +385,7 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
                                 <label>Weight (kg)</label>
                                 <input
                                     placeholder="e.g. 60"
-                                    value={form.weight}
+                                    maxLength={50} inputMode="decimal" value={form.weight}
                                     onChange={(e) => setForm({ ...form, weight: e.target.value })}
                                 />
                             </div>
@@ -368,7 +393,7 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
                                 <label>Height (cm)</label>
                                 <input
                                     placeholder="e.g. 165"
-                                    value={form.height}
+                                    maxLength={50} inputMode="decimal" value={form.height}
                                     onChange={(e) => setForm({ ...form, height: e.target.value })}
                                 />
                             </div>
@@ -494,7 +519,8 @@ function uniqueVals(list, path) {
     return [...new Set(vals)];
 }
 
-function RecordsSearch({ patients, loading, onView, onHistory }) {
+function RecordsSearch({ patients, loading, onView, onHistory, showToast }) {
+    const [recTab, setRecTab] = useState('search');
     const [q, setQ] = useState('');
     const [college, setCollege] = useState('');
     const [year, setYear] = useState('');
@@ -520,88 +546,91 @@ function RecordsSearch({ patients, loading, onView, onHistory }) {
                 <p>Search, filter, and view permanent patient records.</p>
             </div>
             <div className="tabs" style={{ marginBottom: 16 }}>
-                <button className="tab active">
+                <button className={`tab ${recTab === 'search' ? 'active' : ''}`} onClick={() => setRecTab('search')}>
                     <i className="bi bi-search"></i> Search &amp; Filter
                 </button>
-                <button className="tab" style={{ opacity: 0.55, cursor: 'default' }} title="Coming soon">
-                    <i className="bi bi-trash"></i> Record Deletion (soon)
+                <button className={`tab ${recTab === 'deletion' ? 'active' : ''}`} onClick={() => setRecTab('deletion')}>
+                    <i className="bi bi-trash"></i> Record Deletion
                 </button>
             </div>
-            <div className="card">
-                <div className="card-title">Search &amp; Filter Patient Records</div>
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
-                    <input
-                        style={{ flex: 2, minWidth: 200 }}
-                        placeholder="Search by name or ID..."
-                        value={q}
-                        onChange={(e) => setQ(e.target.value)}
-                    />
-                    <select style={{ flex: 1, minWidth: 140 }} value={college} onChange={(e) => setCollege(e.target.value)}>
-                        <option value="">All Colleges</option>
-                        {colleges.map((c) => (
-                            <option key={c}>{c}</option>
-                        ))}
-                    </select>
-                    <select style={{ flex: 1, minWidth: 120 }} value={year} onChange={(e) => setYear(e.target.value)}>
-                        <option value="">All Year Levels</option>
-                        {years.map((y) => (
-                            <option key={y}>{y}</option>
-                        ))}
-                    </select>
-                    <select style={{ flex: 1, minWidth: 120 }} value={ptype} onChange={(e) => setPtype(e.target.value)}>
-                        <option value="">All Types</option>
-                        {ptypes.map((t) => (
-                            <option key={t}>{t}</option>
-                        ))}
-                    </select>
-                </div>
+            {recTab === 'deletion' && <RecordDeletionRequests patients={patients} showToast={showToast} />}
+            {recTab === 'search' && (
+                <div className="card">
+                    <div className="card-title">Search &amp; Filter Patient Records</div>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
+                        <input
+                            style={{ flex: 2, minWidth: 200 }}
+                            placeholder="Search by name or ID..."
+                            value={q}
+                            onChange={(e) => setQ(e.target.value)}
+                        />
+                        <select style={{ flex: 1, minWidth: 140 }} value={college} onChange={(e) => setCollege(e.target.value)}>
+                            <option value="">All Colleges</option>
+                            {colleges.map((c) => (
+                                <option key={c}>{c}</option>
+                            ))}
+                        </select>
+                        <select style={{ flex: 1, minWidth: 120 }} value={year} onChange={(e) => setYear(e.target.value)}>
+                            <option value="">All Year Levels</option>
+                            {years.map((y) => (
+                                <option key={y}>{y}</option>
+                            ))}
+                        </select>
+                        <select style={{ flex: 1, minWidth: 120 }} value={ptype} onChange={(e) => setPtype(e.target.value)}>
+                            <option value="">All Types</option>
+                            {ptypes.map((t) => (
+                                <option key={t}>{t}</option>
+                            ))}
+                        </select>
+                    </div>
 
-                {loading && <p className="text-muted">Loading…</p>}
-                {!loading && !filtered.length && (
-                    <div className="empty-state">
-                        <p>No records found.</p>
-                    </div>
-                )}
-                {!!filtered.length && (
-                    <div className="table-wrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Name</th>
-                                    <th>College</th>
-                                    <th>Yr</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filtered.map((p) => (
-                                    <tr key={p.id}>
-                                        <td className="text-xs">{p.patientId}</td>
-                                        <td className="fw6">{p.name}</td>
-                                        <td className="text-xs">{p.college_dept || '—'}</td>
-                                        <td>{p.year_level || '—'}</td>
-                                        <td>
-                                            <div className="flex gap6">
-                                                <button className="btn btn-outline btn-sm" onClick={() => onView(p)}>
-                                                    <i className="bi bi-file-medical"></i> View Record
-                                                </button>
-                                                <button
-                                                    className="btn btn-primary btn-sm"
-                                                    style={{ background: 'var(--blue)' }}
-                                                    onClick={() => onHistory(p)}
-                                                >
-                                                    <i className="bi bi-clock-history"></i> Visit History
-                                                </button>
-                                            </div>
-                                        </td>
+                    {loading && <p className="text-muted">Loading…</p>}
+                    {!loading && !filtered.length && (
+                        <div className="empty-state">
+                            <p>No records found.</p>
+                        </div>
+                    )}
+                    {!!filtered.length && (
+                        <div className="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Name</th>
+                                        <th>College</th>
+                                        <th>Yr</th>
+                                        <th>Actions</th>
                                     </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </div>
+                                </thead>
+                                <tbody>
+                                    {<PaginatedItems items={filtered} tableColumns={5} label="filtered">{(p) => (
+                                        <tr key={p.id}>
+                                            <td className="text-xs">{p.patientId}</td>
+                                            <td className="fw6">{p.name}</td>
+                                            <td className="text-xs">{p.college_dept || '—'}</td>
+                                            <td>{p.year_level || '—'}</td>
+                                            <td>
+                                                <div className="flex gap6">
+                                                    <button className="btn btn-outline btn-sm" onClick={() => onView(p)}>
+                                                        <i className="bi bi-file-medical"></i> View Record
+                                                    </button>
+                                                    <button
+                                                        className="btn btn-primary btn-sm"
+                                                        style={{ background: 'var(--blue)' }}
+                                                        onClick={() => onHistory(p)}
+                                                    >
+                                                        <i className="bi bi-clock-history"></i> Visit History
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    )}</PaginatedItems>}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+                </div>
+            )}
         </>
     );
 }
@@ -864,7 +893,7 @@ function VisitHistoryModal({ patientRef, onClose }) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {visits.map((v) => (
+                                {<PaginatedItems items={visits} tableColumns={5} label="visits">{(v) => (
                                     <tr key={v.queue_id}>
                                         <td className="text-xs fw6" style={{ whiteSpace: 'nowrap' }}>
                                             {v.date}
@@ -890,7 +919,7 @@ function VisitHistoryModal({ patientRef, onClose }) {
                                             </div>
                                         </td>
                                     </tr>
-                                ))}
+                                )}</PaginatedItems>}
                             </tbody>
                         </table>
                     </div>
@@ -969,7 +998,7 @@ function DailyPatientLog({ visits, loading }) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filtered.map((v) => {
+                                {<PaginatedItems items={filtered} tableColumns={10} label="filtered">{(v) => {
                                     const age = calcAge(v.patient?.ppr_demographic?.dob);
                                     const sex = v.patient?.ppr_demographic?.sex;
                                     return (
@@ -996,7 +1025,7 @@ function DailyPatientLog({ visits, loading }) {
                                             </td>
                                         </tr>
                                     );
-                                })}
+                                }}</PaginatedItems>}
                             </tbody>
                         </table>
                     </div>
@@ -1049,7 +1078,7 @@ function DailyPatientRecords({ visits, loading, onViewDetails }) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filtered.map((v) => {
+                                {<PaginatedItems items={filtered} tableColumns={7} label="filtered">{(v) => {
                                     const rxList = (v.endorsement?.prescriptions || []).map((r) => r.drug_name).join(', ');
                                     return (
                                         <tr key={v.queue_id}>
@@ -1077,7 +1106,7 @@ function DailyPatientRecords({ visits, loading, onViewDetails }) {
                                             </td>
                                         </tr>
                                     );
-                                })}
+                                }}</PaginatedItems>}
                             </tbody>
                         </table>
                     </div>
@@ -1168,7 +1197,9 @@ function VisitDetailModal({ visit, onClose }) {
                                     ].map(([l, v]) => (
                                         <div key={l} style={{ background: '#f9f8f6', padding: '8px 12px', borderRadius: 7 }}>
                                             <div className="text-xs text-muted">{l}</div>
-                                            <div className="fw6 text-sm mt4">{v || '—'}</div>
+                                            <div className="fw6 text-sm mt4">
+                                                <span style={vitalStyle(l, v)}>{v || '—'}</span>
+                                            </div>
                                         </div>
                                     ))}
                                 </div>
@@ -1179,11 +1210,11 @@ function VisitDetailModal({ visit, onClose }) {
                                 <div className="card-title" style={{ fontSize: '.9rem' }}>
                                     Prescriptions
                                 </div>
-                                {rx.map((r) => (
+                                {<PaginatedItems items={rx} label="rx">{(r) => (
                                     <div key={r.prescription_id} className="text-sm mb8">
                                         <b>{r.drug_name}</b> {r.dosage} — {r.frequency}, {r.duration} ({r.route})
                                     </div>
-                                ))}
+                                )}</PaginatedItems>}
                             </>
                         )}
                         {!!meds.length && (
@@ -1191,11 +1222,11 @@ function VisitDetailModal({ visit, onClose }) {
                                 <div className="card-title" style={{ fontSize: '.9rem' }}>
                                     Medicine Issued
                                 </div>
-                                {meds.map((m) => (
+                                {<PaginatedItems items={meds} label="meds">{(m) => (
                                     <div key={m.issuance_id} className="text-sm mb8">
                                         <b>{m.medicine_name}</b> {m.dosage} — Qty {m.quantity}, by {m.nurse ? patientName(m.nurse) : '—'}
                                     </div>
-                                ))}
+                                )}</PaginatedItems>}
                             </>
                         )}
                         {cert && (
@@ -1260,7 +1291,7 @@ function MedicineList({ patients, loading, onManage, issuanceCounts }) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {patients.map((q) => (
+                                {<PaginatedItems items={patients} tableColumns={5} label="patients">{(q) => (
                                     <tr key={q.queue_id}>
                                         <td>
                                             <span className="num-badge">{q.queue_number}</span>
@@ -1284,7 +1315,7 @@ function MedicineList({ patients, loading, onManage, issuanceCounts }) {
                                             </button>
                                         </td>
                                     </tr>
-                                ))}
+                                )}</PaginatedItems>}
                             </tbody>
                         </table>
                     </div>
@@ -1330,7 +1361,7 @@ function ManageMedsModal({ item, onClose, showToast, onIssued }) {
             load();
             onIssued();
         } catch (e) {
-            showToast('Failed to log medicine issuance.', 'error');
+            showToast(requestError(e, 'Failed to log medicine issuance.'), 'error');
         } finally {
             setSaving(false);
         }
@@ -1366,7 +1397,7 @@ function ManageMedsModal({ item, onClose, showToast, onIssued }) {
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {doctorRx.map((rx) => (
+                                    {<PaginatedItems items={doctorRx} tableColumns={5} label="doctor Rx">{(rx) => (
                                         <tr key={rx.prescription_id}>
                                             <td className="fw6">{rx.drug_name}</td>
                                             <td>{rx.dosage}</td>
@@ -1374,7 +1405,7 @@ function ManageMedsModal({ item, onClose, showToast, onIssued }) {
                                             <td>{rx.duration}</td>
                                             <td>{rx.route}</td>
                                         </tr>
-                                    ))}
+                                    )}</PaginatedItems>}
                                 </tbody>
                             </table>
                         </div>
@@ -1384,25 +1415,25 @@ function ManageMedsModal({ item, onClose, showToast, onIssued }) {
                 <div className="field-row">
                     <div className="field">
                         <label>Medicine Name *</label>
-                        <input value={form.medicine_name} onChange={(e) => setForm({ ...form, medicine_name: e.target.value })} />
+                        <input maxLength={255} value={form.medicine_name} onChange={(e) => setForm({ ...form, medicine_name: e.target.value })} />
                     </div>
                     <div className="field">
                         <label>Dosage</label>
-                        <input placeholder="e.g. 500mg" value={form.dosage} onChange={(e) => setForm({ ...form, dosage: e.target.value })} />
+                        <input placeholder="e.g. 500mg" maxLength={100} value={form.dosage} onChange={(e) => setForm({ ...form, dosage: e.target.value })} />
                     </div>
                 </div>
                 <div className="field-row3">
                     <div className="field">
                         <label>Quantity *</label>
-                        <input placeholder="e.g. 10 tabs" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
+                        <input placeholder="e.g. 10 tabs" maxLength={50} value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
                     </div>
                     <div className="field">
                         <label>Frequency</label>
-                        <input placeholder="e.g. 3x a day" value={form.frequency} onChange={(e) => setForm({ ...form, frequency: e.target.value })} />
+                        <input placeholder="e.g. 3x a day" maxLength={100} value={form.frequency} onChange={(e) => setForm({ ...form, frequency: e.target.value })} />
                     </div>
                     <div className="field">
                         <label>Duration</label>
-                        <input placeholder="e.g. 5 days" value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })} />
+                        <input placeholder="e.g. 5 days" maxLength={100} value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })} />
                     </div>
                 </div>
                 <div className="field">
@@ -1419,13 +1450,13 @@ function ManageMedsModal({ item, onClose, showToast, onIssued }) {
                 </div>
                 {loading && <p className="text-muted text-sm">Loading…</p>}
                 {!loading && !list.length && <p className="text-muted text-sm">No services issued yet.</p>}
-                {list.map((s) => (
+                {<PaginatedItems items={list} label="list">{(s) => (
                     <div key={s.issuance_id} style={{ background: '#f9f8f6', padding: '8px 12px', borderRadius: 7, marginBottom: 5, fontSize: '.845rem' }}>
                         <i className="bi bi-capsule" style={{ color: 'var(--maroon)' }}></i> <b>{s.medicine_name}</b> {s.dosage} — {s.quantity}
                         <br />
                         <span className="text-muted">{s.instructions}</span> · by {s.nurse ? patientName(s.nurse) : '—'}
                     </div>
-                ))}
+                )}</PaginatedItems>}
 
                 <div className="modal-footer">
                     <button className="btn btn-outline btn-sm" onClick={onClose}>
@@ -1476,7 +1507,7 @@ function MedCertList({ certs, loading, onView }) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {certs.map((c) => (
+                                {<PaginatedItems items={certs} tableColumns={5} label="certs">{(c) => (
                                     <tr key={c.certificate_id}>
                                         <td>
                                             <span className="num-badge" style={{ background: 'var(--blue)' }}>
@@ -1501,7 +1532,7 @@ function MedCertList({ certs, loading, onView }) {
                                             </button>
                                         </td>
                                     </tr>
-                                ))}
+                                )}</PaginatedItems>}
                             </tbody>
                         </table>
                     </div>
@@ -1577,7 +1608,7 @@ export default function NurseDashboard() {
             const res = await axios.get('/api/v1/medical-certificates', { params: { released: 0 } });
             setCerts(res.data);
         } catch (e) {
-            showToast('Failed to load certificate requests.', 'error');
+            showToast(requestError(e, 'Failed to load certificate requests.'), 'error');
         } finally {
             setCertsLoading(false);
         }
@@ -1607,7 +1638,8 @@ export default function NurseDashboard() {
         if (section === 'medicine') fetchIssuanceCounts();
     }, [section, fetchIssuanceCounts]);
 
-    const medsEligible = queue.filter((q) => q.triaged && !['done', 'cancelled'].includes(q.status));
+    // Legacy: medicine issuance lists triaged patients who are still active and did not come for a med cert only.
+    const medsEligible = queue.filter((q) => q.triaged && q.visit_type !== 'medcert' && !['done', 'cancelled'].includes(q.status));
 
     const [patients, setPatients] = useState([]);
     const [patientsLoading, setPatientsLoading] = useState(true);
@@ -1619,7 +1651,7 @@ export default function NurseDashboard() {
             const res = await axios.get('/api/records/patients');
             setPatients(res.data.patients);
         } catch (e) {
-            showToast('Failed to load patient records.', 'error');
+            showToast(requestError(e, 'Failed to load patient records.'), 'error');
         } finally {
             setPatientsLoading(false);
         }
@@ -1638,7 +1670,7 @@ export default function NurseDashboard() {
             const res = await axios.get('/api/v1/queues', { params: { completed: 1 } });
             setCompletedVisits(res.data);
         } catch (e) {
-            showToast('Failed to load completed visits.', 'error');
+            showToast(requestError(e, 'Failed to load completed visits.'), 'error');
         } finally {
             setVisitsLoading(false);
         }
@@ -1658,7 +1690,7 @@ export default function NurseDashboard() {
             const res = await axios.get('/api/v1/queues');
             setQueue(res.data);
         } catch (e) {
-            showToast('Failed to load the queue.', 'error');
+            showToast(requestError(e, 'Failed to load the queue.'), 'error');
         } finally {
             setLoading(false);
         }
@@ -1680,7 +1712,8 @@ export default function NurseDashboard() {
     const active = queue
         .filter((q) => q.status !== 'done' && q.status !== 'cancelled')
         .sort((a, b) => (a.queue_number || 0) - (b.queue_number || 0));
-    const doneToday = queue.filter((q) => q.status === 'done').length;
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' }); // YYYY-MM-DD
+    const doneToday = queue.filter((q) => q.status === 'done' && String(q.date || '').slice(0, 10) === todayStr).length;
 
     async function handleUndoEndorse(item) {
         if (!confirm(`Undo endorsement for ${patientName(item.patient)}?`)) return;
@@ -1689,7 +1722,7 @@ export default function NurseDashboard() {
             showToast('Endorsement undone.');
             fetchQueue();
         } catch (e) {
-            showToast('Failed to undo endorsement.', 'error');
+            showToast(requestError(e, 'Failed to undo endorsement.'), 'error');
         }
     }
 
@@ -1700,7 +1733,7 @@ export default function NurseDashboard() {
             showToast('Removed from queue.');
             fetchQueue();
         } catch (e) {
-            showToast('Failed to cancel.', 'error');
+            showToast(requestError(e, 'Failed to cancel.'), 'error');
         }
     }
 
@@ -1710,7 +1743,7 @@ export default function NurseDashboard() {
             showToast(`Visit completed for ${patientName(item.patient)}.`);
             fetchQueue();
         } catch (e) {
-            showToast('Failed to complete the visit.', 'error');
+            showToast(requestError(e, 'Failed to complete the visit.'), 'error');
         }
     }
 
@@ -1721,7 +1754,7 @@ export default function NurseDashboard() {
             setEndorseModal(null);
             fetchQueue();
         } catch (e) {
-            showToast('Failed to endorse patient.', 'error');
+            showToast(requestError(e, 'Failed to endorse patient.'), 'error');
         }
     }
 
@@ -1780,7 +1813,7 @@ export default function NurseDashboard() {
                                 </div>
                             )}
 
-                            {active.map((q) => (
+                            {<PaginatedItems items={active} label="active">{(q) => (
                                 <QueueItem
                                     key={q.queue_id}
                                     item={q}
@@ -1794,7 +1827,7 @@ export default function NurseDashboard() {
                                     }
                                     onCancel={() => handleCancel(q)}
                                 />
-                            ))}
+                            )}</PaginatedItems>}
                         </>
                     )}
 
@@ -1815,6 +1848,7 @@ export default function NurseDashboard() {
                             loading={patientsLoading}
                             onView={setViewRecordModal}
                             onHistory={setHistoryModal}
+                            showToast={showToast}
                         />
                     )}
 

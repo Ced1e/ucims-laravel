@@ -1,6 +1,10 @@
+import { prescriptionError, requestError } from '@/lib/clinical-validation.mjs';
+import { isCalendarDate } from '@/lib/registration-validation.mjs';
+import PaginatedItems from '../../components/paginated-items.jsx';
 import { useState, useEffect, useCallback } from 'react';
 import { Head, usePage, router } from '@inertiajs/react';
 import axios from 'axios';
+import DoctorRecordManagement from '../../components/doctor-record-management';
 
 // ─────────────────────────────────────────────────────────────
 // Display helpers (same conventions as Nurse/Dashboard.jsx)
@@ -64,7 +68,7 @@ function Sidebar({ section, onNavigate }) {
                 { icon: 'bi-droplet', label: 'Lab Requests', key: 'labs' },
             ],
         },
-        { section: 'Records', items: [{ icon: 'bi-folder2-open', label: 'Record Management', soon: true }] },
+        { section: 'Records', items: [{ icon: 'bi-folder2-open', label: 'Record Management', key: 'records' }] },
         { section: 'History', items: [{ icon: 'bi-clock-history', label: 'Examination History', key: 'history' }] },
     ];
 
@@ -234,7 +238,7 @@ function ExamineModal({ item, onClose, onFinalized, showToast }) {
             showToast('Diagnosis and findings saved.');
             setTab('prescriptions');
         } catch (e) {
-            showToast('Failed to save diagnosis.', 'error');
+            showToast(requestError(e, 'Failed to save diagnosis.'), 'error');
         } finally {
             setSaving(false);
         }
@@ -254,6 +258,8 @@ function ExamineModal({ item, onClose, onFinalized, showToast }) {
 
     async function savePrescriptions() {
         if (!endorsedId) return;
+        const validationError = prescriptionError(rxRows, otherLab);
+        if (validationError) { showToast(validationError, 'error'); return; }
         setSaving(true);
         try {
             // Labs: delete existing lab requests for this endorsement, then recreate from current checkboxes/other.
@@ -292,7 +298,7 @@ function ExamineModal({ item, onClose, onFinalized, showToast }) {
             showToast('Prescriptions and lab requests saved.');
             setTab('finalize');
         } catch (e) {
-            showToast('Failed to save prescriptions.', 'error');
+            showToast(requestError(e, 'Failed to save prescriptions.'), 'error');
         } finally {
             setSaving(false);
         }
@@ -307,7 +313,7 @@ function ExamineModal({ item, onClose, onFinalized, showToast }) {
             showToast('Examination finalized! Patient returned to Nurse Station.');
             onFinalized();
         } catch (e) {
-            showToast('Failed to finalize the examination.', 'error');
+            showToast(requestError(e, 'Failed to finalize the examination.'), 'error');
         } finally {
             setSaving(false);
         }
@@ -706,7 +712,7 @@ function LabRequestsList({ labs, loading, onAttach }) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {groups.map((g) => (
+                                {<PaginatedItems items={groups} tableColumns={4} label="groups">{(g) => (
                                     <tr key={g.endorsed_id}>
                                         <td className="text-xs fw6">{g.date || '—'}</td>
                                         <td>
@@ -725,7 +731,7 @@ function LabRequestsList({ labs, loading, onAttach }) {
                                             </button>
                                         </td>
                                     </tr>
-                                ))}
+                                )}</PaginatedItems>}
                             </tbody>
                         </table>
                     </div>
@@ -753,7 +759,7 @@ function AttachLabResultsModal({ group, onClose, showToast, onSaved }) {
             showToast('Laboratory results saved.');
             onSaved();
         } catch (e) {
-            showToast('Failed to save results.', 'error');
+            showToast(requestError(e, 'Failed to save results.'), 'error');
         } finally {
             setSaving(false);
         }
@@ -840,7 +846,7 @@ function ExaminationHistory({ visits, loading, onViewSummary }) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filtered.map((v) => (
+                                {<PaginatedItems items={filtered} tableColumns={5} label="filtered">{(v) => (
                                     <tr key={v.queue_id}>
                                         <td className="text-xs fw6" style={{ whiteSpace: 'nowrap' }}>{v.date || '—'}</td>
                                         <td>
@@ -857,7 +863,7 @@ function ExaminationHistory({ visits, loading, onViewSummary }) {
                                             </button>
                                         </td>
                                     </tr>
-                                ))}
+                                )}</PaginatedItems>}
                             </tbody>
                         </table>
                     </div>
@@ -1060,7 +1066,7 @@ function MedCertListDoctor({ certs, loading, onReview }) {
                                 </tr>
                             </thead>
                             <tbody>
-                                {certs.map((c) => (
+                                {<PaginatedItems items={certs} tableColumns={5} label="certs">{(c) => (
                                     <tr key={c.certificate_id}>
                                         <td>
                                             <span className="num-badge" style={{ background: 'var(--maroon)' }}>
@@ -1085,7 +1091,7 @@ function MedCertListDoctor({ certs, loading, onReview }) {
                                             </button>
                                         </td>
                                     </tr>
-                                ))}
+                                )}</PaginatedItems>}
                             </tbody>
                         </table>
                     </div>
@@ -1135,6 +1141,9 @@ function ReviewMedCertModal({ cert, onClose, onReleased, showToast }) {
     const issuedDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
     async function handleRelease() {
+        if (form.exam_date && !isCalendarDate(form.exam_date)) {
+            showToast('Enter a valid examination date.', 'error'); return;
+        }
         if (!form.license_no.trim()) {
             showToast('Please enter the physician license number before releasing.', 'error');
             return;
@@ -1160,7 +1169,7 @@ function ReviewMedCertModal({ cert, onClose, onReleased, showToast }) {
             showToast('Certificate released and sent to print.');
             onReleased();
         } catch (e) {
-            showToast('Failed to release the certificate.', 'error');
+            showToast(requestError(e, 'Failed to release the certificate.'), 'error');
         } finally {
             setSaving(false);
         }
@@ -1276,7 +1285,7 @@ export default function DoctorDashboard() {
             const res = await axios.get('/api/v1/lab-requests', { params: { pending: 1 } });
             setLabs(res.data);
         } catch (e) {
-            showToast('Failed to load lab requests.', 'error');
+            showToast(requestError(e, 'Failed to load lab requests.'), 'error');
         } finally {
             setLabsLoading(false);
         }
@@ -1295,7 +1304,7 @@ export default function DoctorDashboard() {
             const res = await axios.get('/api/v1/queues', { params: { completed: 1, assigned_to_me: 1 } });
             setHistoryVisits(res.data);
         } catch (e) {
-            showToast('Failed to load examination history.', 'error');
+            showToast(requestError(e, 'Failed to load examination history.'), 'error');
         } finally {
             setHistoryLoading(false);
         }
@@ -1315,7 +1324,7 @@ export default function DoctorDashboard() {
             const res = await axios.get('/api/v1/queues', { params: { assigned_to_me: 1 } });
             setQueue(res.data);
         } catch (e) {
-            showToast('Failed to load your consultations.', 'error');
+            showToast(requestError(e, 'Failed to load your consultations.'), 'error');
         } finally {
             setLoading(false);
         }
@@ -1326,7 +1335,7 @@ export default function DoctorDashboard() {
             const res = await axios.get('/api/v1/medical-certificates', { params: { released: 0 } });
             setCerts(res.data);
         } catch (e) {
-            showToast('Failed to load certificate requests.', 'error');
+            showToast(requestError(e, 'Failed to load certificate requests.'), 'error');
         } finally {
             setCertsLoading(false);
         }
@@ -1351,7 +1360,7 @@ export default function DoctorDashboard() {
             showToast('Patient cleared and returned to Nurse Station.');
             fetchQueue();
         } catch (e) {
-            showToast('Failed to complete the visit.', 'error');
+            showToast(requestError(e, 'Failed to complete the visit.'), 'error');
         }
     }
 
@@ -1399,14 +1408,14 @@ export default function DoctorDashboard() {
                                                     </td>
                                                 </tr>
                                             )}
-                                            {active.map((q) => (
+                                            {<PaginatedItems items={active} tableColumns={5} label="active">{(q) => (
                                                 <ConsultRow
                                                     key={q.queue_id}
                                                     item={q}
                                                     onExamine={() => setExamineItem(q)}
                                                     onQuickComplete={() => handleQuickComplete(q)}
                                                 />
-                                            ))}
+                                            )}</PaginatedItems>}
                                         </tbody>
                                     </table>
                                 </div>
@@ -1417,6 +1426,8 @@ export default function DoctorDashboard() {
                     {section === 'medcert' && <MedCertListDoctor certs={certs} loading={certsLoading} onReview={setReviewCertModal} />}
 
                     {section === 'labs' && <LabRequestsList labs={labs} loading={labsLoading} onAttach={setAttachLabsModal} />}
+
+                    {section === 'records' && <DoctorRecordManagement showToast={showToast} />}
 
                     {section === 'history' && (
                         <ExaminationHistory visits={historyVisits} loading={historyLoading} onViewSummary={setSummaryModal} />

@@ -1,3 +1,4 @@
+import { registrationLimits } from '@/lib/registration-validation.mjs';
 import React from 'react';
 import { Field, SectionTitle } from './Common';
 
@@ -19,7 +20,7 @@ export const SYSTEMS = [
 ];
 
 export default function StepHealth({ data, set, errors }) {
-    const bind = (k, extra = {}) => ({ value: data[k], onChange: (e) => set(k, e.target.value), ...extra });
+    const bind = (k, extra = {}) => ({ maxLength: k.startsWith('sr_') ? 100 : registrationLimits[k], value: data[k], onChange: (e) => set(k, e.target.value), ...extra });
 
     return (
         <>

@@ -6,13 +6,16 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdatePprDemographicsRequest extends FormRequest
 {
-    public function authorize(): bool { return true; }
+    public function authorize(): bool
+    {
+        return true;
+    }
 
     public function rules(): array
     {
         return [
-            'dob' => 'nullable|string|max:50',
-            'sex' => 'nullable|string|max:20',
+            'dob' => 'nullable|date_format:Y-m-d|before_or_equal:today',
+            'sex' => 'nullable|in:Male,Female',
             'civil_status' => 'nullable|string|max:50',
             'religion' => 'nullable|string|max:100',
             'birthplace' => 'nullable|string|max:255',

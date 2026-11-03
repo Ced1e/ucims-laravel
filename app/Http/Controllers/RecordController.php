@@ -3,10 +3,14 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Http\Requests\Concerns\InputRules;
 use App\Models\User;
 use App\Models\ClinicQueue;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use App\Http\Requests\StoreRecordDeletionRequest;
+use App\Models\RecordDeletionRequest;
+use Illuminate\Support\Facades\DB;
 
 class RecordController extends Controller
 {
@@ -154,24 +158,12 @@ class RecordController extends Controller
             return response()->json(['message' => 'Patient accounts cannot be edited here.'], 422);
         }
 
-        $data = $request->validate([
-            'firstname' => 'required|string|max:100',
-            'middlename' => 'nullable|string|max:100',
-            'lastname' => 'required|string|max:100',
-            'usep_email' => ['required', 'email', 'max:255', Rule::unique('users', 'usep_email')->ignore($user->user_id, 'user_id')],
-            'sex' => 'nullable|string|max:20',
-            'dob' => 'nullable|date',
-            'mobile_no' => 'nullable|string|max:20',
-            'landline_no' => 'nullable|string|max:20',
-            'address_block' => 'nullable|string|max:50',
-            'address_street' => 'nullable|string|max:100',
-            'address_brgy' => 'nullable|string|max:100',
-            'address_city' => 'nullable|string|max:100',
-            'address_province' => 'nullable|string|max:100',
-            'role_description' => 'nullable|string',
-            'employment_status' => 'nullable|string|max:50',
-            'schedule' => 'nullable|string|max:255',
-        ]);
+        $data = $request->validate(array_merge(InputRules::staffProfile(), [
+            'firstname' => InputRules::name(),
+            'middlename' => InputRules::name('nullable'),
+            'lastname' => InputRules::name(),
+            'usep_email' => ['required', 'email', 'max:150', Rule::unique('users', 'usep_email')->ignore($user->user_id, 'user_id')],
+        ]));
 
         $user->update(collect($data)->only(['firstname', 'middlename', 'lastname', 'usep_email'])->toArray());
 
@@ -215,5 +207,66 @@ class RecordController extends Controller
         $user->update(['is_active' => $data['is_active']]);
 
         return response()->json(['status' => 'success', 'is_active' => $user->is_active]);
+    }
+
+    /**
+     * Log a patient-record deletion request (nurse, doctor, admin).
+     * Nothing is deleted here: the request is stored with status "pending" for review.
+     */
+    public function storeDeletionRequest(StoreRecordDeletionRequest $request)
+    {
+        $data = $request->validated();
+
+        return DB::transaction(function () use ($data, $request) {
+            // Serialize requests for this patient, even when there is no request row yet.
+            User::whereKey($data['patient_id'])->lockForUpdate()->firstOrFail();
+            $alreadyPending = RecordDeletionRequest::where('patient_id', $data['patient_id'])
+                ->where('status', 'pending')
+                ->exists();
+    
+            if ($alreadyPending) {
+                return response()->json(['message' => 'A deletion request for this patient is already pending.'], 422);
+            }
+    
+            $deletionRequest = RecordDeletionRequest::create([
+                'patient_id' => $data['patient_id'],
+                'requested_by' => $request->user()->user_id,
+                'reason' => $data['reason'],
+                'status' => 'pending',
+            ]);
+    
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Deletion request submitted.',
+                'request_id' => $deletionRequest->request_id,
+            ], 201);
+        });
+    }
+
+    /**
+     * Deletion requests: admins see all of them, everyone else only their own.
+     */
+    public function getDeletionRequests(Request $request)
+    {
+        $query = RecordDeletionRequest::with([
+            'patient:user_id,clinic_id,firstname,lastname',
+            'requester:user_id,firstname,lastname',
+        ])->orderByDesc('request_id');
+
+        if ($request->user()->role !== 'admin') {
+            $query->where('requested_by', $request->user()->user_id);
+        }
+
+        $requests = $query->get()->map(fn ($r) => [
+            'id' => $r->request_id,
+            'patientId' => $r->patient?->clinic_id,
+            'patientName' => trim(($r->patient?->firstname ?? '').' '.($r->patient?->lastname ?? '')),
+            'requestedBy' => trim(($r->requester?->firstname ?? '').' '.($r->requester?->lastname ?? '')),
+            'reason' => $r->reason,
+            'status' => $r->status,
+            'created_at' => $r->created_at?->toDateTimeString(),
+        ]);
+
+        return response()->json(['status' => 'success', 'requests' => $requests]);
     }
 }

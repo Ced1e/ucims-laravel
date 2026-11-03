@@ -12,8 +12,14 @@ return new class extends Migration
             $table->dropForeign(['patient_id']);
             $table->dropColumn('patient_id');
 
-            $table->renameColumn('id', 'consultation_id');
-            $table->renameColumn('treatment_plan', 'treatment');
+        });
+
+        // Separate schema operations prevent SQLite's rebuild state from renaming
+        // the id suffix inside doctor_id's foreign key.
+        Schema::table('consultations', fn (Blueprint $table) => $table->renameColumn('id', 'consultation_id'));
+        Schema::table('consultations', fn (Blueprint $table) => $table->renameColumn('treatment_plan', 'treatment'));
+
+        Schema::table('consultations', function (Blueprint $table) {
 
             $table->foreignId('queue_id')
                 ->nullable()
@@ -31,8 +37,12 @@ return new class extends Migration
         Schema::table('consultations', function (Blueprint $table) {
             $table->dropForeign(['queue_id']);
             $table->dropColumn(['queue_id', 'consultation_date', 'notes']);
-            $table->renameColumn('consultation_id', 'id');
-            $table->renameColumn('treatment', 'treatment_plan');
+        });
+
+        Schema::table('consultations', fn (Blueprint $table) => $table->renameColumn('consultation_id', 'id'));
+        Schema::table('consultations', fn (Blueprint $table) => $table->renameColumn('treatment', 'treatment_plan'));
+
+        Schema::table('consultations', function (Blueprint $table) {
             $table->unsignedBigInteger('patient_id')->nullable();
             $table->foreign('patient_id')->references('user_id')->on('users')->onDelete('cascade');
         });

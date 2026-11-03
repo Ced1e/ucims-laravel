@@ -1,3 +1,4 @@
+import PaginatedItems from '../../components/paginated-items.jsx';
 import React, { useState, useEffect } from 'react';
 import api from '@/services/api';
 
@@ -79,7 +80,7 @@ export default function NurseQueue() {
                             </tr>
                         </thead>
                         <tbody>
-                            {queues.map((q) => (
+                            {<PaginatedItems items={queues} tableColumns={5} label="queues">{(q) => (
                                 <tr key={q.queue_id} className="border-b hover:bg-gray-50">
                                     <td className="p-3 font-bold text-maroon">#{q.queue_number}</td>
                                     <td className="p-3">{q.patient?.firstname} {q.patient?.lastname}</td>
@@ -98,7 +99,7 @@ export default function NurseQueue() {
                                         </button>
                                     </td>
                                 </tr>
-                            ))}
+                            )}</PaginatedItems>}
                         </tbody>
                     </table>
                 </div>

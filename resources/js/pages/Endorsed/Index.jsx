@@ -1,7 +1,8 @@
+import PaginatedItems from '../../components/paginated-items.jsx';
 import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 
-export default function Index({ endorsedItems }) {
+export default function Index({ endorsements }) {
     const { delete: destroy, post } = useForm();
 
     const handleClone = (id) => {
@@ -9,7 +10,7 @@ export default function Index({ endorsedItems }) {
     };
 
     return (
-        <AppLayout>
+        <>
             <Head title="Endorsements" />
             <div className="p-6 max-w-7xl mx-auto">
                 <div className="flex justify-between items-center mb-6">
@@ -28,20 +29,20 @@ export default function Index({ endorsedItems }) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 text-sm">
-                            {endorsedItems?.map((item) => (
-                                <tr key={item.id} className="hover:bg-gray-50/50">
-                                    <td className="p-4 font-medium text-gray-900">Endorsement #{item.id}</td>
+                            {<PaginatedItems items={endorsements} tableColumns={2} label="endorsed Items">{(item) => (
+                                <tr key={item.endorsed_id} className="hover:bg-gray-50/50">
+                                    <td className="p-4 font-medium text-gray-900">Endorsement #{item.endorsed_id}</td>
                                     <td className="p-4 text-right space-x-2">
-                                        <Link href={`/endorsed/${item.id}/edit`} className="text-blue-600 hover:underline">Edit</Link>
-                                        <button onClick={() => handleClone(item.id)} className="text-amber-600 hover:underline">Clone</button>
-                                        <button onClick={() => destroy(`/endorsed/${item.id}`)} className="text-red-600 hover:underline">Delete</button>
+                                        <Link href={`/endorsed/${item.endorsed_id}/edit`} className="text-blue-600 hover:underline">Edit</Link>
+                                        <button onClick={() => handleClone(item.endorsed_id)} className="text-amber-600 hover:underline">Clone</button>
+                                        <button onClick={() => destroy(`/endorsed/${item.endorsed_id}`)} className="text-red-600 hover:underline">Delete</button>
                                     </td>
                                 </tr>
-                            ))}
+                            )}</PaginatedItems>}
                         </tbody>
                     </table>
                 </div>
             </div>
-        </AppLayout>
+        </>
     );
 }

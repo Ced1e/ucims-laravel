@@ -1,0 +1,10 @@
+{
+  "app/Http/Controllers/StaffAuthController.php": "b34a146c550b6f6fe9d62a60014195324d34477eebf4d1c84d7f66088747ffef",
+  "app/Http/Controllers/UserController.php": "c01f07f7fe18d4ebf007b75fa9790119377262995b0a7be1a1798dba9a04fc46",
+  "app/Http/Requests/StoreClinicQueueRequest.php": "dfed99760583f6c9227c1c82de6e0198ac0ebbf2cd7d0c48b601003998548fc1",
+  "app/Http/Requests/StoreStaffAuthRequest.php": "d53263d48f16261c77a8d75bc7a18a5403ba94a41319bde8117383f8dfc76cdc",
+  "app/Http/Requests/UpdateStaffAuthRequest.php": "cb1506352f3d48b915674d931e67cc144d4717a6a0381591d132c0c4a8918a13",
+  "app/Http/Requests/StoreUserRequest.php": "f109d48b9485183ef5cfe29195a42ce81849d6246933fd201a9797551262953b",
+  "app/Http/Requests/UpdateUserRequest.php": "506eb0ee91008551d4a436f2adf64a9637126eea5437985f890922e5b82264ec",
+  "app/Actions/Fortify/CloneRecordAction.php": "60d90905e68cbfd275edb5205e70506d03a011fe0bbe8407f60bfebdf7d51c91"
+}

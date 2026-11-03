@@ -18,7 +18,7 @@ export default function StepFemale({ data, set, errors }) {
             <YesNo name="regular" value={data.female_regular} onChange={(v) => set('female_regular', v)} />
             {data.female_regular === 'No' && (
                 <Field label="If No — please specify" required error={errors.female_irregular_spec}>
-                    <input placeholder="Describe irregularity..." value={data.female_irregular_spec} onChange={(e) => set('female_irregular_spec', e.target.value)} />
+                    <input placeholder="Describe irregularity..." maxLength={1000} value={data.female_irregular_spec} onChange={(e) => set('female_irregular_spec', e.target.value)} />
                 </Field>
             )}
 
@@ -26,7 +26,7 @@ export default function StepFemale({ data, set, errors }) {
             <YesNo name="dysmenorrhea" value={data.female_dysmenorrhea} onChange={(v) => set('female_dysmenorrhea', v)} />
 
             <Field label="Other Premenstrual / Menstrual Symptoms" error={errors.female_symptoms}>
-                <textarea placeholder="Describe any other symptoms experienced..." value={data.female_symptoms} onChange={(e) => set('female_symptoms', e.target.value)} />
+                <textarea placeholder="Describe any other symptoms experienced..." maxLength={1000} value={data.female_symptoms} onChange={(e) => set('female_symptoms', e.target.value)} />
             </Field>
         </>
     );

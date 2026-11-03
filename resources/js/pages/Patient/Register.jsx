@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { validName, isCalendarDate, localToday, normalizePhone, lengthErrors, prepareRegistration } from '@/lib/registration-validation.mjs';
 import { Head, router } from '@inertiajs/react';
 import StepPersonal, { FACULTY_OPTION, calcAge } from '@/components/registration/StepPersonal';
 import StepHealth, { SYSTEMS } from '@/components/registration/StepHealth';
@@ -7,16 +8,16 @@ import StepFemale from '@/components/registration/StepFemale';
 import StepAccount from '@/components/registration/StepAccount';
 
 // ── Validation rules ported from the legacy auth.js wizard ──────────────────
-const NAME_RE = /^[A-ZÑ][A-Za-zÑñ\s\-.']*$/;
-const WORDS_RE = /^[A-Za-zÑñ][A-Za-zÑñ\s\-.']*$/;
+const NAME_RE = { test: validName };
+
 const PHONE_RE = /^09\d{9}$/;
 const ID_RE = /^20\d{2}-\d{5}$/;
 const EMAIL_RE = /^[A-Za-z0-9._%+-]+@usep\.edu\.ph$/i;
-const SIGNATURE_RE = /^[A-ZÑ][A-ZÑ\s\-.]*$/;
+const SIGNATURE_RE = { test: (value) => validName(value) && value === value.toUpperCase() };
 
-const digits = (v) => String(v || '').replace(/\D/g, '');
+const digits = normalizePhone;
 const blank = (v) => !String(v ?? '').trim();
-const inRange = (v, min, max) => v !== '' && !isNaN(Number(v)) && Number(v) >= min && Number(v) <= max;
+const inRange = (v, min, max) => !blank(v) && !isNaN(Number(v)) && Number(v) >= min && Number(v) <= max;
 
 const INITIAL = {
     lastname: '', firstname: '', middlename: '', dob: '', sex: '', civil_status: '', religion: '', nationality: 'Filipino',
@@ -48,23 +49,24 @@ function validateStep(key, d) {
     if (key === 'personal') {
         ['lastname', 'firstname', 'middlename'].forEach((k) => {
             if (blank(d[k])) e[k] = 'Required.';
-            else if (!NAME_RE.test(d[k].trim())) e[k] = 'Start with a capital letter; letters only.';
+            else if (!NAME_RE.test(d[k].trim())) e[k] = "Use letters, spaces, apostrophes, dots or hyphens.";
         });
         if (blank(d.dob)) e.dob = 'Required.';
-        else if (new Date(d.dob) > new Date()) e.dob = 'Birthdate cannot be in the future.';
+        else if (!isCalendarDate(d.dob) || d.dob <= '1900-01-01') e.dob = 'Enter a valid birthdate after January 1, 1900.';
+        else if (d.dob > localToday()) e.dob = 'Birthdate cannot be in the future.';
         else if (calcAge(d.dob) === '' ) e.dob = 'Enter a valid birthdate.';
         ['sex', 'civil_status', 'college_dept', 'birthplace', 'city_address', 'prov_address'].forEach((k) => req(k, 'Required.'));
         ['religion', 'nationality'].forEach((k) => {
             if (blank(d[k])) e[k] = 'Required.';
-            else if (!WORDS_RE.test(d[k].trim())) e[k] = 'Letters only.';
+
         });
         if (d.college_dept !== FACULTY_OPTION) req('year_level', 'Required.');
         if (!PHONE_RE.test(digits(d.contact_no))) e.contact_no = 'Enter a valid number (09XXXXXXXXX).';
         if (blank(d.em_name)) e.em_name = 'Required.';
-        else if (!NAME_RE.test(d.em_name.trim())) e.em_name = 'Start with a capital letter; letters only.';
+        else if (!NAME_RE.test(d.em_name.trim())) e.em_name = "Use letters, spaces, apostrophes, dots or hyphens.";
         if (!PHONE_RE.test(digits(d.em_contact))) e.em_contact = 'Enter a valid number (09XXXXXXXXX).';
         if (blank(d.em_rel)) e.em_rel = 'Required.';
-        else if (!WORDS_RE.test(d.em_rel.trim())) e.em_rel = 'Letters only.';
+
     }
 
     if (key === 'health') {
@@ -107,7 +109,7 @@ function validateStep(key, d) {
         if (!d.privacy) e.privacy = 'You must give your consent to continue.';
         if (!SIGNATURE_RE.test(d.signature.trim())) e.signature = 'Type your full name in CAPITAL LETTERS.';
     }
-    return e;
+    return { ...e, ...lengthErrors(d, STEP_KEYS[key] || []) };
 }
 
 export default function Register() {
@@ -128,7 +130,13 @@ export default function Register() {
     const isLast = stepIdx >= steps.length - 1;
 
     const set = (k, v) => {
-        setData((d) => ({ ...d, [k]: v }));
+        setData((d) => {
+            const next = { ...d, [k]: v };
+            if (k === 'sex' && v !== 'Female') {
+                for (const field of STEP_KEYS.female) next[field] = INITIAL[field];
+            }
+            return next;
+        });
         if (errors[k]) setErrors((e) => ({ ...e, [k]: undefined }));
     };
 
@@ -161,13 +169,7 @@ export default function Register() {
                 return;
             }
         }
-        const payload = {
-            ...data,
-            contact_no: digits(data.contact_no),
-            em_contact: digits(data.em_contact),
-            usep_email: data.usep_email.trim().toLowerCase(),
-            usep_email_confirmation: data.usep_email_confirmation.trim().toLowerCase(),
-        };
+        const payload = prepareRegistration(data);
         setSubmitting(true);
         router.post('/register', payload, {
             preserveScroll: true,
@@ -213,7 +215,8 @@ export default function Register() {
                 <div className="card" style={{ padding: '26px 28px' }}>
                     {errorCount > 0 && (
                         <div className="alert alert-warn text-sm" style={{ marginBottom: 16 }}>
-                            <i className="bi bi-exclamation-triangle"></i> Please fix the {errorCount} highlighted field{errorCount > 1 ? 's' : ''} below.
+                            <i className="bi bi-exclamation-triangle"></i> Please correct the highlighted fields.
+                            <ul style={{ marginTop: 8 }}>{Object.entries(errors).filter(([,message]) => message).map(([field,message]) => <li key={field}>{message}</li>)}</ul>
                         </div>
                     )}
 

@@ -3,17 +3,21 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StorePprDemographicRequest extends FormRequest
 {
-    public function authorize(): bool { return true; }
+    public function authorize(): bool
+    {
+        return true;
+    }
 
     public function rules(): array
     {
         return [
-            'patient_id' => 'required|exists:users,user_id|unique:ppr_demographics,patient_id',
-            'dob' => 'nullable|string|max:50',
-            'sex' => 'nullable|string|max:20',
+            'patient_id' => ['required', 'unique:ppr_demographics,patient_id', Rule::exists('users', 'user_id')->where('role', 'patient')],
+            'dob' => 'nullable|date_format:Y-m-d|before_or_equal:today',
+            'sex' => 'nullable|in:Male,Female',
             'civil_status' => 'nullable|string|max:50',
             'religion' => 'nullable|string|max:100',
             'birthplace' => 'nullable|string|max:255',

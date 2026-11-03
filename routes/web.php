@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\RecordController;
-use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TvQueueController;
 use App\Http\Controllers\ClinicQueueController;
 use App\Http\Controllers\TriageRecordController;
 use App\Http\Controllers\EndorsedController;
@@ -32,6 +32,10 @@ Route::get('/', function () {
         'phpVersion' => PHP_VERSION,
     ]);
 })->name('home');
+
+// Public waiting-room display.
+Route::get('/tv-queue', [TvQueueController::class, 'show'])->name('tv-queue');
+Route::get('/api/tv-queue', [TvQueueController::class, 'data'])->middleware('throttle:120,1')->name('tv-queue.data');
 
 // Patient self-registration (guests only). Throttled because it is a public form.
 Route::middleware('guest')->group(function () {
@@ -144,6 +148,8 @@ Route::middleware(['auth'])->group(function () {
     // Record Fetching Routes (moved inside auth — patient PII must not be publicly reachable)
     // Patient records: clinic staff only (patients must never reach other patients' data)
     Route::middleware('role:nurse,doctor,admin')->group(function () {
+        Route::post('/api/records/deletion-requests', [RecordController::class, 'storeDeletionRequest'])->middleware('throttle:10,1');
+        Route::get('/api/records/deletion-requests', [RecordController::class, 'getDeletionRequests']);
         Route::get('/api/records/patients', [RecordController::class, 'getPatients']);
         Route::get('/api/records/patients/{patient}', [RecordController::class, 'getPatientDetail']);
         Route::get('/api/records/patients/{patient}/visits', [RecordController::class, 'getPatientVisits']);
@@ -167,7 +173,7 @@ Route::post('/api/auth/register', [AuthController::class, 'register']);
 Route::get('/api/auth/logout', [AuthController::class, 'logout']);
 
 // Data Sync Route
-Route::get('/api/sync/load', [SyncController::class, 'load']);
-Route::post('/api/sync/save', [SyncController::class, 'save']);
+Route::get('/api/sync/load', [SyncController::class, 'load'])->middleware(['auth', 'role:nurse,doctor,admin']);
+Route::post('/api/sync/save', [SyncController::class, 'save'])->middleware(['auth', 'role:nurse,admin']);
 
 require __DIR__.'/settings.php';

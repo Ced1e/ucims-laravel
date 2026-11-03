@@ -2,17 +2,25 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Endorsed;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateEndorsedRequest extends FormRequest
 {
-    public function authorize(): bool { return true; }
+    public function authorize(): bool
+    {
+        $record = $this->route('endorsed');
+
+        return $record instanceof Endorsed
+            && ($this->user()?->can('update', $record) ?? false);
+    }
 
     public function rules(): array
     {
         return [
-            'queue_id' => 'sometimes|exists:clinic_queue,queue_id',
-            'doctor_id' => 'nullable|exists:users,user_id',
+            'queue_id' => ['sometimes', 'required', 'integer', 'exists:clinic_queue,queue_id', Rule::in([$this->route('endorsed')?->queue_id])],
+            'doctor_id' => ['sometimes', 'required', 'integer', Rule::exists('users', 'user_id')->where('role', 'doctor'), Rule::in([$this->route('endorsed')?->doctor_id])],
             'exam_general' => 'nullable|string',
             'exam_heent' => 'nullable|string',
             'exam_chest' => 'nullable|string',

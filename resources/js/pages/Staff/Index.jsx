@@ -1,3 +1,4 @@
+import PaginatedItems from '../../components/paginated-items.jsx';
 import React from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 
@@ -39,7 +40,7 @@ export default function Index({ staff }) {
                                 </td>
                             </tr>
                         )}
-                        {staff.map((s) => (
+                        {<PaginatedItems items={staff} tableColumns={5} label="staff">{(s) => (
                             <tr key={s.staff_profile_id} className="border-b">
                                 <td className="p-4 font-bold">{s.user?.clinic_id}</td>
                                 <td className="p-4">
@@ -59,7 +60,7 @@ export default function Index({ staff }) {
                                     </button>
                                 </td>
                             </tr>
-                        ))}
+                        )}</PaginatedItems>}
                     </tbody>
                 </table>
             </div>

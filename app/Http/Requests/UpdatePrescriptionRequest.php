@@ -6,7 +6,13 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdatePrescriptionRequest extends FormRequest
 {
-    public function authorize(): bool { return true; }
+    public function authorize(): bool
+    {
+        $record = $this->route('prescription');
+
+        return $record instanceof \App\Models\Prescription
+            && ($this->user()?->can('update', $record) ?? false);
+    }
 
     public function rules(): array
     {

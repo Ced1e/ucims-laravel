@@ -1,3 +1,4 @@
+import { registrationLimits, isCalendarDate, localToday } from '@/lib/registration-validation.mjs';
 import React from 'react';
 import { Field, SectionTitle } from './Common';
 
@@ -16,17 +17,17 @@ export const YEAR_LEVELS = ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th
 export const CIVIL_STATUS = ['Single', 'Married', 'Widowed', 'Separated'];
 
 export function calcAge(dob) {
-    if (!dob) return '';
+    if (!isCalendarDate(dob) || dob > localToday() || dob <= '1900-01-01') return '';
     const [y, m, d] = String(dob).split('-').map(Number);
     if (!y || !m || !d) return '';
     const today = new Date();
     let age = today.getFullYear() - y;
     if (today.getMonth() + 1 < m || (today.getMonth() + 1 === m && today.getDate() < d)) age--;
-    return age >= 0 && age < 120 ? age : '';
+    return age >= 0 ? age : '';
 }
 
 export default function StepPersonal({ data, set, errors }) {
-    const bind = (k, extra = {}) => ({ value: data[k], onChange: (e) => set(k, e.target.value), ...extra });
+    const bind = (k, extra = {}) => ({ maxLength: k.startsWith('sr_') ? 100 : registrationLimits[k], value: data[k], onChange: (e) => set(k, e.target.value), ...extra });
     const isFaculty = data.college_dept === FACULTY_OPTION;
 
     return (
@@ -47,7 +48,7 @@ export default function StepPersonal({ data, set, errors }) {
 
             <div className="field-row3">
                 <Field label="Birthdate" required error={errors.dob}>
-                    <input type="date" max={new Date().toISOString().slice(0, 10)} {...bind('dob')} />
+                    <input type="date" max={localToday()} min="1900-01-02" {...bind('dob')} />
                 </Field>
                 <Field label="Age" hint="Calculated from your birthdate">
                     <input value={calcAge(data.dob)} readOnly placeholder="—" />

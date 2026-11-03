@@ -1,3 +1,4 @@
+import PaginatedItems from './paginated-items';
 import { router } from '@inertiajs/react';
 import { KeyRound } from 'lucide-react';
 import { destroy } from '@/actions/Laravel/Passkeys/Http/Controllers/PasskeyRegistrationController';
@@ -53,13 +54,13 @@ export default function ManagePasskeys(props: Props) {
 
             <div className="border-border overflow-hidden rounded-lg border">
                 {passkeys.length > 0 ? (
-                    passkeys.map((passkey) => (
+                    <PaginatedItems items={passkeys} label="Passkeys">{(passkey: Passkey) => (
                         <PasskeyItem
                             key={passkey.id}
                             passkey={passkey}
                             onDelete={handleDelete}
                         />
-                    ))
+                    )}</PaginatedItems>
                 ) : (
                     <EmptyState />
                 )}

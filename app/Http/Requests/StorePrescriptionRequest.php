@@ -6,7 +6,11 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class StorePrescriptionRequest extends FormRequest
 {
-    public function authorize(): bool { return true; }
+    public function authorize(): bool
+    {
+        // Role rules live in PrescriptionPolicy; checked before validation runs.
+        return $this->user()?->can('create', \App\Models\Prescription::class) ?? false;
+    }
 
     public function rules(): array
     {

@@ -6,12 +6,15 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdatePprPermanentRequest extends FormRequest
 {
-    public function authorize(): bool { return true; }
+    public function authorize(): bool
+    {
+        return true;
+    }
 
     public function rules(): array
     {
         return [
-            'patient_type' => 'nullable|string|max:100',
+            'patient_type' => 'nullable|in:Student,Faculty',
             'college_dept' => 'nullable|string|max:150',
             'year_level' => 'nullable|string|max:50',
         ];

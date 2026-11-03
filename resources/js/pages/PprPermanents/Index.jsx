@@ -1,3 +1,4 @@
+import PaginatedItems from '../../components/paginated-items.jsx';
 import React from 'react';
 import { Head, Link, router } from '@inertiajs/react';
 
@@ -7,7 +8,7 @@ export default function Index({ permanents }) {
             <Head title="Permanent Medical Records" />
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">PPR Permanents</h1>
-                <Link href={route('ppr-permanents.create')} className="bg-blue-600 text-white px-4 py-2 rounded">
+                <Link href={"/ppr-permanents/create"} className="bg-blue-600 text-white px-4 py-2 rounded">
                     New Permanent Record
                 </Link>
             </div>
@@ -17,25 +18,25 @@ export default function Index({ permanents }) {
                     <thead className="bg-gray-50 border-b">
                         <tr>
                             <th className="p-4">ID</th>
-                            <th className="p-4">User ID</th>
-                            <th className="p-4">Blood Type</th>
-                            <th className="p-4">Chronic Conditions</th>
+                            <th className="p-4">Patient ID</th>
+                            <th className="p-4">Patient Type</th>
+                            <th className="p-4">College / Department</th>
                             <th className="p-4">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {permanents.map((item) => (
+                        {<PaginatedItems items={permanents} tableColumns={5} label="permanents">{(item) => (
                             <tr key={item.permanent_id} className="border-b">
                                 <td className="p-4">{item.permanent_id}</td>
-                                <td className="p-4">{item.user_id}</td>
-                                <td className="p-4 font-semibold">{item.blood_type || 'N/A'}</td>
-                                <td className="p-4">{item.chronic_conditions || 'None'}</td>
+                                <td className="p-4">{item.patient_id}</td>
+                                <td className="p-4 font-semibold">{item.patient_type || 'Not recorded'}</td>
+                                <td className="p-4">{item.college_dept || 'Not recorded'}</td>
                                 <td className="p-4 space-x-2">
-                                    <Link href={route('ppr-permanents.edit', item.permanent_id)} className="text-blue-600 hover:underline">Edit</Link>
-                                    <button onClick={() => router.post(route('ppr-permanents.clone', item.permanent_id))} className="text-green-600 hover:underline">Clone</button>
+                                    <Link href={`/ppr-permanents/${item.permanent_id}/edit`} className="text-blue-600 hover:underline">Edit</Link>
+                                    <button onClick={() => router.post(`/ppr-permanents/${item.permanent_id}/clone`)} className="text-green-600 hover:underline">Clone</button>
                                 </td>
                             </tr>
-                        ))}
+                        )}</PaginatedItems>}
                     </tbody>
                 </table>
             </div>

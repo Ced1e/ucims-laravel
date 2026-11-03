@@ -1,7 +1,8 @@
+import PaginatedItems from '../../components/paginated-items.jsx';
 import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 
-export default function Index({ triageRecords }) {
+export default function Index({ records }) {
     const { delete: destroy, post } = useForm();
 
     const handleClone = (id) => {
@@ -9,7 +10,7 @@ export default function Index({ triageRecords }) {
     };
 
     return (
-        <AppLayout>
+        <>
             <Head title="Triage Records" />
             <div className="p-6 max-w-7xl mx-auto">
                 <div className="flex justify-between items-center mb-6">
@@ -29,21 +30,21 @@ export default function Index({ triageRecords }) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 text-sm">
-                            {triageRecords?.map((item) => (
-                                <tr key={item.id} className="hover:bg-gray-50/50">
+                            {<PaginatedItems items={records} tableColumns={3} label="triage Records">{(item) => (
+                                <tr key={item.triage_id} className="hover:bg-gray-50/50">
                                     <td className="p-4 font-medium text-gray-900">{item.temperature ? `${item.temperature}°C` : 'N/A'}</td>
                                     <td className="p-4 text-gray-600">{item.blood_pressure || 'N/A'}</td>
                                     <td className="p-4 text-right space-x-2">
-                                        <Link href={`/triage-records/${item.id}/edit`} className="text-blue-600 hover:underline">Edit</Link>
-                                        <button onClick={() => handleClone(item.id)} className="text-amber-600 hover:underline">Clone</button>
-                                        <button onClick={() => destroy(`/triage-records/${item.id}`)} className="text-red-600 hover:underline">Delete</button>
+                                        <Link href={`/triage-records/${item.triage_id}/edit`} className="text-blue-600 hover:underline">Edit</Link>
+                                        <button onClick={() => handleClone(item.triage_id)} className="text-amber-600 hover:underline">Clone</button>
+                                        <button onClick={() => destroy(`/triage-records/${item.triage_id}`)} className="text-red-600 hover:underline">Delete</button>
                                     </td>
                                 </tr>
-                            ))}
+                            )}</PaginatedItems>}
                         </tbody>
                     </table>
                 </div>
             </div>
-        </AppLayout>
+        </>
     );
 }

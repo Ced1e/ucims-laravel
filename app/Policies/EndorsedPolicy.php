@@ -4,63 +4,45 @@ namespace App\Policies;
 
 use App\Models\Endorsed;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
+use App\Policies\Concerns\ChecksRoles;
 
+/**
+ * Endorsements = the nurse hands a patient to a doctor; the doctor then records
+ * the examination and diagnosis on the same row.
+ */
 class EndorsedPolicy
 {
-    /**
-     * Determine whether the user can view any models.
-     */
+    use ChecksRoles;
+
     public function viewAny(User $user): bool
     {
-        return false;
+        return $this->isStaff($user);
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
     public function view(User $user, Endorsed $endorsed): bool
     {
-        return false;
+        return $this->isStaff($user) || $this->ownsQueue($user, $endorsed->queue);
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
     public function create(User $user): bool
     {
-        return false;
+        return $this->hasRole($user, 'admin', 'doctor', 'nurse');
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
     public function update(User $user, Endorsed $endorsed): bool
     {
-        return false;
+        if ($this->hasRole($user, 'admin')) {
+            return true;
+        }
+
+        // A doctor may update the endorsements assigned to him/her
+        // (or an unassigned one).
+        return $this->hasRole($user, 'doctor')
+            && ($endorsed->doctor_id === null || (int) $endorsed->doctor_id === (int) $user->user_id);
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
     public function delete(User $user, Endorsed $endorsed): bool
     {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can restore the model.
-     */
-    public function restore(User $user, Endorsed $endorsed): bool
-    {
-        return false;
-    }
-
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(User $user, Endorsed $endorsed): bool
-    {
-        return false;
+        return $this->hasRole($user, 'admin');
     }
 }

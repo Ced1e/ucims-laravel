@@ -1,3 +1,4 @@
+import PaginatedItems from '../../components/paginated-items.jsx';
 import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 
@@ -5,7 +6,7 @@ export default function Index({ clinicQueues }) {
     const { delete: destroy, post } = useForm();
 
     return (
-        <AppLayout>
+        <>
             <Head title="Clinic Queue" />
             <div className="p-6 max-w-7xl mx-auto">
                 <div className="flex justify-between items-center mb-6">
@@ -25,8 +26,8 @@ export default function Index({ clinicQueues }) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 text-sm">
-                            {clinicQueues?.map((item) => (
-                                <tr key={item.id} className="hover:bg-gray-50/50">
+                            {<PaginatedItems items={clinicQueues} tableColumns={3} label="clinic Queues">{(item) => (
+                                <tr key={item.queue_id} className="hover:bg-gray-50/50">
                                     <td className="p-4 font-medium text-gray-900">{item.queue_number}</td>
                                     <td className="p-4">
                                         <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${
@@ -36,15 +37,15 @@ export default function Index({ clinicQueues }) {
                                         </span>
                                     </td>
                                     <td className="p-4 text-right space-x-2">
-                                        <Link href={`/clinic-queue/${item.id}/edit`} className="text-blue-600 hover:underline">Edit</Link>
-                                        <button onClick={() => destroy(`/clinic-queue/${item.id}`)} className="text-red-600 hover:underline">Delete</button>
+                                        <Link href={`/clinic-queue/${item.queue_id}/edit`} className="text-blue-600 hover:underline">Edit</Link>
+                                        <button onClick={() => destroy(`/clinic-queue/${item.queue_id}`)} className="text-red-600 hover:underline">Delete</button>
                                     </td>
                                 </tr>
-                            ))}
+                            )}</PaginatedItems>}
                         </tbody>
                     </table>
                 </div>
             </div>
-        </AppLayout>
+        </>
     );
 }

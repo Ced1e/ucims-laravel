@@ -2,8 +2,9 @@
 
 namespace App\Http\Requests;
 
-use Illuminate\Contracts\Validation\ValidationRule;
+use App\Models\ClinicQueue;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreQueueRequest extends FormRequest
 {
@@ -12,16 +13,17 @@ class StoreQueueRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return true;
+        // Role rules live in ClinicQueuePolicy; checked before validation runs.
+        return $this->user()?->can('create', ClinicQueue::class) ?? false;
     }
 
     public function rules(): array
     {
         return [
-            'patient_id' => 'nullable|exists:users,user_id',
-            'visit_type' => 'required|string|max:50',
+            'patient_id' => ['nullable', Rule::exists('users', 'user_id')->where('role', 'patient')],
+            'visit_type' => 'required|in:checkup,medicine,follow-up,medcert',
             'visit_label' => 'nullable|string|max:255',
-            'status' => 'nullable|string|max:50',
+            'status' => 'nullable|in:waiting,triaged,with-doctor,examined,done,cancelled',
             'queue_number' => 'nullable|integer',
         ];
     }

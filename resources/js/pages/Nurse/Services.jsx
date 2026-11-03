@@ -1,3 +1,4 @@
+import PaginatedItems from '../../components/paginated-items.jsx';
 import React, { useState, useEffect } from 'react';
 import api from '@/services/api';
 
@@ -51,7 +52,7 @@ export default function NurseServices() {
             <div className="bg-white shadow rounded-lg p-4 mb-6">
                 <h2 className="text-lg font-semibold mb-3">Active Patient Queue</h2>
                 <div className="space-y-2">
-                    {queues.map((q) => (
+                    {<PaginatedItems items={queues} label="queues">{(q) => (
                         <div key={q.queue_id} className="flex justify-between items-center p-3 border rounded hover:bg-gray-50">
                             <div>
                                 <span className="font-bold text-maroon">#{q.queue_number}</span> — {q.patient?.firstname} {q.patient?.lastname}
@@ -63,7 +64,7 @@ export default function NurseServices() {
                                 Issue Medicine
                             </button>
                         </div>
-                    ))}
+                    )}</PaginatedItems>}
                 </div>
             </div>
 
@@ -79,14 +80,14 @@ export default function NurseServices() {
                         </tr>
                     </thead>
                     <tbody>
-                        {medicines.map((m) => (
+                        {<PaginatedItems items={medicines} tableColumns={4} label="medicines">{(m) => (
                             <tr key={m.id} className="border-b">
                                 <td className="p-2">{m.queue?.patient?.firstname} {m.queue?.patient?.lastname}</td>
                                 <td className="p-2">{m.medicine_name}</td>
                                 <td className="p-2">{m.quantity}</td>
                                 <td className="p-2">{m.dosage || '—'}</td>
                             </tr>
-                        ))}
+                        )}</PaginatedItems>}
                     </tbody>
                 </table>
             </div>

@@ -14,7 +14,7 @@ export default function StepAccount({ data, set, errors }) {
 
             <div className="field-row">
                 <Field label="Student / Faculty ID" required error={errors.clinic_id} hint="Format: 2024-00001">
-                    <input placeholder="e.g. 2024-00001" value={data.clinic_id} onChange={(e) => set('clinic_id', e.target.value)} />
+                    <input placeholder="e.g. 2024-00001" maxLength={10} value={data.clinic_id} onChange={(e) => set('clinic_id', e.target.value)} />
                 </Field>
                 <Field label="Account Type" required error={errors.patient_type}>
                     <select value={data.patient_type} onChange={(e) => set('patient_type', e.target.value)}>
@@ -27,10 +27,10 @@ export default function StepAccount({ data, set, errors }) {
 
             <div className="field-row">
                 <Field label="USeP Email Address" required error={errors.usep_email}>
-                    <input type="email" value={data.usep_email} onChange={(e) => set('usep_email', e.target.value)} />
+                    <input type="email" maxLength={150} value={data.usep_email} onChange={(e) => set('usep_email', e.target.value)} />
                 </Field>
                 <Field label="Confirm Email" required error={errors.usep_email_confirmation}>
-                    <input type="email" placeholder="Confirm your email" value={data.usep_email_confirmation} onChange={(e) => set('usep_email_confirmation', e.target.value)} />
+                    <input type="email" placeholder="Confirm your email" maxLength={150} value={data.usep_email_confirmation} onChange={(e) => set('usep_email_confirmation', e.target.value)} />
                 </Field>
             </div>
 
@@ -59,7 +59,7 @@ export default function StepAccount({ data, set, errors }) {
 
             <div className="field-row mt16">
                 <Field label="Digital Signature (type your full name in CAPITAL LETTERS)" required error={errors.signature}>
-                    <input placeholder="JUAN DELA CRUZ" value={data.signature} onChange={(e) => set('signature', e.target.value.toUpperCase())} />
+                    <input placeholder="JUAN DELA CRUZ" maxLength={150} value={data.signature} onChange={(e) => set('signature', e.target.value.toUpperCase())} />
                 </Field>
                 <Field label="Date">
                     <input value={today} readOnly />

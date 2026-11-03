@@ -1,0 +1,344 @@
+[
+  {
+    "path": "app/Http/Controllers/ClinicQueueController.php",
+    "change": "modified",
+    "baseline_sha256": "7c3adba2e26c0e196883e39f71074d0dcf1037f0f9f46bf79a0f0b879f18480f",
+    "update_sha256": "6bd2dbdf0e9b2a45483ba95da0568cc1129ebb711baa331f2a9e4a273535bdec"
+  },
+  {
+    "path": "app/Http/Controllers/ConsultationController.php",
+    "change": "modified",
+    "baseline_sha256": "cc93a040f8d0cd8f302e71fe4d87d6c537e3e0467e7831135dd9b0e9c3297ac2",
+    "update_sha256": "eb1ac80866987651e798934f129ee4be516d59b183453cad49b80b7f380470a3"
+  },
+  {
+    "path": "app/Http/Controllers/EndorsedController.php",
+    "change": "modified",
+    "baseline_sha256": "7a1663ed654d8ae3f681bd21103e4c4841a8eb1dd7bf93de1c376d7090b32c18",
+    "update_sha256": "ac6efe1de6aa4df6e09b0e28b966774c50bfcaa0699e0b976f477a51f477764a"
+  },
+  {
+    "path": "app/Http/Controllers/LabRequestController.php",
+    "change": "modified",
+    "baseline_sha256": "aa9dbdc4c215b9df9183cd6a54ce890b639405d079455809de5489a6a0f2573e",
+    "update_sha256": "a55525329dfa09886f05d6576597bb9b6a1e4bac2dbb0bb15380a6a13cdc245b"
+  },
+  {
+    "path": "app/Http/Controllers/MedicalCertificateController.php",
+    "change": "modified",
+    "baseline_sha256": "d8bce403406eb36c1086613e104d714a43a15f6cbacb9db322905befa5719cc0",
+    "update_sha256": "acf4d992261f389026fbc774aeeec001210462861e1fede8d53f6c8b32410470"
+  },
+  {
+    "path": "app/Http/Controllers/MedicineIssuanceController.php",
+    "change": "modified",
+    "baseline_sha256": "3472c4fb7059116569d1aa2b87bf0be6f9448bbc3d41fc404414f541693f0761",
+    "update_sha256": "3f31334d9d003116eef3e7afcfc99b14bea12085af2e4c6cc08b18268e9b2f29"
+  },
+  {
+    "path": "app/Http/Controllers/PrescriptionController.php",
+    "change": "modified",
+    "baseline_sha256": "6d31801f7759613cb40e9b5ab8cec8528dc8ea66efd790bec222b1a311233f67",
+    "update_sha256": "5540e40f99ccfb128e53ca8d3d8d46b43d6e15c0beafd2bee832b81c177e1a9a"
+  },
+  {
+    "path": "app/Http/Controllers/RecordController.php",
+    "change": "modified",
+    "baseline_sha256": "9f47dac68f1694f123428ea71358a00065bb78d627410a076d53c9488ef316b1",
+    "update_sha256": "8ef3c252d90a461ab1ed78dcdb672b6a7c26f4fbbc9d3e5da6ab2a215bf44743"
+  },
+  {
+    "path": "app/Http/Controllers/SyncController.php",
+    "change": "modified",
+    "baseline_sha256": "8205e451b84733105c73681c7fda458c346518448df4ee9d0c7b659efbbfccd8",
+    "update_sha256": "44d874c60df4251b10ba54b87ed2a09cd8d4816d85b372c63159202f7e6da8b7"
+  },
+  {
+    "path": "app/Http/Controllers/TriageController.php",
+    "change": "modified",
+    "baseline_sha256": "4081abb86f11c8baddc3d28f6462027f2c859c40ffc2682f4e0bb91f907a9fb3",
+    "update_sha256": "673dd00455a5b50c82705a0104116ddd8ad7e853adfde8b783843d23e7e56d9c"
+  },
+  {
+    "path": "app/Http/Controllers/TriageRecordController.php",
+    "change": "modified",
+    "baseline_sha256": "ae5870cfd5cc7c89885a436e6beee13084ad02b46b211180db85ea99e9833eff",
+    "update_sha256": "dbf0a141d4a38394788ed89d88528a494c3aca6b2e7659c4cdb8043f6f9fd5d8"
+  },
+  {
+    "path": "app/Http/Controllers/TvQueueController.php",
+    "change": "new",
+    "baseline_sha256": null,
+    "update_sha256": "ebcadb30a2cd8f8d38ba6fccf226a6d9c283be916a38e628feb92ebecb50e9bc"
+  },
+  {
+    "path": "app/Http/Requests/StoreConsultationRequest.php",
+    "change": "modified",
+    "baseline_sha256": "dfe3a1046ee8af0e699d91a30fc21e063a5eed16f94ecb8fbeb0caf853aaaac0",
+    "update_sha256": "4e03edd940af14f58b1d78f207e811b3ce16e360670365ffbe61a38516f7c0bd"
+  },
+  {
+    "path": "app/Http/Requests/StoreEndorsedRequest.php",
+    "change": "modified",
+    "baseline_sha256": "a1ed5c7144d42dc69e15306688d94c7a17ec9370e31c575a1ded4185c0380d55",
+    "update_sha256": "781d0752904db098036fb6b9bbe9bfea42b82e955819d4e375e6b3058cb0ec84"
+  },
+  {
+    "path": "app/Http/Requests/StoreLabRequestRequest.php",
+    "change": "modified",
+    "baseline_sha256": "4545a8891f37c25f28d8093d36171e2b7200c56d30b741c7a9f67456e64cd7a2",
+    "update_sha256": "49eba6d407f596665126b324f62aeb05e7cc7249bbb5d39541b930302bb0a324"
+  },
+  {
+    "path": "app/Http/Requests/StoreMedicalCertificateRequest.php",
+    "change": "modified",
+    "baseline_sha256": "4bbfbd4857d5b49b6f5b1ed09ce5b9ce4dc599d8cacbfe773a6ace145f503361",
+    "update_sha256": "0aec6fde085ac0a2b512d7016018a19d6383ab3f573e47e711b800b600fff837"
+  },
+  {
+    "path": "app/Http/Requests/StoreMedicineIssuanceRequest.php",
+    "change": "modified",
+    "baseline_sha256": "c54d476c846419ceebbd14c6763e2e0f18eecee3358165d8c766b362e2d010b0",
+    "update_sha256": "93d61aa3f4a962bb6433f829e9c6b4fa8c31ec46a1c8bc0140bab7ca73e2aaa1"
+  },
+  {
+    "path": "app/Http/Requests/StorePrescriptionRequest.php",
+    "change": "modified",
+    "baseline_sha256": "0dc12c2e2786e76be92bbf1a145e20b7964b3314da93232e55822d46f05707ab",
+    "update_sha256": "3aa8498b935965fe88e06638359301e91ae7a00d12d1e93602d6cea5e2b7528a"
+  },
+  {
+    "path": "app/Http/Requests/StoreQueueRequest.php",
+    "change": "modified",
+    "baseline_sha256": "1ce90c182445d2f070939eeecf9aaf07a2a0f7ff3fdebf7a0aa17eb58b3498cf",
+    "update_sha256": "3baa720c14221f20d8b67546540c1e0cc55a42f17046175c44e2e1246972f191"
+  },
+  {
+    "path": "app/Http/Requests/StoreRecordDeletionRequest.php",
+    "change": "new",
+    "baseline_sha256": null,
+    "update_sha256": "3d111729eae0555814377f99d8ed5c0f623e1b7c347790a052f33ac922d53c92"
+  },
+  {
+    "path": "app/Http/Requests/StoreTriageRecordRequest.php",
+    "change": "modified",
+    "baseline_sha256": "668a40017091bdd7d5f037f10232c713a6f4af7038f9b3c4bf5e0d240e0d3479",
+    "update_sha256": "1fdf03629e9eecdb0b5066f50abe443b9af1843194a35325ceb9f5aae4f610ed"
+  },
+  {
+    "path": "app/Http/Requests/StoreTriageRequest.php",
+    "change": "modified",
+    "baseline_sha256": "7ef65daebb1c40283693af0056879f45cdc38b13ce515673fb682e62c2120f93",
+    "update_sha256": "3ca00f547f8faf581f8aaf341d6a7c341670d1f199705120f09227bee3b5acdd"
+  },
+  {
+    "path": "app/Http/Requests/UpdateClinicQueueRequest.php",
+    "change": "modified",
+    "baseline_sha256": "6b6fc8679a20da91e6f4b9003ab02f8e955f7a9a1958879869c63a2cee80d0ed",
+    "update_sha256": "385d6a7f71707906e7f1ba0023467deca72ef9385a4de69f2d1b9d5ad04b88ac"
+  },
+  {
+    "path": "app/Http/Requests/UpdateConsultationRequest.php",
+    "change": "modified",
+    "baseline_sha256": "a67511406457603c41f24afa9cffb37a68a45775dcea5798409acf8cd2b8303c",
+    "update_sha256": "dfe3cf91a208fae11870f8f87c3620e59a75bddbf9ae95015efa646bfbd78699"
+  },
+  {
+    "path": "app/Http/Requests/UpdateEndorsedRequest.php",
+    "change": "modified",
+    "baseline_sha256": "3da8362b504602e553951dfe7ef41c0969c24ed7622fc73b8317e166906115be",
+    "update_sha256": "38dec2a01a4b89b6c3c59322ed08f7c692fae0bdea7082d78513bc191e661d23"
+  },
+  {
+    "path": "app/Http/Requests/UpdateLabRequestRequest.php",
+    "change": "modified",
+    "baseline_sha256": "9f51cb3d02d02b8d8e652631133a611a00393b4a5d875afc5f9bca3869e4a351",
+    "update_sha256": "98d0b9a5b43c10fca4e276c823ee1bfc42162164ca9e307fce90200dc5543a59"
+  },
+  {
+    "path": "app/Http/Requests/UpdateMedicalCertificateRequest.php",
+    "change": "modified",
+    "baseline_sha256": "4e32cd475df3f14141cef2ff97cc9af13f0615eb17581c5df1653c7ee0aa38b5",
+    "update_sha256": "7ff737d59b5c544cc9463a7db669306426d4bd356291b96a37c8e27ffcd9fceb"
+  },
+  {
+    "path": "app/Http/Requests/UpdateMedicineIssuanceRequest.php",
+    "change": "modified",
+    "baseline_sha256": "9400b06dbf227c9530fd97271efb80f00a2eca56abf2a0cd67dc3dc2ed2fdf65",
+    "update_sha256": "2f5c95d2afe6303edab1a2ffb18f95c0377346a96ac5659e87f90f5c265c5729"
+  },
+  {
+    "path": "app/Http/Requests/UpdatePrescriptionRequest.php",
+    "change": "modified",
+    "baseline_sha256": "fae8baf2331f36446d522b3851ff69ca03f719077ca3490b7bc0e64b10d1d980",
+    "update_sha256": "09adf520d1447f2c7b5dcfac06b47810b2befe210571616ff4cf6666d52815da"
+  },
+  {
+    "path": "app/Http/Requests/UpdateTriageRecordRequest.php",
+    "change": "modified",
+    "baseline_sha256": "1bbe9a8f7e69bdd1c39e40239a22263f46bfaebaf772b9a8887ae8f7357b13b8",
+    "update_sha256": "2aed2e30e10c7c1cc80c4c69a589c777c5af9c61dbced567e3d6bca46d09161e"
+  },
+  {
+    "path": "app/Models/RecordDeletionRequest.php",
+    "change": "new",
+    "baseline_sha256": null,
+    "update_sha256": "393cbe0d5f6748599e05112fea7570f1767da900472c99a5ee97b330b0220ec5"
+  },
+  {
+    "path": "app/Policies/ClinicQueuePolicy.php",
+    "change": "modified",
+    "baseline_sha256": "a345ffa527174f5cdc3891a09862399cf5ff124b6425cf45178ce66cc528519a",
+    "update_sha256": "005120be2e76f23becaad448d9cbd2e4e8d979835992f70ec1c48e50f9a05785"
+  },
+  {
+    "path": "app/Policies/Concerns/ChecksRoles.php",
+    "change": "new",
+    "baseline_sha256": null,
+    "update_sha256": "06f4602870ff5424725e11ff366b9140468c7076333cb15cb0b492f6dea9f93a"
+  },
+  {
+    "path": "app/Policies/ConsultationPolicy.php",
+    "change": "modified",
+    "baseline_sha256": "0fd2a697d4897323bb8b8897f16c8de5c4aa47da5b6fbf6d71ab22ff17cfc09e",
+    "update_sha256": "a4a66b0ae4421cc3638ac885907debc56175fe598471c0aa961f486b9530e1c1"
+  },
+  {
+    "path": "app/Policies/EndorsedPolicy.php",
+    "change": "modified",
+    "baseline_sha256": "1d6a460c495414565249cea986f8097d6ef3d4e3cc8077930fb2822ce7a26cce",
+    "update_sha256": "89083033b45b760f9547d23c9a8aa8384e47152286b029ff9a483c1b4376ab09"
+  },
+  {
+    "path": "app/Policies/LabRequestPolicy.php",
+    "change": "modified",
+    "baseline_sha256": "30f38d6288d158c4dee910592f5efe2e26b67fdc2e9dbc49a84888150e715efa",
+    "update_sha256": "e5645b8b15a4d2b59341b3c2ef37847bef51a33b8638e39cf753ab19a4d80963"
+  },
+  {
+    "path": "app/Policies/MedicalCertificatePolicy.php",
+    "change": "modified",
+    "baseline_sha256": "e7a5076c6c766dcb8bbd1f7ffce8ec2b58fd4d5af5a6388f08f53d8b36d5ec03",
+    "update_sha256": "cfcd203940969ca94488d8d92b419f90d6a35dd85773d43f3ac2ebfa63d368c9"
+  },
+  {
+    "path": "app/Policies/MedicineIssuancePolicy.php",
+    "change": "modified",
+    "baseline_sha256": "13d2be8b3480ad5093e72ef290eb25d920b1bb73d51215620979844c0e169b08",
+    "update_sha256": "7aef6d35f68e559f4139f3cde39f63bcc46ab9239915d5bcee8879c773eb5534"
+  },
+  {
+    "path": "app/Policies/PrescriptionPolicy.php",
+    "change": "modified",
+    "baseline_sha256": "12d2c40ef31eda999266a8d97d9f2d49b375adc64bcc26e80ca57936616c21fd",
+    "update_sha256": "1044306e9a8b79f8a56cd7cbd5d518923941a2b2c67ee914b33f171510f82327"
+  },
+  {
+    "path": "app/Policies/TriageRecordPolicy.php",
+    "change": "modified",
+    "baseline_sha256": "973621e8ba576a8ba6258e09ab0ee7e6d469b970231586934d81bd9ebe68d946",
+    "update_sha256": "8af08db5ead79335944996ad41e790b8c70b786586875933b8702014516a450b"
+  },
+  {
+    "path": "database/migrations/2026_09_19_102358_fix_consultations_table_schema.php",
+    "change": "modified",
+    "baseline_sha256": "cf3e4e565f988da98d48cd4018223558b7dbb1543ec815e3f1d5496f9b332eb0",
+    "update_sha256": "a0271b9ee2aecca735f7c1f90e7207d184ee091c5aab40897c8bbb41ac78d938"
+  },
+  {
+    "path": "database/migrations/2026_10_19_000000_create_record_deletion_requests_table.php",
+    "change": "new",
+    "baseline_sha256": null,
+    "update_sha256": "73278b1c86f7032c79f765b88d1ef012527dc36c1e811b3ea2ca0988fee7e8ab"
+  },
+  {
+    "path": "resources/js/app.tsx",
+    "change": "modified",
+    "baseline_sha256": "00babdab867ab65dc46db87b4b4cf74aaede52c211da9c63e3a6be7f92e24434",
+    "update_sha256": "29e2d8df9e5e8ccfb210558a6510563b2e61ab50b3b52497ba6fe613f7566df0"
+  },
+  {
+    "path": "resources/js/components/doctor-record-management.jsx",
+    "change": "new",
+    "baseline_sha256": null,
+    "update_sha256": "4b468d136c1aa0139c772f4f482ec897a5a6e14e87fa2446b6aaa66917cd8021"
+  },
+  {
+    "path": "resources/js/pages/Doctor/Consultation.jsx",
+    "change": "modified",
+    "baseline_sha256": "0d7e32d2da907f2bcda43494033a7fdeb61759a79ef9efcf949b8dab6b3df020",
+    "update_sha256": "04a13e72df12c048dcc8e9f75f5741f928ad28ba1f30f7fe6de2cce07c6fc59f"
+  },
+  {
+    "path": "resources/js/pages/Nurse/Dashboard.jsx",
+    "change": "modified",
+    "baseline_sha256": "e1d14092abbeafc52dd2891e96b03a84624819872175f851b734a4f49e2387e8",
+    "update_sha256": "2bc2cbb7aa46d7e72d37641af2589637a7d13ca68e44a2c69295ffef5a1a6057"
+  },
+  {
+    "path": "resources/js/pages/Nurse/RecordDeletionRequests.jsx",
+    "change": "new",
+    "baseline_sha256": null,
+    "update_sha256": "3713279f39a864752d11c144b19038eb1fff54f1204e47a15421d8014f9b2713"
+  },
+  {
+    "path": "resources/js/pages/Patient/Portal.jsx",
+    "change": "modified",
+    "baseline_sha256": "e5a93e016bf7874fce32b285f8eb7a6bb0b8b1f0b904dec4d545d1cbc8b6fd45",
+    "update_sha256": "d7688893239c5c5834e790e77c8944761f86dcf532364c204be43f43bb84b503"
+  },
+  {
+    "path": "resources/js/pages/TvQueue.jsx",
+    "change": "new",
+    "baseline_sha256": null,
+    "update_sha256": "16616e30687f8e75d8d2d3a692de1120d1157d303cfe1e8b7c44ad1dbde1013e"
+  },
+  {
+    "path": "resources/js/pages/auth/register.tsx",
+    "change": "modified",
+    "baseline_sha256": "e4750552f97e4d99e6c54b6d31429077423a645803766f8004b1a13b9ebb7ab5",
+    "update_sha256": "6d06e1b3af7854622e05418918419f6862eaacac9f002b4df13684ee57349b56"
+  },
+  {
+    "path": "routes/api.php",
+    "change": "modified",
+    "baseline_sha256": "4a56c29806370e49e51f1e2d79428a9a7a1d28e3b76e4588fb5c2d9bfc9a7b39",
+    "update_sha256": "e501456ac7f2f80fba4c55fc9cefabc220ef84d4b07daabc613f721cd6653056"
+  },
+  {
+    "path": "routes/web.php",
+    "change": "modified",
+    "baseline_sha256": "8be0bc0145cd52c4ca1cf41001c84b474b8c045d302c0bef9f76924e3e6b0c68",
+    "update_sha256": "cf1de0cfbee2c717f5c1c1434c7c8769d744de354790ed9a1cbe072c14b398bd"
+  },
+  {
+    "path": "tests/Feature/Claude1MergeTest.php",
+    "change": "new",
+    "baseline_sha256": null,
+    "update_sha256": "338a42ba3c12480daa32ede4e33babf7deac12a85f82e94257c1a780a0129cbb"
+  },
+  {
+    "path": "tests/Feature/ClinicalAccessTest.php",
+    "change": "new",
+    "baseline_sha256": null,
+    "update_sha256": "55be54b36127abff44c5e29de28a466a88bfa03a85b47366532b2b0e64021550"
+  },
+  {
+    "path": "tests/Feature/DoctorRecordManagementTest.php",
+    "change": "new",
+    "baseline_sha256": null,
+    "update_sha256": "b216a0d776fdfc71535f2f4d90f532473159a2a76fd9890b3cc1f8eda15a6861"
+  },
+  {
+    "path": "tests/Feature/RecordDeletionRequestTest.php",
+    "change": "new",
+    "baseline_sha256": null,
+    "update_sha256": "a5a2bd5a1eba84654344c281fdce073cbb5578ebb480e0a6d43f83b3bb4ba2dd"
+  },
+  {
+    "path": "tests/Feature/TvQueueTest.php",
+    "change": "new",
+    "baseline_sha256": null,
+    "update_sha256": "0486f3316c2570137379843cdf198ce4a6235de9a715548d73a439d4ca0b39da"
+  }
+]

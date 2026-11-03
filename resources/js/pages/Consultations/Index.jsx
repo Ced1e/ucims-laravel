@@ -1,3 +1,4 @@
+import PaginatedItems from '../../components/paginated-items.jsx';
 import { Head, Link, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
 
@@ -9,7 +10,7 @@ export default function Index({ consultations }) {
     };
 
     return (
-        <AppLayout>
+        <>
             <Head title="Consultations" />
             <div className="p-6 max-w-7xl mx-auto">
                 <div className="flex justify-between items-center mb-6">
@@ -29,21 +30,21 @@ export default function Index({ consultations }) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100 text-sm">
-                            {consultations.map((item) => (
-                                <tr key={item.id} className="hover:bg-gray-50/50">
+                            {<PaginatedItems items={consultations} tableColumns={3} label="consultations">{(item) => (
+                                <tr key={item.consultation_id} className="hover:bg-gray-50/50">
                                     <td className="p-4 font-medium text-gray-900">{item.diagnosis}</td>
                                     <td className="p-4 text-gray-600 truncate max-w-xs">{item.treatment}</td>
                                     <td className="p-4 text-right space-x-2">
-                                        <Link href={`/consultations/${item.id}/edit`} className="text-blue-600 hover:underline">Edit</Link>
-                                        <button onClick={() => handleClone(item.id)} className="text-amber-600 hover:underline">Clone</button>
-                                        <button onClick={() => destroy(`/consultations/${item.id}`)} className="text-red-600 hover:underline">Delete</button>
+                                        <Link href={`/consultations/${item.consultation_id}/edit`} className="text-blue-600 hover:underline">Edit</Link>
+                                        <button onClick={() => handleClone(item.consultation_id)} className="text-amber-600 hover:underline">Clone</button>
+                                        <button onClick={() => destroy(`/consultations/${item.consultation_id}`)} className="text-red-600 hover:underline">Delete</button>
                                     </td>
                                 </tr>
-                            ))}
+                            )}</PaginatedItems>}
                         </tbody>
                     </table>
                 </div>
             </div>
-        </AppLayout>
+        </>
     );
 }

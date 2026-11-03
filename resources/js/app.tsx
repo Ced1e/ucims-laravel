@@ -37,6 +37,8 @@ void createInertiaApp({
         const lowerName = name.toLowerCase();
         switch (true) {
             case lowerName === 'welcome':
+            case lowerName === 'tvqueue':
+            case lowerName === 'auth/login':
                 return null;
             case lowerName.startsWith('auth/'):
                 return AuthLayout;
@@ -68,3 +70,4 @@ void createInertiaApp({
 });
 
 initializeTheme();
+

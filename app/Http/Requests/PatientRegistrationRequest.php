@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\InputRules;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -24,8 +25,8 @@ class PatientRegistrationRequest extends FormRequest
 
     public function rules(): array
     {
-        $name = ['required', 'string', 'max:100', "regex:/^[A-ZÑ][A-Za-zÑñ\\s\\-.']*$/u"];
-        $words = ['required', 'string', 'max:100', "regex:/^[A-Za-zÑñ][A-Za-zÑñ\\s\\-.']*$/u"];
+        $name = InputRules::name();
+        $words = ['required', 'string', 'max:100'];
         $phone = ['required', 'regex:/^09\\d{9}$/'];
         $text = ['required', 'string', 'max:255'];
         $yesNo = ['required', Rule::in(['Yes', 'No'])];
@@ -42,12 +43,21 @@ class PatientRegistrationRequest extends FormRequest
             'lastname' => $name,
             'firstname' => $name,
             'middlename' => $name,
-            'dob' => ['required', 'date', 'before_or_equal:today', 'after:1900-01-01'],
+            'dob' => ['required', 'date_format:Y-m-d', 'before_or_equal:today', 'after:1900-01-01'],
             'sex' => ['required', Rule::in(['Male', 'Female'])],
             'civil_status' => ['required', Rule::in(['Single', 'Married', 'Widowed', 'Separated'])],
             'religion' => $words,
             'nationality' => $words,
-            'college_dept' => ['required', 'string', 'max:150'],
+            'college_dept' => ['required', Rule::in([
+                'College of Information and Computing (CIC)',
+                'College of Technology (CT)',
+                'College of Engineering (COE)',
+                'College of Arts and Sciences (CAS)',
+                'College of Applied Economics (CAEC)',
+                'College of Business Administration (CBA)',
+                'College of Education (CED)',
+                'Faculty / Staff',
+            ])],
             'year_level' => ['required', Rule::in(['1st Year', '2nd Year', '3rd Year', '4th Year', '5th Year', 'N/A'])],
             'birthplace' => $text,
             'city_address' => $text,
@@ -55,7 +65,7 @@ class PatientRegistrationRequest extends FormRequest
             'contact_no' => $phone,
             'em_name' => $name,
             'em_contact' => $phone,
-            'em_rel' => $words,
+            'em_rel' => ['required', 'string', 'max:50'],
 
             // Health record
             'gen_appearance' => ['nullable', 'string', 'max:1000'],
@@ -93,13 +103,20 @@ class PatientRegistrationRequest extends FormRequest
             // Confirmation
             'sworn' => ['accepted'],
             'privacy' => ['accepted'],
-            'signature' => ['required', 'string', 'max:150', "regex:/^[A-ZÑ][A-ZÑ\\s\\-.]*$/u"],
+            'signature' => InputRules::name('required', 150),
         ];
 
         foreach (['skin', 'lymph', 'integument', 'circulatory', 'endocrine', 'allergic', 'heent', 'mouth', 'breast',
             'respiratory', 'cardiovascular', 'gastrointestinal', 'genitourinary', 'psychiatric'] as $system) {
             $rules["sr_{$system}"] = ['required', 'string', 'max:100'];
         }
+
+        foreach ($rules as $field => &$rule) {
+            if (str_starts_with($field, 'female_')) {
+                array_unshift($rule, Rule::excludeIf(! $isFemale));
+            }
+        }
+        unset($rule);
 
         return $rules;
     }

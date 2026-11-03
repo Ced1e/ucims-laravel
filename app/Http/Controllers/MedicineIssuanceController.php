@@ -8,11 +8,14 @@ use App\Http\Requests\UpdateMedicineIssuanceRequest;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Actions\CloneRecordAction;
+use Illuminate\Support\Facades\Gate;
 
 class MedicineIssuanceController extends Controller
 {
     public function index(Request $request)
     {
+        Gate::authorize('viewAny', MedicineIssuance::class);
+
         $query = MedicineIssuance::with(['queue.patient', 'nurse'])->orderBy('issuance_id', 'desc');
 
         if ($request->filled('queue_id')) {
@@ -30,14 +33,18 @@ class MedicineIssuanceController extends Controller
 
     public function create()
     {
+        Gate::authorize('create', MedicineIssuance::class);
+
         return Inertia::render('MedicineIssuances/Create');
     }
 
     public function store(StoreMedicineIssuanceRequest $request)
     {
+        Gate::authorize('create', MedicineIssuance::class);
+
         $data = $request->validated();
         $data['issued_date'] = $data['issued_date'] ?? now()->format('Y-m-d H:i:s');
-        $data['nurse_id'] = $data['nurse_id'] ?? $request->user()?->user_id;
+        $data['nurse_id'] = $request->user()->user_id;
 
         $issuance = MedicineIssuance::create($data);
 
@@ -50,23 +57,33 @@ class MedicineIssuanceController extends Controller
 
     public function edit(MedicineIssuance $medicineIssuance)
     {
+        Gate::authorize('update', $medicineIssuance);
+
         return Inertia::render('MedicineIssuances/Update', ['issuance' => $medicineIssuance]);
     }
 
     public function update(UpdateMedicineIssuanceRequest $request, MedicineIssuance $medicineIssuance)
     {
-    $medicineIssuance->update($request->validated());
+    Gate::authorize('update', $medicineIssuance);
+
+    $data = $request->validated();
+    unset($data['nurse_id']); // The recorded dispensing actor is not an editable form field.
+    $medicineIssuance->update($data);
     return redirect()->route('medicine-issuances.index')->with('success', 'Medicine issuance updated.');
     }
 
     public function clone(MedicineIssuance $medicineIssuance, CloneRecordAction $cloner)
     {
+    Gate::authorize('create', MedicineIssuance::class);
+
     $cloner->execute($medicineIssuance);
     return redirect()->route('medicine-issuances.index')->with('success', 'Medicine issuance cloned.');
     }
 
     public function destroy(MedicineIssuance $medicineIssuance)
     {
+        Gate::authorize('delete', $medicineIssuance);
+
         $medicineIssuance->delete();
         return redirect()->route('medicine-issuances.index')->with('success', 'Medicine issuance deleted.');
     }
