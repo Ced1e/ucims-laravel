@@ -68,14 +68,14 @@ it('hides cancelled visits and visits from other days', function () {
         ->and($json['done'])->toBeEmpty();
 });
 
-it('only exposes a masked name and never private patient data', function () {
+it('only exposes queue numbers and serving state', function () {
     queueEntry();
 
     $response = $this->getJson('/api/tv-queue')->assertOk();
     $entry = $response->json('waiting.0');
 
-    expect($entry['name'])->toBe('Maria S.')
-        ->and(array_keys($entry))->toEqualCanonicalizing(['queueNumber', 'name', 'visit']);
+    expect($entry['serving'])->toBeFalse()
+        ->and(array_keys($entry))->toEqualCanonicalizing(['queueNumber', 'serving']);
 
     $raw = $response->getContent();
     expect($raw)->not->toContain('Santos')
@@ -89,4 +89,40 @@ it('keeps only the five most recent completed visits', function () {
     }
 
     expect($this->getJson('/api/tv-queue')->json('done'))->toHaveCount(5);
+});
+
+it('marks a nurse assessment as serving and clears it when closed', function () {
+    $queue = queueEntry();
+    $nurse = User::factory()->create(['role' => 'nurse', 'is_active' => true]);
+    $token = '11111111-1111-4111-8111-111111111111';
+    $url = '/api/tv-queue/serving/'.$queue->queue_id;
+    $this->actingAs($nurse)->postJson($url, ['active' => true, 'token' => $token])->assertNoContent();
+    $this->getJson('/api/tv-queue')->assertJsonPath('nurse.0.serving', true)->assertJsonCount(0, 'waiting');
+    $this->postJson($url, ['active' => false, 'token' => $token])->assertNoContent();
+    $this->getJson('/api/tv-queue')->assertJsonCount(0, 'nurse')->assertJsonPath('waiting.0.serving', false);
+});
+
+it('expires abandoned assessments and rejects patients changing service state', function () {
+    $queue = queueEntry();
+    $url = '/api/tv-queue/serving/'.$queue->queue_id;
+    $payload = ['active' => true, 'token' => '22222222-2222-4222-8222-222222222222'];
+    $this->actingAs(User::factory()->create(['role' => 'patient']))->postJson($url, $payload)->assertForbidden();
+    $this->actingAs(User::factory()->create(['role' => 'nurse', 'is_active' => true]))->postJson($url, $payload)->assertNoContent();
+    $this->travel(76)->seconds();
+    $this->getJson('/api/tv-queue')->assertJsonCount(0, 'nurse')->assertJsonPath('waiting.0.serving', false);
+});
+
+it('does not let an old assessment close a newer one or serve completed visits', function () {
+    $queue = queueEntry();
+    $nurse = User::factory()->create(['role' => 'nurse', 'is_active' => true]);
+    $url = '/api/tv-queue/serving/'.$queue->queue_id;
+    $old = '33333333-3333-4333-8333-333333333333';
+    $new = '44444444-4444-4444-8444-444444444444';
+    $this->actingAs($nurse)->postJson($url, ['active' => true, 'token' => $old])->assertNoContent();
+    $this->postJson($url, ['active' => true, 'token' => $new])->assertNoContent();
+    $this->postJson($url, ['active' => false, 'token' => $old])->assertNoContent();
+    $this->getJson('/api/tv-queue')->assertJsonPath('nurse.0.serving', true);
+    $queue->update(['status' => 'done']);
+    $this->getJson('/api/tv-queue')->assertJsonCount(0, 'nurse')->assertJsonPath('done.0.serving', false);
+    $this->postJson($url, ['active' => true, 'token' => $new])->assertStatus(409);
 });

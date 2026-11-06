@@ -1,9 +1,12 @@
+import { ListSkeleton, TableSkeletonRows } from '@/components/data-skeletons';
 import PaginatedItems from '../../components/paginated-items.jsx';
 import React, { useState, useEffect } from 'react';
 import api from '@/services/api';
 
 export default function NurseServices() {
     const [queues, setQueues] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState('');
     const [medicines, setMedicines] = useState([]);
     const [selectedQueue, setSelectedQueue] = useState(null);
     const [medForm, setMedForm] = useState({
@@ -14,12 +17,15 @@ export default function NurseServices() {
 
     const fetchData = async () => {
         try {
-            const qResponse = await api.get('/queues');
+            const qResponse = await api.get('/queues', { timeout: 20000 });
             setQueues(qResponse.data);
-            const mResponse = await api.get('/medicine-issuances');
+            const mResponse = await api.get('/medicine-issuances', { timeout: 20000 });
             setMedicines(mResponse.data);
+            setLoadError('');
         } catch (error) {
-            console.error('Failed to fetch data:', error);
+            setLoadError('Unable to load clinical services. Please refresh to try again.');
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -52,6 +58,9 @@ export default function NurseServices() {
             <div className="bg-white shadow rounded-lg p-4 mb-6">
                 <h2 className="text-lg font-semibold mb-3">Active Patient Queue</h2>
                 <div className="space-y-2">
+                    {loading && <ListSkeleton columns={3} />}
+                    {loadError && <p role="alert">{loadError}</p>}
+                    {!loading && !loadError && !queues.length && <p>No patients in the queue.</p>}
                     {<PaginatedItems items={queues} label="queues">{(q) => (
                         <div key={q.queue_id} className="flex justify-between items-center p-3 border rounded hover:bg-gray-50">
                             <div>
@@ -80,6 +89,8 @@ export default function NurseServices() {
                         </tr>
                     </thead>
                     <tbody>
+                        {loading && <TableSkeletonRows columns={4} />}
+                        {!loading && !loadError && !medicines.length && <tr><td colSpan={4}>No medicines issued yet.</td></tr>}
                         {<PaginatedItems items={medicines} tableColumns={4} label="medicines">{(m) => (
                             <tr key={m.id} className="border-b">
                                 <td className="p-2">{m.queue?.patient?.firstname} {m.queue?.patient?.lastname}</td>

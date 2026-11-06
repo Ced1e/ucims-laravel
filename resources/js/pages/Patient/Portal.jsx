@@ -1,3 +1,4 @@
+import { DetailSkeleton } from '@/components/data-skeletons';
 import { certificateRequestError, requestError } from '@/lib/clinical-validation.mjs';
 import PaginatedItems from '../../components/paginated-items.jsx';
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -302,8 +303,7 @@ function QueueTicket({ entry, onRefresh, onLeave, refreshing, countdown }) {
     const [allQueue, setAllQueue] = useState([]);
 
     const loadAll = useCallback(() => {
-        axios
-            .get('/api/v1/queues')
+        axios.get('/api/v1/queues', { timeout: 20000 })
             .then((res) => setAllQueue(res.data))
             .catch(() => {});
     }, []);
@@ -493,6 +493,8 @@ function QueueTicket({ entry, onRefresh, onLeave, refreshing, countdown }) {
 // ─────────────────────────────────────────────────────────────
 export default function PatientPortal() {
     const [loading, setLoading] = useState(true);
+    const [queueError, setQueueError] = useState('');
+    const [queueLoaded, setQueueLoaded] = useState(false);
     const [myEntry, setMyEntry] = useState(null);
     const [step, setStep] = useState('purpose'); // purpose | consult-type | confirm | medcert
     const [pendingVisit, setPendingVisit] = useState(null); // { type, label }
@@ -513,7 +515,9 @@ export default function PatientPortal() {
 
     const loadMyQueue = useCallback(async () => {
         try {
-            const res = await axios.get('/api/v1/queues', { params: { mine: 1 } });
+            const res = await axios.get('/api/v1/queues', { timeout: 20000, params: { mine: 1 } });
+            setQueueError('');
+            setQueueLoaded(true);
             const byNewest = (a, b) => (b.queue_id || 0) - (a.queue_id || 0);
             const active = res.data.filter((q) => !['done', 'cancelled'].includes(q.status)).sort(byNewest)[0];
             const prev = entryRef.current;
@@ -535,7 +539,7 @@ export default function PatientPortal() {
                 setMyEntry(null);
             }
         } catch (e) {
-            showToast(requestError(e, 'Failed to load your queue status.'), 'error');
+            setQueueError('Unable to load your queue status. Please refresh to try again.');
         } finally {
             setLoading(false);
         }
@@ -624,17 +628,18 @@ export default function PatientPortal() {
             <div className="layout">
                 <Sidebar />
                 <div className="main-content">
-                    {loading && <p className="text-muted">Loading…</p>}
+                    {loading && <DetailSkeleton fields={2} label="Loading your clinic status" />}
+                    {queueError && <p role="alert">{queueError}</p>}
 
                     {!loading && myEntry && (
                         <QueueTicket entry={myEntry} onRefresh={handleRefresh} onLeave={handleLeave} refreshing={refreshing} countdown={countdown} />
                     )}
 
-                    {!loading && !myEntry && step === 'purpose' && (
+                    {!loading && (!queueError || queueLoaded) && !myEntry && step === 'purpose' && (
                         <PurposeSelect onPick={(t) => setStep(t === 'consult' ? 'consult-type' : 'medcert')} />
                     )}
 
-                    {!loading && !myEntry && step === 'consult-type' && (
+                    {!loading && (!queueError || queueLoaded) && !myEntry && step === 'consult-type' && (
                         <ConsultSubOptions
                             onBack={() => setStep('purpose')}
                             onPick={(type, label) => {
@@ -644,7 +649,7 @@ export default function PatientPortal() {
                         />
                     )}
 
-                    {!loading && !myEntry && step === 'confirm' && pendingVisit && (
+                    {!loading && (!queueError || queueLoaded) && !myEntry && step === 'confirm' && pendingVisit && (
                         <ConfirmQueue
                             visitType={pendingVisit.type}
                             visitLabel={pendingVisit.label}
@@ -654,7 +659,7 @@ export default function PatientPortal() {
                         />
                     )}
 
-                    {!loading && !myEntry && step === 'medcert' && (
+                    {!loading && (!queueError || queueLoaded) && !myEntry && step === 'medcert' && (
                         <MedCertForm submitting={submitting} onBack={() => setStep('purpose')} onSubmit={submitMedCert} />
                     )}
                 </div>

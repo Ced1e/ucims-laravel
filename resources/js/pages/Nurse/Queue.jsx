@@ -1,3 +1,4 @@
+import { ListSkeleton } from '@/components/data-skeletons';
 import PaginatedItems from '../../components/paginated-items.jsx';
 import React, { useState, useEffect } from 'react';
 import api from '@/services/api';
@@ -5,6 +6,7 @@ import api from '@/services/api';
 export default function NurseQueue() {
     const [queues, setQueues] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState('');
     const [selectedQueue, setSelectedQueue] = useState(null);
     const [triageData, setTriageData] = useState({
         blood_pressure: '',
@@ -20,10 +22,11 @@ export default function NurseQueue() {
 
     const fetchQueues = async () => {
         try {
-            const response = await api.get('/queues');
+            const response = await api.get('/queues', { timeout: 20000 });
+            setLoadError('');
             setQueues(response.data);
         } catch (error) {
-            console.error('Failed to fetch queues:', error);
+            setLoadError('Unable to load records. Please refresh to try again.');
         } finally {
             setLoading(false);
         }
@@ -66,8 +69,8 @@ export default function NurseQueue() {
         <div className="p-6">
             <h1 className="text-2xl font-bold text-maroon mb-4">Nurse Queue Monitoring & Triage</h1>
             {loading ? (
-                <p>Loading queue...</p>
-            ) : (
+                <ListSkeleton columns={5} />
+            ) : loadError ? <p role="alert">{loadError}</p> : (
                 <div className="bg-white shadow rounded-lg overflow-hidden">
                     <table className="w-full text-left border-collapse">
                         <thead>

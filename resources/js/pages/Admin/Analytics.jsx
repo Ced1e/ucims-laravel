@@ -1,3 +1,4 @@
+import { DetailSkeleton, ListSkeleton, TableSkeletonRows, MetricSkeleton, ChartSkeleton } from '@/components/data-skeletons';
 import { localToday } from '@/lib/registration-validation.mjs';
 import PaginatedItems from '../../components/paginated-items.jsx';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -145,6 +146,7 @@ function groupVisits(rows, groupBy) {
 function AnalyticsSection({ showToast }) {
     const [visits, setVisits] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState('');
     const [q, setQ] = useState('');
     const [college, setCollege] = useState('');
     const [year, setYear] = useState('');
@@ -158,10 +160,9 @@ function AnalyticsSection({ showToast }) {
     const charts = useRef({});
 
     useEffect(() => {
-        axios
-            .get('/api/v1/queues', { params: { completed: 1 } })
+        axios.get('/api/v1/queues', { timeout: 20000, params: { completed: 1 } })
             .then((res) => setVisits(res.data))
-            .catch(() => showToast('Failed to load consultation data.', 'error'))
+            .catch(() => setLoadError('Unable to load consultation data. Please refresh to try again.'))
             .finally(() => setLoading(false));
         loadChartJs()
             .then(() => setChartReady(true))
@@ -338,12 +339,12 @@ function AnalyticsSection({ showToast }) {
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
                 <div className="stat-card" style={{ borderTopColor: 'var(--maroon)' }}>
-                    <div className="stat-num">{loading ? '…' : filtered.length}</div>
+                    <div className="stat-num">{loading ? <MetricSkeleton /> : loadError ? '—' : filtered.length}</div>
                     <div className="stat-label">Total Consultations Filtered</div>
                 </div>
                 <div className="stat-card" style={{ borderTopColor: 'var(--gold)' }}>
                     <div className="stat-num" style={{ color: 'var(--gold)' }}>
-                        {loading ? '…' : avgPerDay}
+                        {loading ? <MetricSkeleton /> : loadError ? '—' : avgPerDay}
                     </div>
                     <div className="stat-label">Overall Average / Day</div>
                 </div>
@@ -352,7 +353,7 @@ function AnalyticsSection({ showToast }) {
             <div className="card" style={{ marginBottom: 20 }}>
                 <div className="card-title">Overall Consultation Trends</div>
                 <div style={{ position: 'relative', height: 250 }}>
-                    <canvas ref={trendRef}></canvas>
+                    {loading && <ChartSkeleton />}{!loading && (loadError || !filtered.length) && <p role={loadError ? "alert" : undefined}>{loadError || "No consultation data for these filters."}</p>}<canvas ref={trendRef} style={{ visibility: loading || loadError || !filtered.length ? 'hidden' : 'visible' }}></canvas>
                 </div>
             </div>
 
@@ -360,13 +361,13 @@ function AnalyticsSection({ showToast }) {
                 <div className="card">
                     <div className="card-title">Average Consults by Day of Week</div>
                     <div style={{ position: 'relative', height: 250 }}>
-                        <canvas ref={dayRef}></canvas>
+                        {loading && <ChartSkeleton />}{!loading && (loadError || !filtered.length) && <p role={loadError ? "alert" : undefined}>{loadError || "No consultation data for these filters."}</p>}<canvas ref={dayRef} style={{ visibility: loading || loadError || !filtered.length ? 'hidden' : 'visible' }}></canvas>
                     </div>
                 </div>
                 <div className="card">
                     <div className="card-title">Consultation Types Comparison</div>
                     <div style={{ position: 'relative', height: 250 }}>
-                        <canvas ref={typeRef}></canvas>
+                        {loading && <ChartSkeleton />}{!loading && (loadError || !filtered.length) && <p role={loadError ? "alert" : undefined}>{loadError || "No consultation data for these filters."}</p>}<canvas ref={typeRef} style={{ visibility: loading || loadError || !filtered.length ? 'hidden' : 'visible' }}></canvas>
                     </div>
                 </div>
             </div>
@@ -390,7 +391,7 @@ function AnalyticsSection({ showToast }) {
                 </div>
                 {!table.length ? (
                     <div className="empty-state">
-                        <p>{loading ? 'Loading…' : 'No data matches the selected filters.'}</p>
+                        {loading ? <ListSkeleton columns={6} /> : <p role={loadError ? 'alert' : undefined}>{loadError || 'No data matches the selected filters.'}</p>}
                     </div>
                 ) : (
                     <div className="table-wrap">
@@ -796,9 +797,7 @@ function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
                             </thead>
                             <tbody>
                                 {loading && (
-                                    <tr>
-                                        <td colSpan={4} className="text-center text-muted p16">Loading…</td>
-                                    </tr>
+                                    <TableSkeletonRows columns={4} />
                                 )}
                                 {!loading && !staff.length && (
                                     <tr>
@@ -1000,7 +999,7 @@ function RecordValidation({ data, loading }) {
                 <p>Review and validate system data integrity and record completeness.</p>
             </div>
 
-            {loading && <p className="text-muted">Loading…</p>}
+            {loading && <DetailSkeleton />}
 
             {!loading && summary && (
                 <div className="stats-row">
@@ -1083,8 +1082,7 @@ export default function AdminAnalytics() {
 
     const [patientCount, setPatientCount] = useState(null);
     useEffect(() => {
-        axios
-            .get('/api/v1/admin/stats')
+        axios.get('/api/v1/admin/stats', { timeout: 20000 })
             .then((res) => setPatientCount(res.data.total_patients))
             .catch(() => {});
     }, []);
@@ -1093,7 +1091,7 @@ export default function AdminAnalytics() {
     const [staffLoading, setStaffLoading] = useState(true);
     const fetchStaff = useCallback(async () => {
         try {
-            const res = await axios.get('/api/records/staff');
+            const res = await axios.get('/api/records/staff', { timeout: 20000 });
             setStaffList(res.data.staff);
         } catch (e) {
             showToast('Failed to load staff list.', 'error');
@@ -1111,8 +1109,7 @@ export default function AdminAnalytics() {
     useEffect(() => {
         if (section !== 'validation') return;
         setValidationLoading(true);
-        axios
-            .get('/api/records/validation')
+        axios.get('/api/records/validation', { timeout: 20000 })
             .then((res) => setValidationData(res.data))
             .catch(() => showToast('Failed to load record validation data.', 'error'))
             .finally(() => setValidationLoading(false));

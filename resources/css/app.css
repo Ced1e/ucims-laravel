@@ -2,6 +2,15 @@
 
 @import 'tw-animate-css';
 
+/* Load the public homepage design with the initial stylesheet, before React renders. */
+@import './home-designs.css';
+@import './queue-designs.css';
+@import './entry.css';
+@import './data-skeletons.css';
+@import './admin-designs.css';
+
+:root { --ucims-base-ready: 1; }
+
 @source '../views';
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 

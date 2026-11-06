@@ -197,7 +197,6 @@ export default function Register() {
 
             <div style={{ maxWidth: 880, margin: '0 auto', padding: '28px 16px 60px' }}>
                 <div style={{ textAlign: 'center', marginBottom: 22 }}>
-                    <img src="/assets/img/logo.png" alt="USeP" style={{ width: 64, marginBottom: 8 }} />
                     <h1 style={{ color: 'var(--maroon)', margin: 0, fontSize: '1.7rem' }}>Patient Registration</h1>
                     <p className="text-muted" style={{ margin: '6px 0 0' }}>
                         Create your Permanent Patient Record and your Patient Portal account.

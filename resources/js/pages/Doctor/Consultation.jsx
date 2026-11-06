@@ -1,3 +1,4 @@
+import { MetricSkeleton, DetailSkeleton, ListSkeleton, TableSkeletonRows } from '@/components/data-skeletons';
 import { prescriptionError, requestError } from '@/lib/clinical-validation.mjs';
 import { isCalendarDate } from '@/lib/registration-validation.mjs';
 import PaginatedItems from '../../components/paginated-items.jsx';
@@ -180,8 +181,7 @@ function ExamineModal({ item, onClose, onFinalized, showToast }) {
     const [finalRemarks, setFinalRemarks] = useState('');
 
     useEffect(() => {
-        axios
-            .get(`/api/v1/queues/${item.queue_id}`)
+        axios.get(`/api/v1/queues/${item.queue_id}`, { timeout: 20000 })
             .then((res) => {
                 const d = res.data;
                 setDetail(d);
@@ -348,8 +348,8 @@ function ExamineModal({ item, onClose, onFinalized, showToast }) {
                 </div>
 
                 {loading ? (
-                    <p className="text-muted">Loading…</p>
-                ) : (
+                    <DetailSkeleton />
+                ) : !detail ? <p role="alert">Unable to load consultation details. Close and reopen to try again.</p> : (
                     <>
                         <div className="tabs">
                             <button className={`tab ${tab === 'triage-review' ? 'active' : ''}`} onClick={() => setTab('triage-review')}>
@@ -690,7 +690,7 @@ function LabRequestsList({ labs, loading, onAttach }) {
                 <h1>Laboratory Requests</h1>
                 <p>Pending laboratory tests awaiting results.</p>
             </div>
-            {loading && <p className="text-muted">Loading…</p>}
+            {loading && <ListSkeleton />}
             {!loading && !groups.length && (
                 <div className="empty-state">
                     <div className="ei">
@@ -827,7 +827,7 @@ function ExaminationHistory({ visits, loading, onViewSummary }) {
             </div>
             <div className="card">
                 <input style={{ marginBottom: 16, width: '100%' }} placeholder="Search by patient name or ID..." value={q} onChange={(e) => setQ(e.target.value)} />
-                {loading && <p className="text-muted">Loading…</p>}
+                {loading && <ListSkeleton />}
                 {!loading && !filtered.length && (
                     <div className="empty-state">
                         <p className="text-muted">No examination history found.</p>
@@ -1039,11 +1039,11 @@ function MedCertListDoctor({ certs, loading, onReview }) {
             </div>
             <div className="stats-row">
                 <div className="stat-card">
-                    <div className="stat-num">{certs.length}</div>
+                    <div className="stat-num">{loading ? <MetricSkeleton /> : certs.length}</div>
                     <div className="stat-label">Pending Releases</div>
                 </div>
             </div>
-            {loading && <p className="text-muted">Loading…</p>}
+            {loading && <ListSkeleton />}
             {!loading && !certs.length && (
                 <div className="empty-state">
                     <div className="ei">
@@ -1267,6 +1267,7 @@ function ReviewMedCertModal({ cert, onClose, onReleased, showToast }) {
 
 export default function DoctorDashboard() {
     const [queue, setQueue] = useState([]);
+    const [queueError, setQueueError] = useState('');
     const [loading, setLoading] = useState(true);
     const [toastMsg, setToastMsg] = useState(null);
     const [examineItem, setExamineItem] = useState(null);
@@ -1282,7 +1283,7 @@ export default function DoctorDashboard() {
 
     const fetchLabs = useCallback(async () => {
         try {
-            const res = await axios.get('/api/v1/lab-requests', { params: { pending: 1 } });
+            const res = await axios.get('/api/v1/lab-requests', { timeout: 20000, params: { pending: 1 } });
             setLabs(res.data);
         } catch (e) {
             showToast(requestError(e, 'Failed to load lab requests.'), 'error');
@@ -1301,7 +1302,7 @@ export default function DoctorDashboard() {
 
     const fetchHistory = useCallback(async () => {
         try {
-            const res = await axios.get('/api/v1/queues', { params: { completed: 1, assigned_to_me: 1 } });
+            const res = await axios.get('/api/v1/queues', { timeout: 20000, params: { completed: 1, assigned_to_me: 1 } });
             setHistoryVisits(res.data);
         } catch (e) {
             showToast(requestError(e, 'Failed to load examination history.'), 'error');
@@ -1321,10 +1322,11 @@ export default function DoctorDashboard() {
 
     const fetchQueue = useCallback(async () => {
         try {
-            const res = await axios.get('/api/v1/queues', { params: { assigned_to_me: 1 } });
+            const res = await axios.get('/api/v1/queues', { timeout: 20000, params: { assigned_to_me: 1 } });
             setQueue(res.data);
+            setQueueError('');
         } catch (e) {
-            showToast(requestError(e, 'Failed to load your consultations.'), 'error');
+            setQueueError('Unable to load consultations. Retrying automatically.');
         } finally {
             setLoading(false);
         }
@@ -1332,7 +1334,7 @@ export default function DoctorDashboard() {
 
     const fetchCerts = useCallback(async () => {
         try {
-            const res = await axios.get('/api/v1/medical-certificates', { params: { released: 0 } });
+            const res = await axios.get('/api/v1/medical-certificates', { timeout: 20000, params: { released: 0 } });
             setCerts(res.data);
         } catch (e) {
             showToast(requestError(e, 'Failed to load certificate requests.'), 'error');
@@ -1395,13 +1397,10 @@ export default function DoctorDashboard() {
                                         </thead>
                                         <tbody>
                                             {loading && (
-                                                <tr>
-                                                    <td colSpan={5} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
-                                                        Loading…
-                                                    </td>
-                                                </tr>
+                                                <TableSkeletonRows columns={5} />
                                             )}
-                                            {!loading && active.length === 0 && (
+                                            {queueError && <tr><td colSpan={5} role="alert">{queueError}</td></tr>}
+                                            {!loading && !queueError && active.length === 0 && (
                                                 <tr>
                                                     <td colSpan={5} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
                                                         No patients waiting.

@@ -31,7 +31,10 @@ void createInertiaApp({
             path = foundKey ?? jsxPath;
         }
 
-        return resolvePageComponent(path, pages) as Promise<any>;
+        return (resolvePageComponent(path, pages) as Promise<any>).then((page) => {
+            document.documentElement.setAttribute('data-ui-page', name.toLowerCase());
+            return page;
+        });
     },
     layout: (name) => {
         const lowerName = name.toLowerCase();
@@ -39,6 +42,10 @@ void createInertiaApp({
             case lowerName === 'welcome':
             case lowerName === 'tvqueue':
             case lowerName === 'auth/login':
+            case lowerName === 'previews/homedesigns':
+            case lowerName === 'previews/queuedesigns':
+            case lowerName === 'previews/admindesigns':
+            case lowerName === 'previews/adminreferencedesigns':
                 return null;
             case lowerName.startsWith('auth/'):
                 return AuthLayout;

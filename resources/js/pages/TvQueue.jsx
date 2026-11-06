@@ -1,334 +1,60 @@
-import PaginatedItems from '../components/paginated-items.jsx';
-import { useCallback, useEffect, useState } from 'react';
+import { ListSkeleton, ServingSkeleton } from '@/components/data-skeletons';
 import { Head, Link } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
+import { Monitor, Minimize, HeartPulse, Clock3, Check, ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 
-// ─────────────────────────────────────────────────────────────
-// Live Queue board (ported from legacy index.html #page-tv-queue +
-// initTVQueue() / updateTVQueue() in assets/js/shared.js).
-// Public page: shows queue numbers and masked names only.
-// ─────────────────────────────────────────────────────────────
-const REFRESH_MS = 3000;
-
-const EMPTY = { waiting: [], nurse: [], doctor: [], done: [] };
-
-function useManilaClock() {
-    const [now, setNow] = useState(() => formatClock());
-    useEffect(() => {
-        const id = setInterval(() => setNow(formatClock()), 1000);
-        return () => clearInterval(id);
-    }, []);
-    return now;
+const empty = { waiting: [], nurse: [], doctor: [], done: [] };
+const number = value => String(value).padStart(3, '0');
+function QueueList({ entries }) {
+ const [page, setPage] = useState(0);
+ const pages = Math.ceil(entries.length / 4);
+ useEffect(() => { setPage(0); }, [entries.map(e => e.queueNumber).join(',')]);
+ useEffect(() => { if(pages < 2) return; const id = setInterval(() => setPage(p => (p+1)%pages), 8000); return () => clearInterval(id); }, [pages]);
+ return <><div className="q-wait-list">{entries.slice((page%Math.max(1,pages))*4,(page%Math.max(1,pages))*4+4).map(e => <div key={e.queueNumber}><strong>{number(e.queueNumber)}</strong></div>)}</div>{pages>1&&<p>Page {page+1} of {pages} · {entries.length} in total</p>}</>;
 }
-
-function formatClock() {
-    return new Date().toLocaleTimeString('en-US', {
-        timeZone: 'Asia/Manila',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-    });
+function Station({ title, entries, nurse, ready, loading }) {
+ const serving = entries.filter(e => e.serving);
+ const others = entries.filter(e => !e.serving);
+ return <Card className={`q-station ${nurse?'q-nurse':'q-doctor'}`}><CardHeader><CardDescription><HeartPulse aria-hidden="true" />{title}</CardDescription><CardTitle>{!ready?(loading?'Loading…':'Unavailable'):serving.length?'NOW SERVING':entries.length?'At this station':'Ready to welcome you'}</CardTitle></CardHeader><CardContent>
+ {loading ? <ServingSkeleton /> : <>
+ {serving.length ? serving.map(e => <div key={e.queueNumber}><div className="q-number">{number(e.queueNumber)}</div><Badge variant="secondary"><span className="q-dot" />Now serving</Badge></div>) : <div className="q-number">{entries.length===1?number(entries[0].queueNumber):'—'}</div>}
+ <p>{!ready?'Queue information is unavailable.':serving.length?`Please proceed to the ${title.toLowerCase()}.`:entries.length?'Please wait for clinic staff to assist you.':'No patient at this station.'}</p>
+ {(serving.length ? others.length>0 : others.length>1)&&<><p>Also at this station</p><QueueList entries={others}/></>}
+ </>}
+ </CardContent></Card>;
 }
-
-function QueueCard({ entry, color }) {
-    return (
-        <div
-            style={{
-                background: '#fdfdfc',
-                border: '1px solid var(--border)',
-                borderLeft: `5px solid ${color}`,
-                padding: '10px 14px',
-                borderRadius: 10,
-                display: 'flex',
-                alignItems: 'center',
-                gap: 12,
-                marginBottom: 8,
-            }}
-        >
-            <div style={{ fontSize: '1.6rem', fontWeight: 700, color, minWidth: 50, textAlign: 'center' }}>
-                #{entry.queueNumber}
-            </div>
-            <div style={{ flex: 1, overflow: 'hidden' }}>
-                <div
-                    style={{
-                        fontSize: '1.1rem',
-                        fontWeight: 700,
-                        color: '#333',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                    }}
-                >
-                    {entry.name}
-                </div>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
-                    {entry.visit}
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function Column({ title, icon, color, entries, emptyText }) {
-    return (
-        <div
-            style={{
-                background: '#ffffff',
-                borderRadius: 16,
-                borderTop: `6px solid ${color}`,
-                padding: 16,
-                display: 'flex',
-                flexDirection: 'column',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.05)',
-                border: '1px solid var(--border)',
-                borderTopWidth: 6,
-                borderTopColor: color,
-                minHeight: 0,
-            }}
-        >
-            <div
-                style={{
-                    fontSize: '1.2rem',
-                    fontWeight: 700,
-                    color,
-                    marginBottom: 12,
-                    textAlign: 'center',
-                    textTransform: 'uppercase',
-                    letterSpacing: 1,
-                }}
-            >
-                <i className={`bi ${icon}`}></i> {title}
-            </div>
-            <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, paddingRight: 6 }}>
-                {entries.length === 0 ? (
-                    <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '1.1rem', marginTop: 20 }}>
-                        {emptyText}
-                    </div>
-                ) : (
-                    <PaginatedItems items={entries} autoAdvance pageSize={4} label={title}>{(e) => <QueueCard key={`${e.queueNumber}-${e.name}`} entry={e} color={color} />}</PaginatedItems>
-                )}
-            </div>
-        </div>
-    );
-}
-
 export default function TvQueue() {
-    const [board, setBoard] = useState(EMPTY);
-    const [offline, setOffline] = useState(false);
-    const clock = useManilaClock();
-
-    const load = useCallback(async () => {
-        try {
-            const { data } = await axios.get('/api/tv-queue', { headers: { Accept: 'application/json' } });
-            setBoard({
-                waiting: data.waiting ?? [],
-                nurse: data.nurse ?? [],
-                doctor: data.doctor ?? [],
-                done: data.done ?? [],
-            });
-            setOffline(false);
-        } catch {
-            // Keep showing the last known board; just flag the connection.
-            setOffline(true);
-        }
-    }, []);
-
-    useEffect(() => {
-        load();
-        const id = setInterval(() => {
-            if (!document.hidden) load();
-        }, REFRESH_MS);
-        return () => clearInterval(id);
-    }, [load]);
-
-    return (
-        <>
-            <Head title="Live Queue">
-                <link rel="stylesheet" href="/assets/css/main.css" />
-                <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
-            </Head>
-
-            <div style={{ background: '#F5F4F0', color: '#333', height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                {/* Header */}
-                <div
-                    style={{
-                        padding: '12px 30px',
-                        background: 'var(--maroon)',
-                        borderBottom: '4px solid var(--gold)',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        boxShadow: '0 4px 15px rgba(0,0,0,0.15)',
-                        flexShrink: 0,
-                    }}
-                >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                        <img
-                            src="/assets/img/logo.png"
-                            alt="USeP"
-                            style={{ width: 50, height: 50, borderRadius: '50%', border: '2px solid var(--gold)', background: '#fff' }}
-                        />
-                        <div>
-                            <div
-                                style={{
-                                    fontFamily: "'Barlow Condensed', sans-serif",
-                                    fontSize: '1.8rem',
-                                    fontWeight: 700,
-                                    color: 'var(--gold)',
-                                    letterSpacing: 1,
-                                    textTransform: 'uppercase',
-                                    lineHeight: 1,
-                                }}
-                            >
-                                USeP Clinic
-                            </div>
-                            <div style={{ fontSize: '0.9rem', color: '#fff', opacity: 0.9, marginTop: 2, letterSpacing: 1 }}>
-                                Live Patient Queue Board
-                            </div>
-                        </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontFamily: 'monospace', fontSize: '2rem', color: '#fff', fontWeight: 'bold', letterSpacing: 2 }}>
-                            {clock}
-                        </div>
-                        <Link
-                            href="/"
-                            className="btn btn-outline btn-sm"
-                            style={{
-                                color: '#fff',
-                                borderColor: 'rgba(255,255,255,0.4)',
-                                background: 'rgba(0,0,0,0.2)',
-                                marginTop: 4,
-                                fontSize: '0.75rem',
-                                padding: '4px 10px',
-                            }}
-                        >
-                            <i className="bi bi-arrow-left"></i> Exit TV Mode
-                        </Link>
-                    </div>
-                </div>
-
-                {/* Body */}
-                <div style={{ padding: '20px 30px', display: 'flex', flexDirection: 'column', gap: 16, flex: 1, minHeight: 0 }}>
-                    {offline && (
-                        <div
-                            style={{
-                                background: '#fff3cd',
-                                border: '1px solid #ffe08a',
-                                color: '#6b5200',
-                                borderRadius: 8,
-                                padding: '6px 14px',
-                                fontSize: '0.85rem',
-                                fontWeight: 600,
-                                textAlign: 'center',
-                            }}
-                        >
-                            <i className="bi bi-wifi-off"></i> Connection lost. Showing the last update and retrying…
-                        </div>
-                    )}
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 20, flex: 1, minHeight: 0 }}>
-                        <Column
-                            title="Waiting Area"
-                            icon="bi-hourglass-split"
-                            color="var(--gold)"
-                            entries={board.waiting}
-                            emptyText="No patients waiting."
-                        />
-                        <Column
-                            title="Nurse Station"
-                            icon="bi-clipboard2-pulse"
-                            color="var(--maroon)"
-                            entries={board.nurse}
-                            emptyText="Nurse station clear."
-                        />
-                        <Column
-                            title="Doctor's Clinic"
-                            icon="bi-heart-pulse"
-                            color="var(--blue)"
-                            entries={board.doctor}
-                            emptyText="Doctor clinic clear."
-                        />
-                    </div>
-
-                    {/* Recently completed */}
-                    <div
-                        style={{
-                            background: '#ffffff',
-                            borderRadius: 16,
-                            border: '1px solid var(--border)',
-                            borderTop: '6px solid var(--green)',
-                            padding: '12px 20px',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            boxShadow: '0 4px 16px rgba(0,0,0,0.05)',
-                            flexShrink: 0,
-                            minHeight: 200,
-                        }}
-                    >
-                        <div
-                            style={{
-                                fontSize: '1.1rem',
-                                fontWeight: 700,
-                                color: 'var(--green)',
-                                marginBottom: 10,
-                                textAlign: 'center',
-                                textTransform: 'uppercase',
-                                letterSpacing: 1,
-                            }}
-                        >
-                            <i className="bi bi-check-circle"></i> Recently Completed
-                        </div>
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'row', flexWrap: 'wrap', gap: 12, justifyContent: 'center', alignItems: 'center' }}>
-                            {board.done.length === 0 ? (
-                                <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '1rem', width: '100%' }}>
-                                    No completed visits yet today.
-                                </div>
-                            ) : (
-                                <PaginatedItems items={board.done} autoAdvance pageSize={4} label="Recently completed">{(q) => (
-                                    <div
-                                        key={`${q.queueNumber}-${q.name}`}
-                                        style={{
-                                            background: '#f9fdfa',
-                                            border: '1px solid #c3e6cb',
-                                            borderBottom: '4px solid var(--green)',
-                                            padding: '10px 16px',
-                                            borderRadius: 12,
-                                            display: 'flex',
-                                            flexDirection: 'column',
-                                            alignItems: 'center',
-                                            justifyContent: 'center',
-                                            minWidth: 140,
-                                        }}
-                                    >
-                                        <div style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--green)', lineHeight: 1 }}>
-                                            #{q.queueNumber}
-                                        </div>
-                                        <div
-                                            style={{
-                                                fontSize: '0.9rem',
-                                                fontWeight: 700,
-                                                color: '#333',
-                                                textAlign: 'center',
-                                                maxWidth: 120,
-                                                whiteSpace: 'nowrap',
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                            }}
-                                        >
-                                            {q.name}
-                                        </div>
-                                    </div>
-                                )}</PaginatedItems>
-                            )}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </>
-    );
+ const [board,setBoard] = useState(empty);
+ const [connection,setConnection] = useState('Connecting');
+ const [ready,setReady] = useState(false);
+ const [updated,setUpdated] = useState(null);
+ const [now,setNow] = useState(new Date());
+ const [full,setFull] = useState(false);
+ const [error,setError] = useState('');
+ const loading = !ready && connection === 'Connecting';
+ useEffect(() => {
+  let stopped=false, timer, controller;
+  async function load() {
+   controller=new AbortController();
+   try { const {data}=await axios.get('/api/tv-queue',{signal:controller.signal,timeout:10000,headers:{Accept:'application/json'}});
+    if(stopped)return;
+    setBoard(Object.fromEntries(Object.keys(empty).map(key=>[key,Array.isArray(data[key])?data[key].filter(e=>e.queueNumber!=null).map(e=>({queueNumber:e.queueNumber,serving:e.serving===true})):[]])));
+    setReady(true);setConnection('Live');setUpdated(new Date());
+   } catch { if(!stopped)setConnection('Reconnecting'); }
+   finally { if(!stopped)timer=setTimeout(load,3000); }
+  }
+  load();return()=>{stopped=true;clearTimeout(timer);controller?.abort();};
+ },[]);
+ useEffect(()=>{const timer=setInterval(()=>setNow(new Date()),1000);const change=()=>setFull(!!document.fullscreenElement);document.addEventListener('fullscreenchange',change);return()=>{clearInterval(timer);document.removeEventListener('fullscreenchange',change);};},[]);
+ async function fullscreen(){try{if(document.fullscreenElement)await document.exitFullscreen();else await document.querySelector('.q-board').requestFullscreen();setError('');}catch{setError('Full screen is unavailable in this browser.');}}
+ return <div className="hp q-preview q-design-6 q-live"><Head title="Live Queue · USeP Clinic"/><div className="q-board"><header className="q-header"><Link href="/" className="q-brand" aria-label="USeP home"><img src="/assets/img/University of Southeastern Philippines Seal.png" alt="USeP seal" width="64" height="64"/><span><strong>USeP Clinic</strong><small>University of Southeastern Philippines</small></span></Link><div className="q-heading"><span className="q-eyebrow">LIVE QUEUE</span><h1>Now serving</h1><Badge variant="secondary" role="status"><span className="q-dot"/>{connection}</Badge></div><div className="q-tools"><time>{now.toLocaleTimeString('en-US',{timeZone:'Asia/Manila',hour:'2-digit',minute:'2-digit',hour12:true})}</time><small>{now.toLocaleDateString('en-US',{timeZone:'Asia/Manila',weekday:'long',month:'short',day:'numeric'})}</small><Button variant="outline" size="sm" onClick={fullscreen}>{full?<Minimize data-icon="inline-start"/>:<Monitor data-icon="inline-start"/>}{full?'Exit TV mode':'TV mode'}</Button>{error&&<small role="alert">{error}</small>}</div></header>
+ <main className="q-main"><div className="q-intro"><p>Please watch for your queue number.</p><span>Proceed when your number is called <ArrowRight size={16} aria-hidden="true"/></span></div>
+ {connection==='Reconnecting'&&<p className="q-connection" role="status">Connection interrupted. {updated?`Showing the last update at ${updated.toLocaleTimeString('en-US',{timeZone:'Asia/Manila'})}.`:'Queue information is unavailable.'} Reconnecting automatically.</p>}
+ <div className="q-grid"><Card className="q-waiting"><CardHeader><CardDescription><Clock3 aria-hidden="true"/>Waiting area</CardDescription><CardTitle>{!ready?'Connecting…':board.waiting.length?'Up next':'All caught up'}</CardTitle></CardHeader><CardContent>{loading ? <ListSkeleton columns={1} rows={4} label="Loading waiting queue" /> : board.waiting.length?<><QueueList entries={board.waiting}/><p>Please remain in the waiting area.</p></>:<div className="q-empty"><Clock3 aria-hidden="true"/><strong>{ready?'No patients waiting':'Queue unavailable'}</strong><p>{ready?'New queue numbers will appear here.':'Reconnecting automatically.'}</p></div>}</CardContent></Card><Station title="Nurse station" entries={board.nurse} nurse ready={ready} loading={loading}/><Station title="Doctor’s clinic" entries={board.doctor} ready={ready} loading={loading}/></div>
+ <Card className="q-completed"><CardHeader><CardTitle><Check aria-hidden="true"/>Recently completed</CardTitle><CardDescription>Latest 5 visits today</CardDescription></CardHeader><CardContent>{loading ? <ListSkeleton columns={5} rows={1} label="Loading completed visits" /> : board.done.length?<div className="q-done-list">{board.done.slice(0,5).map(e=><Badge key={e.queueNumber} variant="secondary"><Check aria-hidden="true"/>{number(e.queueNumber)}</Badge>)}</div>:<p>{ready?'No completed visits yet today.':'Queue information is unavailable.'}</p>}</CardContent></Card><footer className="q-footer"><span>University Clinic Information Management System</span><span>Queue numbers only · Thank you for your patience</span></footer></main></div></div>;
 }
-
-// The board is a full-screen public display: opt out of the default AppLayout
-// (sidebar/header) without touching the shared layout resolver in app.tsx.
-TvQueue.layout = (page) => page;
+TvQueue.layout = page => page;

@@ -1,3 +1,4 @@
+import { MetricSkeleton, DetailSkeleton, ListSkeleton } from '@/components/data-skeletons';
 import { requestError } from '@/lib/clinical-validation.mjs';
 import PaginatedItems from '../../components/paginated-items.jsx';
 import { useState, useEffect, useCallback } from 'react';
@@ -221,6 +222,17 @@ function QueueItem({ item, onTriage, onViewTriage, onEndorse, onUndoEndorse, onC
 // ─────────────────────────────────────────────────────────────
 function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
     const [mode, setMode] = useState(initialMode);
+    useEffect(() => {
+        if (mode === 'view') return;
+        const token = crypto.randomUUID();
+        let pending = Promise.resolve();
+        const update = (active) => {
+            pending = pending.then(() => axios.post(`/api/tv-queue/serving/${item.queue_id}`, { active, token })).catch(() => {});
+        };
+        update(true);
+        const timer = setInterval(() => update(true), 20000);
+        return () => { clearInterval(timer); update(false); };
+    }, [mode, item.queue_id]);
     const [form, setForm] = useState({
         blood_pressure: '',
         heart_rate: '',
@@ -233,15 +245,14 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
         initial_notes: '',
     });
     const [existing, setExisting] = useState(null);
-    const [loading, setLoading] = useState(initialMode === 'view');
+    const [loading, setLoading] = useState(Boolean(item.triaged));
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
 
     useEffect(() => {
         if (!item.triaged) return;
         setLoading(true);
-        axios
-            .get(`/api/v1/triage/${item.queue_id}`)
+        axios.get(`/api/v1/triage/${item.queue_id}`, { timeout: 20000 })
             .then((res) => setExisting(res.data))
             .catch(() => setError('Could not load the existing triage record.'))
             .finally(() => setLoading(false));
@@ -302,7 +313,7 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
                     {mode === 'edit' && existing ? 'Edit Triage Assessment' : 'Triage Assessment'} — {patientName(item.patient)}
                 </div>
 
-                {loading && <p className="text-muted">Loading…</p>}
+                {loading && <ListSkeleton />}
 
                 {mode === 'view' && !loading && existing && (
                     <>
@@ -331,7 +342,7 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
 
                 {mode === 'view' && !loading && !existing && <p className="text-muted">No triage record found.</p>}
 
-                {mode === 'edit' && (
+                {mode === 'edit' && !loading && (
                     <>
                         <div className="card-title" style={{ fontSize: '.88rem', marginBottom: 10 }}>
                             Vital Signs
@@ -584,7 +595,7 @@ function RecordsSearch({ patients, loading, onView, onHistory, showToast }) {
                         </select>
                     </div>
 
-                    {loading && <p className="text-muted">Loading…</p>}
+                    {loading && <ListSkeleton />}
                     {!loading && !filtered.length && (
                         <div className="empty-state">
                             <p>No records found.</p>
@@ -638,12 +649,13 @@ function RecordsSearch({ patients, loading, onView, onHistory, showToast }) {
 function ViewRecordModal({ patientRef, onClose }) {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState('');
     const [tab, setTab] = useState('personal');
 
     useEffect(() => {
-        axios
-            .get(`/api/records/patients/${patientRef.id}`)
+        axios.get(`/api/records/patients/${patientRef.id}`, { timeout: 20000 })
             .then((res) => setData(res.data.patient))
+            .catch(() => setLoadError('Unable to load this record. Close and reopen it to try again.'))
             .finally(() => setLoading(false));
     }, [patientRef.id]);
 
@@ -675,9 +687,10 @@ function ViewRecordModal({ patientRef, onClose }) {
                     </div>
                 </div>
 
-                {loading && <p className="text-muted">Loading…</p>}
+                {loading && <DetailSkeleton />}
+                {loadError && <p role="alert">{loadError}</p>}
 
-                {!loading && (
+                {!loading && !loadError && (
                     <>
                         <div className="tabs" style={{ marginBottom: 16 }}>
                             <button className={`tab ${tab === 'personal' ? 'active' : ''}`} onClick={() => setTab('personal')}>
@@ -844,11 +857,12 @@ function ViewRecordModal({ patientRef, onClose }) {
 function VisitHistoryModal({ patientRef, onClose }) {
     const [visits, setVisits] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState('');
 
     useEffect(() => {
-        axios
-            .get(`/api/records/patients/${patientRef.id}/visits`)
+        axios.get(`/api/records/patients/${patientRef.id}/visits`, { timeout: 20000 })
             .then((res) => setVisits(res.data.visits))
+            .catch(() => setLoadError('Unable to load this record. Close and reopen it to try again.'))
             .finally(() => setLoading(false));
     }, [patientRef.id]);
 
@@ -871,8 +885,9 @@ function VisitHistoryModal({ patientRef, onClose }) {
                     <i className="bi bi-journal-medical"></i> Consultation &amp; Service History
                 </div>
 
-                {loading && <p className="text-muted">Loading…</p>}
-                {!loading && !visits.length && (
+                {loading && <ListSkeleton columns={5} />}
+                {loadError && <p role="alert">{loadError}</p>}
+                {!loading && !loadError && !visits.length && (
                     <div className="empty-state" style={{ padding: 30 }}>
                         <div className="ei">
                             <i className="bi bi-calendar-x text-muted" style={{ opacity: 0.5 }}></i>
@@ -974,7 +989,7 @@ function DailyPatientLog({ visits, loading }) {
                         <i className="bi bi-printer"></i> Print Log
                     </button>
                 </div>
-                {loading && <p className="text-muted">Loading…</p>}
+                {loading && <ListSkeleton />}
                 {!loading && !filtered.length && (
                     <div className="empty-state" style={{ padding: 40 }}>
                         <p className="text-muted">No records found.</p>
@@ -1057,7 +1072,7 @@ function DailyPatientRecords({ visits, loading, onViewDetails }) {
                         <i className="bi bi-printer"></i> Print Records
                     </button>
                 </div>
-                {loading && <p className="text-muted">Loading…</p>}
+                {loading && <ListSkeleton />}
                 {!loading && !filtered.length && (
                     <div className="empty-state" style={{ padding: 40 }}>
                         <p className="text-muted">No records found.</p>
@@ -1268,7 +1283,7 @@ function MedicineList({ patients, loading, onManage, issuanceCounts }) {
                 <h1>Medicine Issuance</h1>
                 <p>Issue medicines and treatments to active patients.</p>
             </div>
-            {loading && <p className="text-muted">Loading…</p>}
+            {loading && <ListSkeleton />}
             {!loading && !patients.length && (
                 <div className="empty-state">
                     <div className="ei">
@@ -1334,16 +1349,15 @@ function ManageMedsModal({ item, onClose, showToast, onIssued }) {
 
     const load = useCallback(() => {
         setLoading(true);
-        axios
-            .get('/api/v1/medicine-issuances', { params: { queue_id: item.queue_id } })
+        axios.get('/api/v1/medicine-issuances', { timeout: 20000, params: { queue_id: item.queue_id } })
             .then((res) => setList(res.data))
+            .catch(() => showToast('Unable to load issued medicines. Please try again.', 'error'))
             .finally(() => setLoading(false));
     }, [item.queue_id]);
 
     useEffect(() => {
         load();
-        axios
-            .get(`/api/v1/queues/${item.queue_id}`)
+        axios.get(`/api/v1/queues/${item.queue_id}`, { timeout: 20000 })
             .then((res) => setDoctorRx(res.data.endorsement?.prescriptions || []))
             .catch(() => {});
     }, [load, item.queue_id]);
@@ -1448,7 +1462,7 @@ function ManageMedsModal({ item, onClose, showToast, onIssued }) {
                 <div className="text-xs fw6 text-muted mb4" style={{ textTransform: 'uppercase', letterSpacing: '.5px' }}>
                     Issued Medicines
                 </div>
-                {loading && <p className="text-muted text-sm">Loading…</p>}
+                {loading && <ListSkeleton />}
                 {!loading && !list.length && <p className="text-muted text-sm">No services issued yet.</p>}
                 {<PaginatedItems items={list} label="list">{(s) => (
                     <div key={s.issuance_id} style={{ background: '#f9f8f6', padding: '8px 12px', borderRadius: 7, marginBottom: 5, fontSize: '.845rem' }}>
@@ -1480,11 +1494,11 @@ function MedCertList({ certs, loading, onView }) {
             </div>
             <div className="stats-row">
                 <div className="stat-card">
-                    <div className="stat-num">{certs.length}</div>
+                    <div className="stat-num">{loading ? <MetricSkeleton /> : certs.length}</div>
                     <div className="stat-label">Pending Doctor Release</div>
                 </div>
             </div>
-            {loading && <p className="text-muted">Loading…</p>}
+            {loading && <ListSkeleton />}
             {!loading && !certs.length && (
                 <div className="empty-state">
                     <div className="ei">
@@ -1592,6 +1606,7 @@ function ViewMedCertModal({ cert, onClose }) {
 export default function NurseDashboard() {
     const [section, setSection] = useState('queue');
     const [queue, setQueue] = useState([]);
+    const [queueError, setQueueError] = useState('');
     const [loading, setLoading] = useState(true);
     const [doctors, setDoctors] = useState([]);
     const [toastMsg, setToastMsg] = useState(null);
@@ -1605,7 +1620,7 @@ export default function NurseDashboard() {
 
     const fetchCerts = useCallback(async () => {
         try {
-            const res = await axios.get('/api/v1/medical-certificates', { params: { released: 0 } });
+            const res = await axios.get('/api/v1/medical-certificates', { timeout: 20000, params: { released: 0 } });
             setCerts(res.data);
         } catch (e) {
             showToast(requestError(e, 'Failed to load certificate requests.'), 'error');
@@ -1623,7 +1638,7 @@ export default function NurseDashboard() {
 
     const fetchIssuanceCounts = useCallback(async () => {
         try {
-            const res = await axios.get('/api/v1/medicine-issuances');
+            const res = await axios.get('/api/v1/medicine-issuances', { timeout: 20000 });
             const counts = {};
             res.data.forEach((i) => {
                 if (i.queue_id) counts[i.queue_id] = (counts[i.queue_id] || 0) + 1;
@@ -1648,7 +1663,7 @@ export default function NurseDashboard() {
 
     const fetchPatients = useCallback(async () => {
         try {
-            const res = await axios.get('/api/records/patients');
+            const res = await axios.get('/api/records/patients', { timeout: 20000 });
             setPatients(res.data.patients);
         } catch (e) {
             showToast(requestError(e, 'Failed to load patient records.'), 'error');
@@ -1667,7 +1682,7 @@ export default function NurseDashboard() {
 
     const fetchCompletedVisits = useCallback(async () => {
         try {
-            const res = await axios.get('/api/v1/queues', { params: { completed: 1 } });
+            const res = await axios.get('/api/v1/queues', { timeout: 20000, params: { completed: 1 } });
             setCompletedVisits(res.data);
         } catch (e) {
             showToast(requestError(e, 'Failed to load completed visits.'), 'error');
@@ -1687,10 +1702,11 @@ export default function NurseDashboard() {
 
     const fetchQueue = useCallback(async () => {
         try {
-            const res = await axios.get('/api/v1/queues');
+            const res = await axios.get('/api/v1/queues', { timeout: 20000 });
             setQueue(res.data);
+            setQueueError('');
         } catch (e) {
-            showToast(requestError(e, 'Failed to load the queue.'), 'error');
+            setQueueError('Unable to load the queue. Retrying automatically.');
         } finally {
             setLoading(false);
         }
@@ -1703,8 +1719,7 @@ export default function NurseDashboard() {
     }, [fetchQueue]);
 
     useEffect(() => {
-        axios
-            .get('/api/v1/doctors')
+        axios.get('/api/v1/doctors', { timeout: 20000 })
             .then((res) => setDoctors(res.data))
             .catch(() => {});
     }, []);
@@ -1789,11 +1804,11 @@ export default function NurseDashboard() {
 
                             <div className="stats-row">
                                 <div className="stat-card">
-                                    <div className="stat-num">{active.length}</div>
+                                    <div className="stat-num">{loading ? <MetricSkeleton /> : active.length}</div>
                                     <div className="stat-label">Active in Queue</div>
                                 </div>
                                 <div className="stat-card stat-green">
-                                    <div className="stat-num">{doneToday}</div>
+                                    <div className="stat-num">{loading ? <MetricSkeleton /> : doneToday}</div>
                                     <div className="stat-label">Done Today</div>
                                 </div>
                             </div>
@@ -1802,9 +1817,10 @@ export default function NurseDashboard() {
                                 Queue List
                             </div>
 
-                            {loading && <p className="text-muted">Loading queue…</p>}
+                            {loading && <ListSkeleton rows={4} columns={4} label="Loading patient queue" />}
 
-                            {!loading && !active.length && (
+                            {queueError && <p role="alert">{queueError}</p>}
+                            {!loading && !queueError && !active.length && (
                                 <div className="empty-state">
                                     <div className="ei">
                                         <i className="bi bi-check2-circle text-muted" style={{ opacity: 0.5 }}></i>

@@ -33,9 +33,34 @@ Route::get('/', function () {
     ]);
 })->name('home');
 
+// Local-only design review; the public home page stays unchanged.
+if (app()->environment('local')) {
+    Route::get('/previews/admin-reference', function () {
+        return Inertia::render('previews/AdminReferenceDesigns', [
+            'initialDesign' => max(1, min(5, (int) request('design', 1))),
+        ]);
+    });
+    Route::get('/previews/admin-designs', function () {
+        return Inertia::render('previews/AdminDesigns', [
+            'initialDesign' => max(1, min(15, (int) request('design', 1))),
+        ]);
+    });
+    Route::get('/previews/queue-designs', function () {
+        return Inertia::render('previews/QueueDesigns', [
+            'initialDesign' => max(1, min(10, (int) request('design', 1))),
+        ]);
+    });
+    Route::get('/previews/home-designs', function () {
+        return Inertia::render('previews/HomeDesigns', [
+            'initialDesign' => max(1, min(10, (int) request('design', 1))),
+        ]);
+    });
+}
+
 // Public waiting-room display.
 Route::get('/tv-queue', [TvQueueController::class, 'show'])->name('tv-queue');
 Route::get('/api/tv-queue', [TvQueueController::class, 'data'])->middleware('throttle:120,1')->name('tv-queue.data');
+Route::post('/api/tv-queue/serving/{clinicQueue}', [TvQueueController::class, 'serving'])->middleware(['auth', 'throttle:60,1']);
 
 // Patient self-registration (guests only). Throttled because it is a public form.
 Route::middleware('guest')->group(function () {

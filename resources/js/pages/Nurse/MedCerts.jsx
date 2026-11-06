@@ -1,3 +1,4 @@
+import { ListSkeleton } from '@/components/data-skeletons';
 import PaginatedItems from '../../components/paginated-items.jsx';
 import React, { useState, useEffect } from 'react';
 import api from '@/services/api';
@@ -5,6 +6,7 @@ import api from '@/services/api';
 export default function MedicalCertificates() {
     const [certificates, setCertificates] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState('');
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [certForm, setCertForm] = useState({
         queue_id: '',
@@ -15,10 +17,11 @@ export default function MedicalCertificates() {
 
     const fetchCertificates = async () => {
         try {
-            const response = await api.get('/medical-certificates');
+            const response = await api.get('/medical-certificates', { timeout: 20000 });
+            setLoadError('');
             setCertificates(response.data);
         } catch (error) {
-            console.error('Failed to fetch medical certificates:', error);
+            setLoadError('Unable to load records. Please refresh to try again.');
         } finally {
             setLoading(false);
         }
@@ -56,8 +59,8 @@ export default function MedicalCertificates() {
             </div>
 
             {loading ? (
-                <p>Loading certificates...</p>
-            ) : (
+                <ListSkeleton columns={5} />
+            ) : loadError ? <p role="alert">{loadError}</p> : (
                 <div className="bg-white shadow rounded-lg overflow-hidden">
                     <table className="w-full text-left border-collapse">
                         <thead>

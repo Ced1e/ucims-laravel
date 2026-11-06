@@ -85,3 +85,41 @@
 @media (prefers-reduced-motion: reduce) {
     .clinic-home-action, .clinic-entry-field input { transition: none; }
 }
+
+/* Burgundy Silk login: scoped to keep other entry pages independent. */
+.clinic-entry-silk .clinic-entry-visual { background: repeating-radial-gradient(ellipse at 110% -10%, transparent 0 70px, #e8cb8516 71px 72px, transparent 73px 110px), linear-gradient(145deg, #370813, #791727); }
+.clinic-entry-silk .clinic-entry-visual::after { inset: 0; width: auto; height: auto; border: 0; border-radius: 0; box-shadow: none; opacity: .12; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23fff' filter='url(%23n)' opacity='.4' d='M0 0h180v180H0z'/%3E%3C/svg%3E"); }
+.clinic-entry-silk .clinic-entry-brand { gap: 18px; font-family: Arial, sans-serif; font-size: 19px; font-weight: 600; line-height: 1.32; letter-spacing: -.025em; }
+.clinic-entry-silk .clinic-entry-brand img { width: 88px; height: 88px; flex-shrink: 0; }
+.clinic-entry-wordmark { display: flex; flex-direction: column; gap: 10px; }
+.clinic-entry-wordmark small { color: #e8cb85; font-size: 14px; font-weight: 400; letter-spacing: 0; }
+.clinic-entry-silk .clinic-entry-story h1 { font-family: Arial, sans-serif; font-weight: 600; font-size: clamp(36px, 3.8vw, 60px); letter-spacing: -.05em; line-height: 1.08; }
+.clinic-entry-silk .clinic-entry-story h1 span { color: inherit; }
+.clinic-entry-silk .clinic-entry-description { color: #e8cb85; font-size: 16px; }
+.clinic-entry-silk .clinic-entry-art { height: 135px; margin-top: 28px; }
+.clinic-entry-silk .clinic-entry-orbit { width: 110px; height: 110px; left: calc(50% - 55px); top: 10px; box-shadow: none; }
+.clinic-entry-silk .clinic-entry-art svg { top: 0; }
+.clinic-entry-silk .clinic-entry-cross, .clinic-entry-silk .clinic-entry-art-label { display: none; }
+.clinic-entry-silk .clinic-entry-panel { background: radial-gradient(ellipse at top right, #fff, #fbf7f1); }
+.clinic-entry-silk .clinic-entry-form-wrap h2 { font-family: Arial, sans-serif; font-weight: 600; letter-spacing: -.045em; }
+.clinic-entry-silk .clinic-entry-submit { background: linear-gradient(110deg, #880d19, #65000b); border: 0; border-radius: 9px; box-shadow: 0 7px 18px #76000020; }
+.clinic-entry-silk .clinic-entry-submit:hover { filter: brightness(1.1); }
+.clinic-entry-silk .clinic-entry-help { border: 0; }
+@media (max-width: 760px) {
+    .clinic-entry-silk .clinic-entry-brand img { width: 72px; height: 72px; }
+    .clinic-entry-silk .clinic-entry-brand { font-size: clamp(14px, 3.5vw, 18px); gap: 14px; }
+    .clinic-entry-wordmark small { font-size: 13px; }
+    .clinic-entry-silk .clinic-entry-story h1 { font-size: clamp(28px, 6.5vw, 44px); }
+}
+
+/* One timing curve keeps the luminous tip aligned with the reversible trace. */
+.clinic-entry-silk .clinic-heartbeat { display: block; height: 135px; }
+.clinic-heartbeat-base { opacity: .22; }
+.clinic-heartbeat-trace { stroke-dasharray: 100; animation: clinic-heartbeat-draw 4s ease-in-out infinite alternate; }
+.clinic-heartbeat-halo { stroke-width: 7; filter: blur(6px); opacity: .5; }
+.clinic-heartbeat-light { offset-path: path('M10 70H130L155 42 185 108 225 18 264 120 295 55 320 70H470'); animation: clinic-heartbeat-travel 4s ease-in-out infinite alternate; filter: drop-shadow(0 0 4px #ffe6a0); }
+@keyframes clinic-heartbeat-draw { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+@keyframes clinic-heartbeat-travel { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+@media (max-width: 760px) { .clinic-entry-silk .clinic-heartbeat { height: 100px; margin-top: 16px; } .clinic-entry-silk .clinic-heartbeat svg { height: 100px; } }
+
+.clinic-entry { --ucims-page-ready: 1; }

@@ -1,0 +1,31 @@
+import { Head } from '@inertiajs/react';
+import { useEffect, useState } from 'react';
+import { Monitor, Minimize, HeartPulse, Clock3, Check, ArrowRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { cn } from '@/lib/utils';
+
+const designs = ['Clinic Standard', 'Serving Spotlight', 'Queue Directory', 'Maroon Frame', 'Station Focus', 'Clinic Masthead', 'Serving Ledger', 'Quiet Gallery', 'Station Tickets', 'Welcome Desk'];
+const descriptions = ['Balanced cards with clear station labels and generous breathing room.', 'A large serving panel makes the next destination unmistakable.', 'An orderly list layout with crisp dividers and compact supporting information.', 'A maroon surround gives the board a strong identity for wall-mounted TVs.', 'Two focused station panels with a quiet waiting strip underneath.', 'A maroon masthead anchors bright, spacious station cards.', 'Stacked serving rows beside a dedicated waiting column.', 'Oversized numbers in an open editorial layout with fine gold rules.', 'Distinct station tickets with a compact horizontal waiting list.', 'An identity sidebar beside a clean, focused clinic board.'];
+export default function QueueDesigns({ initialDesign = 1 }: { initialDesign?: number }) {
+ const [design, setDesign] = useState(initialDesign);
+ const [state, setState] = useState('busy');
+ const [now, setNow] = useState(new Date());
+ const [full, setFull] = useState(false);
+ const [error, setError] = useState('');
+ useEffect(() => { const timer = setInterval(() => setNow(new Date()),1000); const change = () => setFull(!!document.fullscreenElement); document.addEventListener('fullscreenchange',change); return () => { clearInterval(timer); document.removeEventListener('fullscreenchange',change); }; },[]);
+ const busy = state === 'busy';
+ async function fullscreen() { try { if(document.fullscreenElement) await document.exitFullscreen(); else await document.querySelector('.q-board')?.requestFullscreen(); setError(''); } catch { setError('Full screen is unavailable in this browser.'); } }
+ function station(title: string, number: string, className: string) { return <Card className={cn('q-station',className)}><CardHeader><CardDescription><HeartPulse aria-hidden="true" />{title}</CardDescription><CardTitle>{busy ? 'NOW SERVING' : 'Ready to welcome you'}</CardTitle></CardHeader><CardContent><div className="q-number" key={state}>{busy ? number : '—'}</div><p>{busy ? `Please proceed to the ${title.toLowerCase()}.` : 'No patient being served.'}</p>{busy && <Badge variant="secondary"><span className="q-dot" />In progress</Badge>}</CardContent></Card>; }
+ return <div className={cn('hp','q-preview',`q-design-${design}`)}><Head title="Live queue · Design previews" />
+ <aside className="q-picker"><div><strong>Live queue · Design review</strong><p>Sample queue numbers only · Preview, not live clinic data</p></div><ToggleGroup type="single" value={String(design)} variant="outline" onValueChange={v=>{if(v){setDesign(Number(v));history.replaceState(null,'',`?design=${v}`)}}} aria-label="Design choice" className="q-design-picker">{designs.map((name,i)=><ToggleGroupItem key={name} value={String(i+1)} aria-label={name}>{i+1}</ToggleGroupItem>)}</ToggleGroup><ToggleGroup type="single" value={state} variant="outline" onValueChange={v=>v&&setState(v)} aria-label="Preview queue state"><ToggleGroupItem value="busy">Populated</ToggleGroupItem><ToggleGroupItem value="empty">Empty</ToggleGroupItem></ToggleGroup></aside>
+ <div className="q-caption"><strong>{design}. {designs[design-1]}</strong><span>{descriptions[design-1]}</span></div>
+ <div className="q-board"><header className="q-header"><a href="/" className="q-brand"><img src="/assets/img/University of Southeastern Philippines Seal.png" alt="USeP seal" width="64" height="64" /><span><strong>USeP Clinic</strong><small>University of Southeastern Philippines</small></span></a><div className="q-heading"><span className="q-eyebrow">LIVE QUEUE</span><h1>Now serving</h1><Badge variant="secondary"><span className="q-dot" />Live · Preview</Badge></div><div className="q-tools"><time>{now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true})}</time><small>{now.toLocaleDateString('en-US',{weekday:'long',month:'short',day:'numeric'})}</small><Button variant="outline" size="sm" onClick={fullscreen}>{full ? <Minimize data-icon="inline-start" /> : <Monitor data-icon="inline-start" />}{full ? 'Exit TV mode' : 'TV mode'}</Button>{error&&<small role="alert">{error}</small>}</div></header>
+ <main className="q-main"><div className="q-intro"><p>Please watch for your queue number.</p><span>Proceed when your number is called <ArrowRight size={16} aria-hidden="true" /></span></div><div className="q-grid">
+ <Card className="q-waiting"><CardHeader><CardDescription><Clock3 aria-hidden="true" />Waiting area</CardDescription><CardTitle>{busy ? 'Up next' : 'All caught up'}</CardTitle></CardHeader><CardContent>{busy ? <><div className="q-wait-list">{['028','029','030','031'].map((n,i)=><div key={n}><strong>{n}</strong><span>{i===0?'Next in line':`Position ${i+1}`}</span></div>)}</div><p>Please remain in the waiting area.</p></> : <div className="q-empty"><Clock3 aria-hidden="true" /><strong>No patients waiting</strong><p>New queue numbers will appear here.</p></div>}</CardContent></Card>
+ {station('Nurse station','026','q-nurse')}{station('Doctor’s clinic','025','q-doctor')}</div>
+ <Card className="q-completed"><CardHeader><CardTitle><Check aria-hidden="true" />Recently completed</CardTitle><CardDescription>Latest 5 visits today</CardDescription></CardHeader><CardContent>{busy ? <div className="q-done-list">{['024','023','022','021','020'].map(n=><Badge key={n} variant="secondary"><Check aria-hidden="true" />{n}</Badge>)}</div> : <p>No completed visits yet today.</p>}</CardContent></Card>
+ <footer className="q-footer"><span>University Clinic Information Management System</span><span>Queue numbers only · Thank you for your patience</span></footer></main></div></div>;
+}

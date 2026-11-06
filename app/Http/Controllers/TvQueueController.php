@@ -4,7 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\ClinicQueue;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Str;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -14,7 +15,7 @@ use Inertia\Response;
  * Ported from the legacy SPA (#page-tv-queue + initTVQueue() in shared.js).
  * The page and its JSON feed are intentionally public so the TV does not need
  * a login, therefore the feed only exposes what a waiting-room screen needs:
- * queue number, a masked name ("Maria S.") and the visit label. No patient id,
+ * queue number and active service state. No names, visit labels, patient id,
  * email, vitals, diagnosis or any other record data is ever returned.
  */
 class TvQueueController extends Controller
@@ -31,25 +32,26 @@ class TvQueueController extends Controller
     {
         $today = now()->toDateString();
 
-        $rows = ClinicQueue::with('patient:user_id,firstname,lastname')
+        $rows = ClinicQueue::query()
             ->where('date', $today)
             ->whereNotIn('status', ['cancelled'])
             ->orderBy('queue_number')
             ->get();
 
+        $active = $rows->filter(fn ($q) => in_array($q->status, ['waiting', 'triaged', 'examined'], true)
+            && Cache::has('tv-serving:'.$q->queue_id))->pluck('queue_id');
         $card = fn (ClinicQueue $q): array => [
             'queueNumber' => $q->queue_number,
-            'name' => $this->maskedName($q),
-            'visit' => $q->visit_label ?: 'Visit',
+            'serving' => $active->contains($q->queue_id),
         ];
 
         // Waiting area: checked in, not yet seen by the nurse.
-        $waiting = $rows->filter(fn ($q) => $q->status === 'waiting' && ! $q->triaged);
+        $waiting = $rows->filter(fn ($q) => $q->status === 'waiting' && ! $q->triaged && ! $active->contains($q->queue_id));
 
         // Nurse station: triaged (the triage form only sets the flag, the status
         // stays "waiting" until endorsement) or already examined by the doctor.
         $nurse = $rows->filter(fn ($q) => in_array($q->status, ['triaged', 'examined'], true)
-            || ($q->status === 'waiting' && $q->triaged));
+            || ($q->status === 'waiting' && $q->triaged) || $active->contains($q->queue_id));
 
         // Doctor's clinic: endorsed and currently with the doctor.
         $doctor = $rows->filter(fn ($q) => $q->status === 'with-doctor');
@@ -68,21 +70,20 @@ class TvQueueController extends Controller
         ])->header('Cache-Control', 'no-store');
     }
 
-    /**
-     * "Maria Clara Santos" is shown as "Maria S." on the public screen.
-     */
-    private function maskedName(ClinicQueue $q): string
+    /** Short-lived assessment presence; no clinical record or workflow changes. */
+    public function serving(Request $request, ClinicQueue $clinicQueue)
     {
-        $first = trim((string) $q->patient?->firstname);
-        $last = trim((string) $q->patient?->lastname);
-
-        if ($first === '' && $last === '') {
-            return 'Patient';
+        abort_unless($request->user()->is_active && in_array($request->user()->role, ['nurse', 'admin'], true), 403);
+        $data = $request->validate(['active' => ['required', 'boolean'], 'token' => ['required', 'uuid']]);
+        $key = 'tv-serving:'.$clinicQueue->queue_id;
+        $owner = $request->user()->user_id.':'.$data['token'];
+        if ($data['active']) {
+            abort_unless($clinicQueue->date === now()->toDateString()
+                && in_array($clinicQueue->status, ['waiting', 'triaged', 'examined'], true), 409);
+            Cache::put($key, $owner, now()->addSeconds(75));
+        } elseif (Cache::get($key) === $owner) {
+            Cache::forget($key);
         }
-
-        $first = Str::of($first)->before(' ')->toString() ?: $first;
-        $initial = $last !== '' ? ' '.mb_strtoupper(mb_substr($last, 0, 1)).'.' : '';
-
-        return trim($first.$initial);
+        return response()->noContent();
     }
 }

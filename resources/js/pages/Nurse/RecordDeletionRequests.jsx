@@ -1,3 +1,4 @@
+import { ListSkeleton } from '@/components/data-skeletons';
 import PaginatedItems from '../../components/paginated-items.jsx';
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
@@ -42,7 +43,7 @@ export default function RecordDeletionRequests({ patients, showToast }) {
 
     const fetchRequests = useCallback(async () => {
         try {
-            const res = await axios.get('/api/records/deletion-requests');
+            const res = await axios.get('/api/records/deletion-requests', { timeout: 20000 });
             setRequests(res.data.requests);
         } catch (e) {
             if (showToast) showToast('Failed to load deletion requests.', 'error');
@@ -140,7 +141,7 @@ export default function RecordDeletionRequests({ patients, showToast }) {
 
             <div className="card" style={{ marginTop: 16 }}>
                 <div className="card-title">Deletion Requests</div>
-                {loading && <p className="text-muted">Loading…</p>}
+                {loading && <ListSkeleton />}
                 {!loading && !requests.length && (
                     <div className="empty-state">
                         <p>No deletion requests submitted yet.</p>

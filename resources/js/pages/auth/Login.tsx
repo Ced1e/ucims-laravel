@@ -1,9 +1,9 @@
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useState, type FormEvent } from 'react';
-import '../../../css/entry.css';
 
 export default function Login({ status }: { status?: string }) {
     const [showPassword, setShowPassword] = useState(false);
+    const heartbeatPath = 'M10 70H130L155 42 185 108 225 18 264 120 295 55 320 70H470';
     const { data, setData, post, processing, errors, reset } = useForm({
         clinic_id: '',
         password: '',
@@ -21,22 +21,24 @@ export default function Login({ status }: { status?: string }) {
     };
 
     return (
-        <main className="clinic-entry">
+        <main className="clinic-entry clinic-entry-silk">
             <Head title="UCIMS - Login" />
             <section className="clinic-entry-visual" aria-labelledby="clinic-entry-title">
                 <Link href="/" className="clinic-entry-brand" aria-label="UCIMS home">
-                    <img src="/assets/img/logo.png" alt="USeP logo" />
-                    <span>University of<br />Southeastern Philippines</span>
+                    <img src="/assets/img/University of Southeastern Philippines Seal.png" alt="USeP logo" />
+                    <span className="clinic-entry-wordmark"><span>University of<br />Southeastern Philippines</span><small>University Clinic</small></span>
                 </Link>
                 <div className="clinic-entry-story">
                     <p className="clinic-entry-eyebrow">YOUR UNIVERSITY. YOUR HEALTH.</p>
                     <h1 id="clinic-entry-title">Care for today.<br /><span>Ready for tomorrow.</span></h1>
                     <p className="clinic-entry-description">Your connection to the university clinic, from your first visit to your next step forward.</p>
-                    <div className="clinic-entry-art" aria-hidden="true">
-                        <div className="clinic-entry-orbit" />
-                        <div className="clinic-entry-cross">+</div>
-                        <svg viewBox="0 0 480 130" fill="none"><path d="M0 74H125L151 48L178 99L215 20L250 112L278 62L301 74H480" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                        <span className="clinic-entry-art-label">CONNECTED CARE · USeP</span>
+                    <div className="clinic-entry-art clinic-heartbeat">
+                        <svg viewBox="0 0 480 135" fill="none" aria-hidden="true" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                            <path className="clinic-heartbeat-base" d={heartbeatPath} />
+                            <path className="clinic-heartbeat-trace clinic-heartbeat-halo" pathLength="100" d={heartbeatPath} />
+                            <path className="clinic-heartbeat-trace" pathLength="100" d={heartbeatPath} />
+                            <circle className="clinic-heartbeat-light" r="4" fill="#fff0bd" stroke="none" />
+                        </svg>
                     </div>
                 </div>
                 <p className="clinic-entry-visual-footer">University Clinic Information Management System</p>
@@ -77,3 +79,7 @@ export default function Login({ status }: { status?: string }) {
         </main>
     );
 }
+
+
+
+

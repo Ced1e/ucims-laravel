@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" @class(['dark' => ($appearance ?? 'system') == 'dark'])>
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-ui-loading @class(['dark' => ($appearance ?? 'system') == 'dark'])>
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        @include('partials.loading-guard')
 
         {{-- Inline script to detect system dark mode preference and apply it immediately --}}
         <script>
@@ -44,6 +45,13 @@
         </x-inertia::head>
     </head>
     <body class="font-sans antialiased">
+        <div id="ucims-loading" role="status" aria-live="polite">
+            <div><strong>USeP Clinic</strong><div class="loading-line" aria-hidden="true"></div>
+                <p id="ucims-loading-message">Preparing your page…</p>
+                <a id="ucims-loading-retry" href="" hidden>Retry loading</a>
+                <noscript><p>Enable JavaScript to use the clinic portal.</p></noscript>
+            </div>
+        </div>
         <x-inertia::app />
     </body>
 </html>
