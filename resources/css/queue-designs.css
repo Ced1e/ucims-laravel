@@ -143,3 +143,4 @@
 .q-live .q-station .q-number { overflow-wrap:anywhere; }
 
 .q-board { --ucims-queue-ready: 1; }
+.q-live .q-done-list .q-completed-time { font-size:13px; font-weight:500; white-space:nowrap; } .q-live .q-completed-separator { margin-inline:3px; opacity:.6; }

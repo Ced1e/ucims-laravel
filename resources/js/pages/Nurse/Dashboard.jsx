@@ -1,4 +1,4 @@
-import { MetricSkeleton, DetailSkeleton, ListSkeleton } from '@/components/data-skeletons';
+import { TableSkeletonRows, MetricSkeleton, DetailSkeleton, ListSkeleton } from '@/components/data-skeletons';
 import { requestError } from '@/lib/clinical-validation.mjs';
 import PaginatedItems from '../../components/paginated-items.jsx';
 import { useState, useEffect, useCallback } from 'react';
@@ -79,7 +79,6 @@ function Sidebar({ section, onNavigate }) {
     const { auth } = usePage().props;
     const user = auth?.user;
     const displayName = user ? [user.firstname, user.lastname].filter(Boolean).join(' ') : 'Nurse';
-    const initial = (user?.firstname || 'N').charAt(0).toUpperCase();
 
     const navItems = [
         { section: 'Queue', items: [{ icon: 'bi-people', label: 'Queue Monitoring', key: 'queue' }] },
@@ -101,52 +100,28 @@ function Sidebar({ section, onNavigate }) {
     ];
 
     return (
-        <div className="sidebar">
-            <div className="sidebar-brand">
-                <img src="/assets/img/logo.png" className="logo-img" alt="USeP" />
-                <div className="sidebar-brand-text">
-                    <div className="sh-title">USeP Clinic</div>
-                    <div className="sh-sub">Nurse Interface</div>
-                </div>
+        <aside className="canvas-sidebar" id="nurse-sidebar" aria-label="Nurse navigation">
+            <div className="canvas-brand">
+                <img src="/assets/img/University of Southeastern Philippines Seal.png" width="42" height="42" alt="USeP" />
+                <span>USeP Clinic<small>Nurse workspace</small></span>
             </div>
-            <div className="sidebar-nav">
-                {navItems.map((group) => (
-                    <div key={group.section}>
-                        <div className="sidebar-section">{group.section}</div>
-                        {group.items.map((item) => (
-                            <a
-                                key={item.label}
-                                className={item.key === section ? 'active' : ''}
-                                style={item.soon ? { opacity: 0.55, cursor: 'default' } : undefined}
-                                title={item.soon ? 'Coming soon' : undefined}
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    if (item.soon) return;
-                                    onNavigate(item.key);
-                                }}
-                            >
-                                <i className={`bi ${item.icon} nav-icon`}></i> {item.label}
-                                {item.soon && <span style={{ fontSize: '0.7rem', marginLeft: 6, opacity: 0.8 }}>(soon)</span>}
-                            </a>
-                        ))}
-                    </div>
-                ))}
+            <div className="canvas-nav-area">
+                <p className="canvas-nav-label">Workspace</p>
+                <nav>{navItems.flatMap(group => group.items).map(item => (
+                    <button key={item.key} type="button" title={item.label} aria-label={item.label}
+                        aria-current={item.key === section ? 'page' : undefined}
+                        className={item.key === section ? 'active' : ''} onClick={() => onNavigate(item.key)}>
+                        <i className={`bi ${item.icon}`} aria-hidden="true" /> <span>{item.label}</span>
+                    </button>
+                ))}</nav>
             </div>
-            <div className="sidebar-footer">
-                <div className="sidebar-user">
-                    <div className="sidebar-avatar" style={{ background: 'var(--blue)' }}>
-                        {initial}
-                    </div>
-                    <div>
-                        <div className="sidebar-user-name">{displayName}</div>
-                        <div className="sidebar-user-role">Nurse Interface</div>
-                    </div>
-                </div>
-                <button className="btn btn-outline btn-sm w100" onClick={() => router.post('/logout')}>
-                    <i className="bi bi-box-arrow-left"></i> Sign Out
+            <div className="canvas-user">
+                <div><strong>{displayName}</strong><small>Clinic nurse</small></div>
+                <button type="button" title="Sign out" aria-label="Sign out" onClick={() => router.post('/logout')}>
+                    <i className="bi bi-box-arrow-left" aria-hidden="true" /> <span>Sign out</span>
                 </button>
             </div>
-        </div>
+        </aside>
     );
 }
 
@@ -157,20 +132,12 @@ function QueueItem({ item, onTriage, onViewTriage, onEndorse, onUndoEndorse, onC
     const isMedcert = item.visit_type === 'medcert';
 
     return (
-        <div className="queue-item">
-            <div className="queue-num">#{item.queue_number ?? '—'}</div>
-            <div className="queue-info">
-                <div className="queue-name">{patientName(item.patient)}</div>
-                <div className="flex gap6 mt4" style={{ flexWrap: 'wrap' }}>
-                    <VisitBadge item={item} />
-                    <StatusBadge status={item.status} />
-                </div>
-                <div className="queue-detail mt4">
-                    Arrived: {item.time_in || '—'}
-                    {item.triage?.chief_complaint ? ` · "${item.triage.chief_complaint}"` : ''}
-                </div>
-            </div>
-            <div className="queue-actions">
+        <tr>
+            <td className="nurse-queue-number">#{item.queue_number ?? '—'}</td>
+            <td><strong>{patientName(item.patient)}</strong><small>Arrived · {item.time_in || '—'}</small>{item.triage?.chief_complaint && <small className="nurse-complaint">{item.triage.chief_complaint}</small>}</td>
+            <td><VisitBadge item={item} /></td>
+            <td><StatusBadge status={item.status} /></td>
+            <td><div className="nurse-row-actions">
                 {!item.triaged && (
                     <button className={`btn ${isMedcert ? 'btn-outline' : 'btn-primary'} btn-sm`} onClick={onTriage}>
                         <i className="bi bi-heart-pulse"></i> {isMedcert ? 'Optional Triage' : 'Triage'}
@@ -212,8 +179,8 @@ function QueueItem({ item, onTriage, onViewTriage, onEndorse, onUndoEndorse, onC
                 >
                     <i className="bi bi-x-circle"></i> Cancel
                 </button>
-            </div>
-        </div>
+            </div></td>
+        </tr>
     );
 }
 
@@ -610,7 +577,7 @@ function RecordsSearch({ patients, loading, onView, onHistory, showToast }) {
                                         <th>Name</th>
                                         <th>College</th>
                                         <th>Yr</th>
-                                        <th>Actions</th>
+                                        <th className="nurse-record-actions">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -620,7 +587,7 @@ function RecordsSearch({ patients, loading, onView, onHistory, showToast }) {
                                             <td className="fw6">{p.name}</td>
                                             <td className="text-xs">{p.college_dept || '—'}</td>
                                             <td>{p.year_level || '—'}</td>
-                                            <td>
+                                            <td className="nurse-record-actions">
                                                 <div className="flex gap6">
                                                     <button className="btn btn-outline btn-sm" onClick={() => onView(p)}>
                                                         <i className="bi bi-file-medical"></i> View Record
@@ -1605,6 +1572,8 @@ function ViewMedCertModal({ cert, onClose }) {
 
 export default function NurseDashboard() {
     const [section, setSection] = useState('queue');
+    const [collapsed, setCollapsed] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 800);
+    const [search, setSearch] = useState('');
     const [queue, setQueue] = useState([]);
     const [queueError, setQueueError] = useState('');
     const [loading, setLoading] = useState(true);
@@ -1715,7 +1684,7 @@ export default function NurseDashboard() {
     useEffect(() => {
         fetchQueue();
         const id = setInterval(fetchQueue, 15000);
-        return () => clearInterval(id);
+            return () => clearInterval(id);
     }, [fetchQueue]);
 
     useEffect(() => {
@@ -1773,6 +1742,9 @@ export default function NurseDashboard() {
         }
     }
 
+    const visibleQueue = active.filter(item => `${item.queue_number ?? ''} ${patientName(item.patient)} ${VISIT_MAP[item.visit_type]?.label || ''}`.toLowerCase().includes(search.trim().toLowerCase()));
+    const sectionTitles = {queue:'Queue Monitoring',medicine:'Medicine Issuance',medcert:'MedCert Requests',records:'Record Management',dpr:'Daily Patient Records',dpl:'Daily Patient Log'};
+
     return (
         <>
             <Head title="Nurse Dashboard">
@@ -1781,7 +1753,7 @@ export default function NurseDashboard() {
                 <style>{`
                     @media print {
                         @page { size: landscape; margin: 10mm; }
-                        .sidebar, .page-header p, .hide-print, .modal-overlay { display: none !important; }
+                        .sidebar, .canvas-sidebar, .canvas-topbar, .page-header p, .hide-print, .modal-overlay { display: none !important; }
                         .main-content { margin: 0 !important; padding: 0 !important; width: 100% !important; }
                         .card { box-shadow: none !important; border: none !important; padding: 0 !important; }
                         table { font-size: 10px !important; }
@@ -1792,14 +1764,15 @@ export default function NurseDashboard() {
                 `}</style>
             </Head>
 
-            <div className="layout">
+            <div className={`layout canvas-admin nurse-canvas ${collapsed ? 'canvas-collapsed' : ''}`}>
                 <Sidebar section={section} onNavigate={setSection} />
                 <div className="main-content">
+                    <header className="canvas-topbar"><button className="btn btn-outline btn-sm" type="button" aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} aria-expanded={!collapsed} aria-controls="nurse-sidebar" onClick={() => setCollapsed(value => !value)}><i className="bi bi-layout-sidebar" aria-hidden="true" /></button><strong>{sectionTitles[section]}</strong><span>USeP · University Clinic</span></header>
                     {section === 'queue' && (
                         <>
                             <div className="page-header">
                                 <h1>Queue Monitoring</h1>
-                                <p>Real-time patient queue — {active.length} patient(s) currently active.</p>
+                                <p>Monitor the queue, assess patients and coordinate care.</p>
                             </div>
 
                             <div className="stats-row">
@@ -1813,23 +1786,13 @@ export default function NurseDashboard() {
                                 </div>
                             </div>
 
-                            <div className="card-title" style={{ marginBottom: 10 }}>
-                                Queue List
-                            </div>
-
-                            {loading && <ListSkeleton rows={4} columns={4} label="Loading patient queue" />}
-
-                            {queueError && <p role="alert">{queueError}</p>}
-                            {!loading && !queueError && !active.length && (
-                                <div className="empty-state">
-                                    <div className="ei">
-                                        <i className="bi bi-check2-circle text-muted" style={{ opacity: 0.5 }}></i>
-                                    </div>
-                                    <p>Queue is clear. All patients attended to.</p>
-                                </div>
-                            )}
-
-                            {<PaginatedItems items={active} label="active">{(q) => (
+                            <section className="card nurse-queue-panel">
+                            <div className="nurse-queue-heading"><div><h2 className="card-title">Patient queue</h2><p>{loading ? 'Loading queue…' : `${active.length} active visits`}</p></div><label className="nurse-search"><i className="bi bi-search" aria-hidden="true" /><input type="search" aria-label="Search patient or queue" placeholder="Search patient or queue…" value={search} onChange={event => setSearch(event.target.value)} /></label></div>
+                            <div className="table-wrap"><table><thead><tr><th>Queue</th><th>Patient</th><th>Purpose</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+                            {loading && <TableSkeletonRows columns={5} />}
+                            {queueError && <tr><td colSpan={5} role="alert">{queueError}</td></tr>}
+                            {!loading && !queueError && !visibleQueue.length && <tr><td colSpan={5} className="nurse-empty">{search.trim() ? 'No matching patients. Try another name or queue number.' : 'Queue is clear. All patients attended to.'}</td></tr>}
+                            {<PaginatedItems items={visibleQueue} tableColumns={5} label="active">{(q) => (
                                 <QueueItem
                                     key={q.queue_id}
                                     item={q}
@@ -1844,6 +1807,7 @@ export default function NurseDashboard() {
                                     onCancel={() => handleCancel(q)}
                                 />
                             )}</PaginatedItems>}
+                            </tbody></table></div></section>
                         </>
                     )}
 

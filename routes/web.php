@@ -35,6 +35,32 @@ Route::get('/', function () {
 
 // Local-only design review; the public home page stays unchanged.
 if (app()->environment('local')) {
+    Route::get('/previews/patient-canvas', function () {
+        return Inertia::render('previews/PatientCanvas', [
+            'initialDesign' => max(1, min(10, (int) request('design', 1))),
+            'initialState' => in_array(request('state'), ['queue', 'triaged', 'doctor', 'examined', 'done', 'error']) ? request('state') : 'start',
+        ]);
+    });
+    Route::get('/previews/nurse-canvas', function () {
+        return Inertia::render('previews/NurseCanvas', [
+            'initialDesign' => max(1, min(10, (int) request('design', 1))),
+        ]);
+    });
+    Route::get('/previews/doctor-canvas', function () {
+        return Inertia::render('previews/DoctorCanvas', [
+            'initialDesign' => max(1, min(10, (int) request('design', 1))),
+        ]);
+    });
+    Route::get('/previews/doctor-designs', function () {
+        return Inertia::render('previews/DoctorDesigns', [
+            'initialDesign' => max(1, min(5, (int) request('design', 1))),
+        ]);
+    });
+    Route::get('/previews/authorization-designs', function () {
+        return Inertia::render('previews/AuthorizationDesigns', [
+            'initialDesign' => max(1, min(5, (int) request('design', 1))),
+        ]);
+    });
     Route::get('/previews/admin-reference', function () {
         return Inertia::render('previews/AdminReferenceDesigns', [
             'initialDesign' => max(1, min(5, (int) request('design', 1))),

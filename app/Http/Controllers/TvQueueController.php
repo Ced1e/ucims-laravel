@@ -15,7 +15,7 @@ use Inertia\Response;
  * Ported from the legacy SPA (#page-tv-queue + initTVQueue() in shared.js).
  * The page and its JSON feed are intentionally public so the TV does not need
  * a login, therefore the feed only exposes what a waiting-room screen needs:
- * queue number and active service state. No names, visit labels, patient id,
+ * queue number, active service state and completed checkout time. No names, visit labels, patient id,
  * email, vitals, diagnosis or any other record data is ever returned.
  */
 class TvQueueController extends Controller
@@ -58,7 +58,7 @@ class TvQueueController extends Controller
 
         // Recently completed: newest first.
         $done = $rows->filter(fn ($q) => $q->status === 'done')
-            ->sortByDesc('queue_id')
+            ->sortByDesc(fn ($q) => [$q->time_out ? (strtotime($today.' '.$q->time_out) ?: 0) : 0, $q->queue_id])
             ->take(self::DONE_LIMIT);
 
         return response()->json([
@@ -66,7 +66,7 @@ class TvQueueController extends Controller
             'waiting' => $waiting->map($card)->values(),
             'nurse' => $nurse->map($card)->values(),
             'doctor' => $doctor->map($card)->values(),
-            'done' => $done->map($card)->values(),
+            'done' => $done->map(fn ($q) => [...$card($q), 'completedTime' => $q->time_out ?: null])->values(),
         ])->header('Cache-Control', 'no-store');
     }
 

@@ -46,6 +46,11 @@ void createInertiaApp({
             case lowerName === 'previews/queuedesigns':
             case lowerName === 'previews/admindesigns':
             case lowerName === 'previews/adminreferencedesigns':
+            case lowerName === 'previews/authorizationdesigns':
+            case lowerName === 'previews/doctordesigns':
+            case lowerName === 'previews/doctorcanvas':
+            case lowerName === 'previews/nursecanvas':
+            case lowerName === 'previews/patientcanvas':
                 return null;
             case lowerName.startsWith('auth/'):
                 return AuthLayout;

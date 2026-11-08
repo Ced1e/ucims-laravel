@@ -12,14 +12,30 @@ final class InputRules
         return [$presence, 'string', 'max:'.$max, "regex:/^[\\p{L}][\\p{L}\\p{M} .’'\\-]*$/u"];
     }
 
-    public static function vital(int $max = 50, string $presence = 'nullable'): array
+    public static function vital(int $maxLength = 50, string $presence = 'nullable', ?float $min = null, ?float $max = null): array
     {
-        // Validate representation only, not a clinical range.
-        return ['bail', $presence, 'regex:/^\d+(?:\.\d+)?$/D', function ($attribute, $value, $fail) use ($max) {
-            if (strlen((string) $value) > $max) {
-                $fail("The {$attribute} must not exceed {$max} characters.");
+        return ['bail', $presence, 'regex:/^\d+(?:\.\d+)?$/D', function ($attribute, $value, $fail) use ($maxLength, $min, $max) {
+            if (strlen((string) $value) > $maxLength) {
+                $fail("The {$attribute} must not exceed {$maxLength} characters.");
+                return;
+            }
+            if ($value !== null && $value !== '' && $min !== null && $max !== null) {
+                $number = (float) $value;
+                if ($number < $min || $number > $max) {
+                    $fail("The {$attribute} must be between {$min} and {$max}.");
+                }
             }
         }];
+    }
+
+    public static function staffClinicId(string $presence = 'required'): array
+    {
+        return [$presence, 'string', 'max:5', 'regex:/^[ADN]-\d{3}$/D'];
+    }
+
+    public static function usepEmail(string $presence = 'required'): array
+    {
+        return [$presence, 'email', 'max:150', 'regex:/^[A-Za-z0-9._%+\-]+@usep\.edu\.ph$/i'];
     }
 
     public static function bloodPressure(string $presence = 'nullable', int $max = 50): array

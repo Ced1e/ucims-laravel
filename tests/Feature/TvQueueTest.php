@@ -91,6 +91,23 @@ it('keeps only the five most recent completed visits', function () {
     expect($this->getJson('/api/tv-queue')->json('done'))->toHaveCount(5);
 });
 
+it('shows saved checkout times and orders completed visits by completion rather than queue entry', function () {
+    $later = queueEntry(['status' => 'done', 'time_out' => '9:02 PM']);
+    $earlier = queueEntry(['status' => 'done', 'time_out' => '8:45 PM']);
+    queueEntry(['status' => 'done', 'time_out' => null]);
+
+    $response = $this->getJson('/api/tv-queue')->assertOk();
+    $response->assertJsonPath('done.0.queueNumber', $later->queue_number)
+        ->assertJsonPath('done.0.completedTime', '9:02 PM')
+        ->assertJsonPath('done.1.queueNumber', $earlier->queue_number)
+        ->assertJsonPath('done.1.completedTime', '8:45 PM')
+        ->assertJsonPath('done.2.completedTime', null);
+    expect(array_keys($response->json('done.0')))->toEqualCanonicalizing(['queueNumber', 'serving', 'completedTime']);
+
+    $this->travel(2)->minutes();
+    $this->getJson('/api/tv-queue')->assertJsonPath('done.0.completedTime', '9:02 PM');
+});
+
 it('marks a nurse assessment as serving and clears it when closed', function () {
     $queue = queueEntry();
     $nurse = User::factory()->create(['role' => 'nurse', 'is_active' => true]);

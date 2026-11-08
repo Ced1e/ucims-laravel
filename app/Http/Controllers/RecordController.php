@@ -162,7 +162,7 @@ class RecordController extends Controller
             'firstname' => InputRules::name(),
             'middlename' => InputRules::name('nullable'),
             'lastname' => InputRules::name(),
-            'usep_email' => ['required', 'email', 'max:150', Rule::unique('users', 'usep_email')->ignore($user->user_id, 'user_id')],
+            'usep_email' => [...InputRules::usepEmail(), Rule::unique('users', 'usep_email')->ignore($user->user_id, 'user_id')],
         ]));
 
         $user->update(collect($data)->only(['firstname', 'middlename', 'lastname', 'usep_email'])->toArray());

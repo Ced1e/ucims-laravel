@@ -58,7 +58,6 @@ function Sidebar({ section, onNavigate }) {
     const { auth } = usePage().props;
     const user = auth?.user;
     const displayName = user ? [user.firstname, user.lastname].filter(Boolean).join(' ') : 'Doctor';
-    const initial = (user?.firstname || 'D').charAt(0).toUpperCase();
 
     const navItems = [
         { section: 'Consultations', items: [{ icon: 'bi-heart-pulse', label: 'Active Consultations', key: 'consultations' }] },
@@ -74,52 +73,28 @@ function Sidebar({ section, onNavigate }) {
     ];
 
     return (
-        <div className="sidebar">
-            <div className="sidebar-brand">
-                <img src="/assets/img/logo.png" className="logo-img" alt="USeP" />
-                <div className="sidebar-brand-text">
-                    <div className="sh-title">USeP Clinic</div>
-                    <div className="sh-sub">Doctor Interface</div>
-                </div>
+        <aside className="canvas-sidebar" id="doctor-sidebar" aria-label="Doctor navigation">
+            <div className="canvas-brand">
+                <img src="/assets/img/University of Southeastern Philippines Seal.png" width="42" height="42" alt="USeP" />
+                <span>USeP Clinic<small>Doctor workspace</small></span>
             </div>
-            <div className="sidebar-nav">
-                {navItems.map((group) => (
-                    <div key={group.section}>
-                        <div className="sidebar-section">{group.section}</div>
-                        {group.items.map((item) => (
-                            <a
-                                key={item.label}
-                                className={item.key === section ? 'active' : ''}
-                                style={item.soon ? { opacity: 0.55, cursor: 'default' } : undefined}
-                                title={item.soon ? 'Coming soon' : undefined}
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    if (item.soon) return;
-                                    onNavigate(item.key);
-                                }}
-                            >
-                                <i className={`bi ${item.icon} nav-icon`}></i> {item.label}
-                                {item.soon && <span style={{ fontSize: '0.7rem', marginLeft: 6, opacity: 0.8 }}>(soon)</span>}
-                            </a>
-                        ))}
-                    </div>
-                ))}
+            <div className="canvas-nav-area">
+                <p className="canvas-nav-label">Workspace</p>
+                <nav>{navItems.flatMap(group => group.items).map(item => (
+                    <button key={item.key} type="button" title={item.label} aria-label={item.label}
+                        aria-current={item.key === section ? 'page' : undefined}
+                        className={item.key === section ? 'active' : ''} onClick={() => onNavigate(item.key)}>
+                        <i className={`bi ${item.icon}`} aria-hidden="true" /> <span>{item.label}</span>
+                    </button>
+                ))}</nav>
             </div>
-            <div className="sidebar-footer">
-                <div className="sidebar-user">
-                    <div className="sidebar-avatar" style={{ background: 'var(--green)' }}>
-                        {initial}
-                    </div>
-                    <div>
-                        <div className="sidebar-user-name">{displayName}</div>
-                        <div className="sidebar-user-role">Doctor Interface</div>
-                    </div>
-                </div>
-                <button className="btn btn-outline btn-sm w100" onClick={() => router.post('/logout')}>
-                    <i className="bi bi-box-arrow-left"></i> Sign Out
+            <div className="canvas-user">
+                <div><strong>{displayName}</strong><small>Clinic physician</small></div>
+                <button type="button" title="Sign out" aria-label="Sign out" onClick={() => router.post('/logout')}>
+                    <i className="bi bi-box-arrow-left" aria-hidden="true" /> <span>Sign out</span>
                 </button>
             </div>
-        </div>
+        </aside>
     );
 }
 
@@ -146,7 +121,7 @@ function ConsultRow({ item, onExamine, onQuickComplete }) {
                     <button className="btn btn-primary btn-sm" onClick={onExamine}>
                         <i className="bi bi-file-medical"></i> Examine
                     </button>
-                    <button className="btn btn-primary btn-sm" onClick={onQuickComplete}>
+                    <button className="btn btn-outline btn-sm" onClick={onQuickComplete}>
                         <i className="bi bi-check-circle"></i> Completed
                     </button>
                 </div>
@@ -1266,6 +1241,8 @@ function ReviewMedCertModal({ cert, onClose, onReleased, showToast }) {
 }
 
 export default function DoctorDashboard() {
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 800);
+    const [search, setSearch] = useState('');
     const [queue, setQueue] = useState([]);
     const [queueError, setQueueError] = useState('');
     const [loading, setLoading] = useState(true);
@@ -1355,6 +1332,11 @@ export default function DoctorDashboard() {
 
     const active = queue.filter((q) => q.status === 'with-doctor').sort((a, b) => (a.queue_number || 0) - (b.queue_number || 0));
 
+    const filteredActive = active.filter(item => `${item.queue_number ?? ''} ${patientName(item.patient)} ${VISIT_MAP[item.visit_type]?.label || item.visit_label || ''}`.toLowerCase().includes(search.trim().toLowerCase()));
+    const featured = filteredActive[0];
+    const remaining = filteredActive.slice(1);
+    const sectionTitles = { consultations: 'Active Consultations', medcert: 'MedCert Requests', labs: 'Lab Requests', records: 'Record Management', history: 'Examination History' };
+
     async function handleQuickComplete(item) {
         if (!confirm(`Mark visit for ${patientName(item.patient)} as completed?`)) return;
         try {
@@ -1373,17 +1355,32 @@ export default function DoctorDashboard() {
                 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
             </Head>
 
-            <div className="layout">
+            <div className={`layout canvas-admin doctor-focus ${sidebarCollapsed ? 'canvas-collapsed' : ''}`}>
                 <Sidebar section={section} onNavigate={setSection} />
                 <div className="main-content">
+                    <header className="canvas-topbar doctor-topbar">
+                        <button type="button" className="btn btn-outline btn-sm" aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'} aria-expanded={!sidebarCollapsed} aria-controls="doctor-sidebar" onClick={() => setSidebarCollapsed(value => !value)}><i className="bi bi-layout-sidebar" aria-hidden="true" /></button>
+                        <strong>{sectionTitles[section]}</strong><span>USeP · University Clinic</span>
+                    </header>
                     {section === 'consultations' && (
                         <>
                             <div className="page-header">
-                                <h1>Medical Consultations</h1>
-                                <p>Patients endorsed to you, waiting for examination.</p>
+                                <h1>Active Consultations</h1>
+                                <p>Review assigned patients and continue their care.</p>
                             </div>
-                            <div className="card">
-                                <div className="card-title">Patient Queue</div>
+                            <div className="doctor-summary">
+                                <div className="doctor-summary-card"><span>Active consultations</span><strong>{loading ? <MetricSkeleton /> : queueError ? '—' : active.length}</strong></div>
+                                <button type="button" className="doctor-summary-card" onClick={() => setSection('medcert')}><span>Certificate requests</span><strong>View requests <i className="bi bi-arrow-right" aria-hidden="true" /></strong></button>
+                                <button type="button" className="doctor-summary-card" onClick={() => setSection('labs')}><span>Lab requests</span><strong>View requests <i className="bi bi-arrow-right" aria-hidden="true" /></strong></button>
+                            </div>
+                            <div className="card doctor-queue-card">
+                                <div className="doctor-queue-heading"><div><h2 className="card-title">Assigned patient queue</h2><p>{loading ? 'Loading consultations…' : `${active.length} assigned consultations`}</p></div>
+                                    <label className="doctor-search"><i className="bi bi-search" aria-hidden="true" /><input type="search" aria-label="Search assigned patients" placeholder="Search patient or queue…" value={search} onChange={event => setSearch(event.target.value)} /></label>
+                                </div>
+                                {!loading && featured && <section className="doctor-featured" aria-label="First matching assigned patient">
+                                    <div><span className="doctor-eyebrow">{search.trim() ? 'FIRST MATCHING CONSULTATION' : 'FIRST IN ASSIGNED QUEUE'}</span><h2><span>#{featured.queue_number ?? '—'}</span> {patientName(featured.patient)}</h2><VisitBadge item={featured} />{featured.time_in && <span className="doctor-time">Time in · {featured.time_in}</span>}</div>
+                                    <div className="doctor-featured-actions"><StatusBadge status={featured.status} /><div className="flex gap6"><button type="button" className="btn btn-primary btn-sm" onClick={() => setExamineItem(featured)}><i className="bi bi-file-medical" /> Examine</button><button type="button" className="btn btn-outline btn-sm" onClick={() => handleQuickComplete(featured)}><i className="bi bi-check-circle" /> Completed</button></div></div>
+                                </section>}
                                 <div className="table-wrap">
                                     <table>
                                         <thead>
@@ -1400,14 +1397,15 @@ export default function DoctorDashboard() {
                                                 <TableSkeletonRows columns={5} />
                                             )}
                                             {queueError && <tr><td colSpan={5} role="alert">{queueError}</td></tr>}
-                                            {!loading && !queueError && active.length === 0 && (
+                                            {!loading && !queueError && filteredActive.length === 0 && (
                                                 <tr>
                                                     <td colSpan={5} style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>
-                                                        No patients waiting.
+                                                        {search.trim() ? 'No matching patients. Try another name or queue number.' : 'No patients waiting.'}
                                                     </td>
                                                 </tr>
                                             )}
-                                            {<PaginatedItems items={active} tableColumns={5} label="active">{(q) => (
+                                            {!loading && featured && remaining.length === 0 && <tr><td colSpan={5} className="doctor-no-remaining">No other patients in this queue.</td></tr>}
+                                            {<PaginatedItems items={remaining} tableColumns={5} label="remaining consultations">{(q) => (
                                                 <ConsultRow
                                                     key={q.queue_id}
                                                     item={q}

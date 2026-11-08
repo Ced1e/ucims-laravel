@@ -120,7 +120,7 @@ function RecordsSearch({ patients, loading, onView, onHistory }) {
                                     <th>Name</th>
                                     <th>College</th>
                                     <th>Yr</th>
-                                    <th>Actions</th>
+                                    <th className="doctor-record-actions">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -130,7 +130,7 @@ function RecordsSearch({ patients, loading, onView, onHistory }) {
                                         <td className="fw6">{p.name}</td>
                                         <td className="text-xs">{p.college_dept || '—'}</td>
                                         <td>{p.year_level || '—'}</td>
-                                        <td>
+                                        <td className="doctor-record-actions">
                                             <div className="flex gap6">
                                                 <button className="btn btn-outline btn-sm" onClick={() => onView(p)}>
                                                     <i className="bi bi-file-medical"></i> View Record

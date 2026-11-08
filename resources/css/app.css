@@ -8,6 +8,13 @@
 @import './entry.css';
 @import './data-skeletons.css';
 @import './admin-designs.css';
+@import './admin-canvas.css';
+@import './authorization-designs.css';
+@import './doctor-designs.css';
+@import './doctor-focus.css';
+@import './nurse-live-canvas.css';
+@import './patient-centered.css';
+@import './patient-queue.css';
 
 :root { --ucims-base-ready: 1; }
 
@@ -150,3 +157,6 @@
         @apply bg-background text-foreground;
     }
 }
+
+
+

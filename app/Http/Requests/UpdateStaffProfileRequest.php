@@ -21,7 +21,7 @@ class UpdateStaffProfileRequest extends FormRequest
             'firstname' => InputRules::name('sometimes'),
             'middlename' => InputRules::name('nullable'),
             'lastname' => InputRules::name('sometimes'),
-            'usep_email' => ['sometimes', 'email', 'max:150', Rule::unique('users', 'usep_email')->ignore($staff?->user_id, 'user_id')],
+            'usep_email' => [...InputRules::usepEmail('sometimes'), Rule::unique('users', 'usep_email')->ignore($staff?->user_id, 'user_id')],
             'role' => 'sometimes|in:admin,doctor,nurse',
             'password' => 'nullable|string|min:8',
 

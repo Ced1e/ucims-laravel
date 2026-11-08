@@ -1,3 +1,5 @@
+import { ChartNoAxesCombined, Users, ShieldCheck, ClipboardCheck, PanelLeftOpen, PanelLeftClose, LogOut } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { DetailSkeleton, ListSkeleton, TableSkeletonRows, MetricSkeleton, ChartSkeleton } from '@/components/data-skeletons';
 import { localToday } from '@/lib/registration-validation.mjs';
 import PaginatedItems from '../../components/paginated-items.jsx';
@@ -51,67 +53,9 @@ function loadChartJs() {
 // Sidebar (legacy #page-admin design)
 // ─────────────────────────────────────────────────────────────
 function Sidebar({ section, onNavigate }) {
-    const { auth } = usePage().props;
-    const user = auth?.user;
-    const displayName = user ? fullName(user) : 'Admin';
-    const initial = (user?.firstname || 'A').charAt(0).toUpperCase();
-
-    const navItems = [
-        {
-            section: 'Management',
-            items: [
-                { icon: 'bi-bar-chart-fill', label: 'Analytics & Stats', key: 'analytics' },
-                { icon: 'bi-person-lines-fill', label: 'Account Management', key: 'accounts' },
-                { icon: 'bi-shield-lock', label: 'Authorization Management', key: 'authorization' },
-            ],
-        },
-        { section: 'Validation', items: [{ icon: 'bi-check2-all', label: 'Record Validation', key: 'validation' }] },
-    ];
-
-    return (
-        <div className="sidebar">
-            <div className="sidebar-brand">
-                <img src="/assets/img/logo.png" className="logo-img" alt="USeP" />
-                <div className="sidebar-brand-text">
-                    <div className="sh-title">USeP Clinic</div>
-                    <div className="sh-sub">Admin Interface</div>
-                </div>
-            </div>
-            <div className="sidebar-nav">
-                {navItems.map((group) => (
-                    <div key={group.section}>
-                        <div className="sidebar-section">{group.section}</div>
-                        {group.items.map((item) => (
-                            <a
-                                key={item.label}
-                                className={item.key === section ? 'active' : ''}
-                                onClick={(e) => {
-                                    e.preventDefault();
-                                    onNavigate(item.key);
-                                }}
-                            >
-                                <i className={`bi ${item.icon} nav-icon`}></i> {item.label}
-                            </a>
-                        ))}
-                    </div>
-                ))}
-            </div>
-            <div className="sidebar-footer">
-                <div className="sidebar-user">
-                    <div className="sidebar-avatar" style={{ background: '#555' }}>
-                        {initial}
-                    </div>
-                    <div>
-                        <div className="sidebar-user-name">{displayName}</div>
-                        <div className="sidebar-user-role">Admin Interface</div>
-                    </div>
-                </div>
-                <button className="btn btn-outline btn-sm w100" onClick={() => router.post('/logout')}>
-                    <i className="bi bi-box-arrow-left"></i> Sign Out
-                </button>
-            </div>
-        </div>
-    );
+ const {auth}=usePage().props;const user=auth?.user;
+ const items=[['analytics','Reports',ChartNoAxesCombined],['accounts','Account Management',Users],['authorization','Authorization Management',ShieldCheck],['validation','Record Validation',ClipboardCheck]];
+ return <aside className="canvas-sidebar" id="admin-sidebar"><a href="/" className="canvas-brand"><img src="/assets/img/University of Southeastern Philippines Seal.png" width="44" height="44" alt="USeP home"/><span>USeP Clinic<small>Administration</small></span></a><div className="canvas-nav-area"><p className="canvas-nav-label">Workspace</p><nav aria-label="Administration">{items.map(([key,label,Icon])=><button key={key} type="button" className={section===key?'active':''} aria-current={section===key?'page':undefined} title={label} aria-label={label} onClick={()=>onNavigate(key)}><Icon size={18} aria-hidden="true"/><span>{label}</span></button>)}</nav></div><div className="canvas-user"><div><strong>{user?fullName(user):'Administrator'}</strong><small>Clinic administrator</small></div><button type="button" title="Sign out" aria-label="Sign out" onClick={()=>router.post('/logout')}><LogOut size={18}/><span>Sign out</span></button></div></aside>;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -294,11 +238,11 @@ function AnalyticsSection({ showToast }) {
     return (
         <>
             <div className="page-header">
-                <h1>Clinic Analytics &amp; Statistics</h1>
-                <p>Monitor consultation trends, averages, and demographic breakdowns.</p>
+                <h1>Reports</h1>
+
             </div>
 
-            <div className="card" style={{ marginBottom: 20 }}>
+            <div className="card canvas-report-panel" style={{ marginBottom: 20 }}>
                 <div className="card-title" style={{ fontSize: '0.9rem' }}>
                     <i className="bi bi-funnel"></i> Filter Data
                 </div>
@@ -338,11 +282,11 @@ function AnalyticsSection({ showToast }) {
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
-                <div className="stat-card" style={{ borderTopColor: 'var(--maroon)' }}>
+                <div className="stat-card">
                     <div className="stat-num">{loading ? <MetricSkeleton /> : loadError ? '—' : filtered.length}</div>
                     <div className="stat-label">Total Consultations Filtered</div>
                 </div>
-                <div className="stat-card" style={{ borderTopColor: 'var(--gold)' }}>
+                <div className="stat-card">
                     <div className="stat-num" style={{ color: 'var(--gold)' }}>
                         {loading ? <MetricSkeleton /> : loadError ? '—' : avgPerDay}
                     </div>
@@ -372,7 +316,7 @@ function AnalyticsSection({ showToast }) {
                 </div>
             </div>
 
-            <div className="card">
+            <div className="card canvas-report-panel">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2px solid var(--border)', marginBottom: 16 }}>
                     <div className="card-title" style={{ marginBottom: 0 }}>
                         Consultation Data Table
@@ -918,14 +862,14 @@ function AuthorizationSection({ staff, loading, showToast, reload }) {
                 <h1>System Authorization Management</h1>
                 <p>Control user roles and feature access permissions across the system.</p>
             </div>
-            <div className="grid2" style={{ alignItems: 'start' }}>
-                <div className="card">
-                    <div className="card-title">Modify User Role</div>
-                    <div className="text-sm text-muted mb8">Elevate or demote permissions for existing staff members.</div>
-                    <div className="field-row mt12">
+            <div className="canvas-authorization">
+                <div className="card canvas-role-editor">
+                    <div className="card-title"><ShieldCheck size={20} aria-hidden="true" /> Modify user role</div>
+                    <div className="text-sm text-muted mb8">Update the role assigned to an existing staff member.</div>
+                    <div className="canvas-role-fields mt12">
                         <div className="field">
-                            <label>Select User</label>
-                            <select value={selected} onChange={(e) => setSelected(e.target.value)} disabled={loading}>
+                            <label htmlFor="role-staff">Select user</label>
+                            <select id="role-staff" value={selected} onChange={(e) => setSelected(e.target.value)} disabled={loading}>
                                 <option value="">— Select Staff —</option>
                                 {options.map((u) => (
                                     <option key={u.id} value={u.id}>
@@ -935,8 +879,8 @@ function AuthorizationSection({ staff, loading, showToast, reload }) {
                             </select>
                         </div>
                         <div className="field">
-                            <label>New Role</label>
-                            <select value={newRole} onChange={(e) => setNewRole(e.target.value)}>
+                            <label htmlFor="role-new">New role</label>
+                            <select id="role-new" value={newRole} onChange={(e) => setNewRole(e.target.value)}>
                                 <option value="nurse">Nurse</option>
                                 <option value="doctor">Doctor</option>
                                 <option value="admin">Admin</option>
@@ -949,31 +893,17 @@ function AuthorizationSection({ staff, loading, showToast, reload }) {
                     <p className="text-xs text-muted mt8">You can't change your own role — ask another admin to do it.</p>
                 </div>
 
-                <div className="card">
-                    <div className="card-title">Role Permissions Overview</div>
-                    <div className="table-wrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>Feature Module</th>
-                                    <th>Patient</th>
-                                    <th>Nurse</th>
-                                    <th>Doctor</th>
-                                    <th>Admin</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {PERMISSIONS.map((row) => (
-                                    <tr key={row[0]}>
-                                        {row.map((cell, i) => (
-                                            <td key={i} className={i === 0 ? 'fw6' : undefined} style={i === 0 ? undefined : { textAlign: 'center' }}>
-                                                {cell}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                <div className="card canvas-permissions">
+                    <div className="card-title">Role permissions overview</div>
+                    <p className="text-sm text-muted">Existing feature access by role · Reference only</p>
+                    <div className="canvas-role-cards">
+                        {['Patient', 'Nurse', 'Doctor', 'Admin'].map((role, index) => {
+                            const modules = PERMISSIONS.filter(row => Boolean(row[index + 1]));
+                            return <section key={role} className="canvas-role-card">
+                                <h2>{role}<span>{modules.length} modules</span></h2>
+                                <ul>{modules.map(row => <li key={row[0]}><i className="bi bi-check-lg" aria-hidden="true" />{row[0]}</li>)}</ul>
+                            </section>;
+                        })}
                     </div>
                 </div>
             </div>
@@ -1031,11 +961,11 @@ function RecordValidation({ data, loading }) {
                             <thead>
                                 <tr>
                                     <th>Patient</th>
-                                    <th>Demographics</th>
-                                    <th>Health Records</th>
-                                    <th>Questionnaire</th>
-                                    <th>Permanent</th>
-                                    <th>Status</th>
+                                    <th scope="col" style={{ textAlign: 'center' }}>Demographics</th>
+                                    <th scope="col" style={{ textAlign: 'center' }}>Health Records</th>
+                                    <th scope="col" style={{ textAlign: 'center' }}>Questionnaire</th>
+                                    <th scope="col" style={{ textAlign: 'center' }}>Permanent</th>
+                                    <th scope="col" style={{ textAlign: 'center' }}>Status</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -1073,6 +1003,7 @@ function RecordValidation({ data, loading }) {
 // ─────────────────────────────────────────────────────────────
 export default function AdminAnalytics() {
     const [section, setSection] = useState('analytics');
+    const [collapsed, setCollapsed] = useState(false);
     const [toastMsg, setToastMsg] = useState(null);
 
     const showToast = useCallback((msg, type = 'success') => {
@@ -1122,10 +1053,10 @@ export default function AdminAnalytics() {
                 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
             </Head>
 
-            <div className="layout">
+            <div className={`layout canvas-admin ${collapsed ? 'canvas-collapsed' : ''}`}>
                 <Sidebar section={section} onNavigate={setSection} />
-                <div className="main-content">
-                    {section === 'analytics' && <AnalyticsSection showToast={showToast} />}
+                <div className="main-content"><div className="canvas-topbar"><Button variant="ghost" size="icon" aria-label={collapsed?'Expand sidebar':'Collapse sidebar'} aria-expanded={!collapsed} aria-controls="admin-sidebar" onClick={()=>setCollapsed(v=>!v)}>{collapsed?<PanelLeftOpen/>:<PanelLeftClose/>}</Button><strong>{{analytics:'Reports',accounts:'Account Management',authorization:'Authorization Management',validation:'Record Validation'}[section]}</strong><span>USeP · Clinic administration</span></div>
+                    <section hidden={section !== 'analytics'}><AnalyticsSection showToast={showToast} /></section>
                     {section === 'accounts' && (
                         <AccountsSection staff={staffList} loading={staffLoading} patientCount={patientCount} showToast={showToast} reload={fetchStaff} />
                     )}

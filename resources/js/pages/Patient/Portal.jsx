@@ -4,6 +4,7 @@ import PaginatedItems from '../../components/paginated-items.jsx';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Head, usePage, router } from '@inertiajs/react';
 import axios from 'axios';
+import { Check, Clock, HeartPulse, RefreshCw } from 'lucide-react';
 
 function nowTime() {
     return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
@@ -31,111 +32,33 @@ function Sidebar() {
     const { auth } = usePage().props;
     const user = auth?.user;
     const displayName = user ? [user.firstname, user.lastname].filter(Boolean).join(' ') : 'Patient';
-    const initial = (user?.firstname || 'P').charAt(0).toUpperCase();
 
     return (
-        <div className="sidebar">
-            <div className="sidebar-brand">
-                <img src="/assets/img/logo.png" className="logo-img" alt="USeP" />
-                <div className="sidebar-brand-text">
-                    <div className="sh-title">USeP Clinic</div>
-                    <div className="sh-sub">Patient Portal</div>
-                </div>
-            </div>
-            <div className="sidebar-nav">
-                <div className="sidebar-section">Visit</div>
-                <a className="active" onClick={(e) => e.preventDefault()}>
-                    <i className="bi bi-hospital nav-icon"></i> Visit Purpose Selection
-                </a>
-            </div>
-            <div className="sidebar-footer">
-                <div className="sidebar-user">
-                    <div className="sidebar-avatar">{initial}</div>
-                    <div>
-                        <div className="sidebar-user-name">{displayName}</div>
-                        <div className="sidebar-user-role">Patient Portal</div>
-                    </div>
-                </div>
-                <button className="btn btn-outline btn-sm w100" onClick={() => router.post('/logout')}>
-                    <i className="bi bi-box-arrow-left"></i> Sign Out
-                </button>
-            </div>
-        </div>
+        <aside className="canvas-sidebar" id="patient-sidebar" aria-label="Patient navigation">
+            <div className="canvas-brand"><img src="/assets/img/University of Southeastern Philippines Seal.png" width="42" height="42" alt="USeP" /><span>USeP Clinic<small>Patient portal</small></span></div>
+            <div className="canvas-nav-area"><p className="canvas-nav-label">Workspace</p><nav><button type="button" className="active" aria-current="page" title="Patient portal" aria-label="Patient portal"><i className="bi bi-heart-pulse" aria-hidden="true" /><span>Patient portal</span></button></nav></div>
+            <div className="canvas-user"><div><strong>{displayName}</strong><small>{user?.clinic_id || 'Patient portal'}</small></div><button type="button" title="Sign out" aria-label="Sign out" onClick={() => router.post('/logout')}><i className="bi bi-box-arrow-left" aria-hidden="true" /><span>Sign out</span></button></div>
+        </aside>
     );
 }
 
 function Steps({ current }) {
-    const steps = ['Select Purpose', 'Details / Queue', 'Queue Status'];
-    return (
-        <div className="steps" style={{ maxWidth: 800 }}>
-            {steps.map((s, i) => (
-                <div key={s} className={`step ${i < current ? 'done' : i === current ? 'active' : ''}`}>
-                    {i + 1} · {s}
-                </div>
-            ))}
-        </div>
-    );
+    return <ol className="cq-progress" aria-label="Visit progress">{['Choose purpose', 'Confirm visit', 'Queue status'].map((label, i) => <li key={label} aria-current={i === current ? 'step' : undefined}><span>{i < current ? <Check size={13} /> : i + 1}</span>{label}</li>)}</ol>;
 }
 
 // ─────────────────────────────────────────────────────────────
 // Step 1: Purpose selection
 // ─────────────────────────────────────────────────────────────
 function PurposeSelect({ onPick }) {
-    return (
-        <>
-            <div className="page-header">
-                <h1>Visit Purpose Selection</h1>
-                <p>Choose the type of service you need for your visit today.</p>
-            </div>
-            <Steps current={0} />
-            <div style={{ maxWidth: 800, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                <div className="purpose-card" onClick={() => onPick('consult')}>
-                    <div
-                        style={{
-                            width: 52,
-                            height: 52,
-                            borderRadius: 12,
-                            background: '#f5e0e0',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '1.6rem',
-                            marginBottom: 14,
-                            color: 'var(--maroon)',
-                        }}
-                    >
-                        <i className="bi bi-heart-pulse"></i>
-                    </div>
-                    <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: 5, color: 'var(--maroon)' }}>Consultation</div>
-                    <div style={{ fontSize: '.8rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                        Visit the clinic for a check-up, medicine request, or follow-up consultation.
-                    </div>
-                </div>
-                <div className="purpose-card" onClick={() => onPick('medcert')}>
-                    <div
-                        style={{
-                            width: 52,
-                            height: 52,
-                            borderRadius: 12,
-                            background: '#e8edf6',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '1.6rem',
-                            marginBottom: 14,
-                            color: 'var(--blue)',
-                        }}
-                    >
-                        <i className="bi bi-file-earmark-medical"></i>
-                    </div>
-                    <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: 5, color: 'var(--blue)' }}>Medical Certificate Request</div>
-                    <div style={{ fontSize: '.8rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>
-                        Request an official medical certificate. Fill out a form and join the queue.
-                    </div>
-                </div>
-            </div>
-        </>
-    );
+    const { auth } = usePage().props;
+    return <>
+        <div className="page-header"><h1>{auth?.user?.firstname ? `Welcome, ${auth.user.firstname}.` : 'Welcome to your patient portal.'}</h1><p>Your connection to the university clinic.</p></div>
+        <div className="patient-services">
+            <article className="patient-service"><span className="patient-service-icon"><i className="bi bi-heart-pulse" /></span><h2>Consultation</h2><p>Visit the clinic for a check-up, medicine request, or follow-up consultation.</p><button className="btn btn-primary" onClick={() => onPick('consult')}>Choose consultation <i className="bi bi-arrow-right" /></button></article>
+            <article className="patient-service"><span className="patient-service-icon"><i className="bi bi-file-earmark-medical" /></span><h2>Medical certificate</h2><p>Complete a request form and join the clinic queue for your medical certificate.</p><button className="btn btn-outline" onClick={() => onPick('medcert')}>Request certificate <i className="bi bi-arrow-right" /></button></article>
+        </div>
+        <section className="patient-visit-guide"><h2>Your clinic visit</h2><ol>{[['Choose your purpose','Select the service you need.'],['Confirm your visit','Review your details before joining.'],['Follow your queue','Wait for your number to be called.']].map(([title,description],i)=><li key={title}><span>{i+1}</span><div><strong>{title}</strong><p>{description}</p></div></li>)}</ol></section>
+    </>;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -154,6 +77,9 @@ function ConsultSubOptions({ onPick, onBack }) {
                     <div
                         key={o.type}
                         className="purpose-card"
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); onPick(o.type, o.label); } }}
                         style={{ padding: '24px 18px', textAlign: 'center' }}
                         onClick={() => onPick(o.type, o.label)}
                     >
@@ -318,180 +244,54 @@ function QueueTicket({ entry, onRefresh, onLeave, refreshing, countdown }) {
     const s = STATUS_MAP[entry.status] || { lbl: entry.status, badge: 'b-gray' };
     const active = allQueue.filter((q) => !['done', 'cancelled'].includes(q.status));
     const aheadCount = active.filter((q) => (q.queue_number || 0) < (entry.queue_number || 0)).length;
-    const currentlyServing = active.length ? Math.min(...active.map((q) => q.queue_number || Infinity)) : '--';
     const triage = entry.triage;
-
-    return (
-        <>
-            <div className="page-header">
-                <h1>Queue Status</h1>
-                <p>Your current position in the clinic queue.</p>
-            </div>
-            <Steps current={entry.status === 'done' ? 3 : 2} />
-            <div className="card" style={{ maxWidth: 800, padding: '36px 32px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 20 }}>
-                    <div>
-                        <div className="text-xs text-muted" style={{ textTransform: 'uppercase', letterSpacing: 2, marginBottom: 8 }}>
-                            Queue Number
-                        </div>
-                        <div style={{ fontFamily: "'DM Serif Display',serif", fontSize: '5rem', color: 'var(--maroon)', lineHeight: 1 }}>
-                            {entry.queue_number}
-                        </div>
-                        <div className="text-sm text-muted mt8">
-                            Time In: <b>{entry.time_in}</b>
-                        </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                        <div style={{ margin: '14px 0 12px' }}>
-                            <span className={`badge ${s.badge}`} style={{ fontSize: '.85rem', padding: '8px 18px' }}>
-                                {s.lbl}
-                            </span>
-                        </div>
-                        <div
-                            style={{
-                                display: 'inline-block',
-                                padding: '6px 16px',
-                                borderRadius: 20,
-                                fontSize: '.8rem',
-                                fontWeight: 600,
-                                background: '#f5e0e0',
-                                color: 'var(--maroon)',
-                            }}
-                        >
-                            {entry.visit_label}
-                        </div>
-                        <br />
-                        <button className="btn btn-outline btn-sm mt16" disabled={refreshing} onClick={onRefresh}>
-                            <i className="bi bi-arrow-clockwise"></i> {refreshing ? 'Refreshing…' : 'Refresh Status'}
-                        </button>
+    const done = entry.status === 'done';
+    const message = entry.status === 'with-doctor' ? 'The doctor is reviewing your records. Please remain nearby.'
+        : entry.status === 'examined' ? 'Please proceed to the nurse station to finish your visit.'
+        : entry.status === 'triaged' ? 'Your assessment is recorded. Please wait for the doctor.'
+        : 'Please remain in the waiting area until your number is called.';
+    return <>
+        <div className="page-header"><h1>{done ? 'Visit completed' : 'Your queue status'}</h1><p>Follow the status of your clinic visit.</p></div>
+        <div className="cq-wrap">
+            <Steps current={done ? 3 : 2} />
+            <section className="cq-ticket">
+                <div className="cq-ticket-header"><span className="cq-kicker">Your clinic visit</span><span className="cq-status" role="status"><span />{s.lbl}</span></div>
+                <div className="cq-ticket-body">
+                    <div><span className="cq-number-label">QUEUE NUMBER</span><strong className="cq-number">{entry.queue_number ?? '—'}</strong><div className="cq-details"><span>{entry.visit_label || 'Clinic visit'}</span><span>Time in · {entry.time_in || '—'}</span></div></div>
+                    <div className="cq-guidance"><span className="cq-guidance-icon">{done ? <Check size={22} /> : <Clock size={22} />}</span><h2>{done ? 'Your visit is complete.' : entry.status === 'waiting' ? 'You’re in the queue.' : s.lbl}</h2><p>{done ? 'Please collect prescriptions or documents at the nurse station. Thank you for visiting.' : message}</p>
+                        {done ? <button className="btn btn-primary" onClick={onLeave}>Done <Check size={14} /></button> : <button className="btn btn-outline" disabled={refreshing} onClick={onRefresh}><RefreshCw size={14} />{refreshing ? 'Refreshing…' : 'Refresh status'}</button>}
                     </div>
                 </div>
+                <footer className="cq-ticket-footer"><span><span className="cq-dot" />{done ? 'Visit completed' : 'Updates automatically'}</span><span>{done && countdown !== null && countdown > 0 ? `Returning to the start in ${countdown}s…` : 'USeP · University Clinic'}</span></footer>
+            </section>
+            {!done && <div className="cq-position"><span><strong>{aheadCount}</strong> patient(s) ahead</span><span>Follow the clinic staff’s instructions when called.</span></div>}
+            {triage?.blood_pressure && <section className="cq-vitals"><div className="cq-section-heading"><div><h2><HeartPulse size={18} /> Your recorded vital signs</h2><p>From your nurse assessment</p></div></div><dl>{[
+                ['Blood pressure', triage.blood_pressure, 'mmHg'],
+                ['Heart rate', triage.heart_rate, 'bpm'],
+                ['Temperature', triage.temperature, '°C'],
+                ['Respiratory rate', triage.resp_rate, '/min'],
+                ['Oxygen saturation', triage.o2_saturation, '%'],
+                ['Weight', triage.weight, 'kg'],
+            ].map(([name, value, unit]) => <div key={name}><dt>{name}</dt><dd>{value || '—'}{value && <small>{unit}</small>}</dd></div>)}</dl><p className="cq-complaint"><span>Chief complaint</span>{triage.chief_complaint || '—'}</p></section>}
+            {!done && <section className="cq-queue"><div className="cq-section-heading"><div><h2>Current clinic queue</h2><p>Queue numbers only. Your entry is highlighted.</p></div><span className="cq-small-count">{active.length} active</span></div><div className="cq-table"><table><thead><tr><th>Queue number</th><th>Status</th></tr></thead><tbody>
+                {active.length === 0 && <tr><td colSpan={2}>No active queue entries to display.</td></tr>}
+                <PaginatedItems items={active} tableColumns={2} label="active">{q => {
+                    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+                    const isMe = String(entry.date).slice(0, 10) === today && Number(q.queue_number) === Number(entry.queue_number);
+                    const st = STATUS_MAP[q.status] || { lbl: q.status };
+                    return <tr key={q.queue_number} className={isMe ? 'cq-your-row' : ''}><td><strong>{q.queue_number}</strong>{isMe && <span className="cq-you">You</span>}</td><td><span className="cq-table-status">{st.lbl}</span></td></tr>;
+                }}</PaginatedItems>
+            </tbody></table></div></section>}
+        </div>
+    </>;
 
-                {entry.status !== 'done' && (
-                    <div
-                        style={{
-                            marginTop: 24,
-                            background: '#fdf5f5',
-                            border: '1px solid var(--border)',
-                            borderRadius: 'var(--radius-lg)',
-                            padding: '18px 24px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 16,
-                        }}
-                    >
-                        <div style={{ fontSize: '2.5rem', color: 'var(--maroon)' }}>
-                            <i className="bi bi-people-fill"></i>
-                        </div>
-                        <div>
-                            <div style={{ fontSize: '.85rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 700 }}>
-                                Live Queue Update
-                            </div>
-                            {aheadCount === 0 ? (
-                                <div style={{ fontSize: '1.1rem', color: 'var(--green)', fontWeight: 700, marginTop: 4 }}>It is almost your turn!</div>
-                            ) : (
-                                <div style={{ fontSize: '1.1rem', color: 'var(--maroon)', fontWeight: 700, marginTop: 4 }}>
-                                    There are {aheadCount} patient(s) ahead of you.
-                                </div>
-                            )}
-                            <div style={{ fontSize: '.85rem', color: 'var(--text-muted)', marginTop: 2 }}>Currently Serving: Ticket #{currentlyServing}</div>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {entry.status === 'done' && (
-                <>
-                    <div className="alert alert-success" style={{ maxWidth: 800 }}>
-                        <i className="bi bi-check-circle-fill"></i> Your consultation is complete. Please collect prescriptions or documents at the
-                        nurse's station. Thank you!
-                    </div>
-                    <div style={{ maxWidth: 800, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-                        <button className="btn btn-primary" onClick={onLeave}>
-                            <i className="bi bi-check2"></i> Done
-                        </button>
-                        {countdown !== null && countdown > 0 && (
-                            <span className="text-sm text-muted">Returning to the start in {countdown}s…</span>
-                        )}
-                    </div>
-                </>
-            )}
-            {entry.status === 'with-doctor' && (
-                <div className="alert alert-info" style={{ maxWidth: 800 }}>
-                    <i className="bi bi-person-badge"></i> The doctor is reviewing your records. Please remain nearby.
-                </div>
-            )}
-
-            {triage?.blood_pressure && (
-                <div className="card card-sm" style={{ maxWidth: 800, marginTop: 0 }}>
-                    <div className="fw6 text-sm mb8" style={{ color: 'var(--maroon)' }}>
-                        <i className="bi bi-activity"></i> Your Recorded Vital Signs
-                    </div>
-                    <div className="grid3">
-                        {[
-                            ['BP', triage.blood_pressure],
-                            ['HR', triage.heart_rate ? `${triage.heart_rate} bpm` : ''],
-                            ['Temp', triage.temperature ? `${triage.temperature}°C` : ''],
-                            ['RR', triage.resp_rate || ''],
-                            ['O₂', triage.o2_saturation ? `${triage.o2_saturation}%` : ''],
-                            ['Weight', triage.weight ? `${triage.weight} kg` : ''],
-                        ].map(([l, v]) => (
-                            <div key={l} style={{ background: '#f9f8f6', borderRadius: 7, padding: '12px 14px' }}>
-                                <div className="text-xs text-muted">{l}</div>
-                                <div className="fw6 text-sm mt4">{v || '—'}</div>
-                            </div>
-                        ))}
-                    </div>
-                    <div className="text-sm mt12">
-                        <span className="text-muted">Chief Complaint:</span> {triage.chief_complaint || '—'}
-                    </div>
-                </div>
-            )}
-
-            <div className="card" style={{ maxWidth: 800, marginTop: 20 }}>
-                <div className="card-title" style={{ fontSize: '1.05rem' }}>
-                    Current Clinic Queue
-                </div>
-                <div className="text-sm text-muted mb8">See all patients currently in line.</div>
-                <div className="table-wrap">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Queue #</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {<PaginatedItems items={active} tableColumns={2} label="active">{(q) => {
-                                const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
-                                const isMe = String(entry.date).slice(0, 10) === today && Number(q.queue_number) === Number(entry.queue_number);
-                                const st = STATUS_MAP[q.status] || { lbl: q.status, badge: 'b-gray' };
-                                return (
-                                    <tr key={q.queue_number} style={isMe ? { background: '#fdf5f5' } : undefined}>
-                                        <td style={isMe ? { fontWeight: 'bold', color: 'var(--maroon)' } : undefined}>
-                                            <span className="num-badge" style={{ background: isMe ? 'var(--maroon)' : '#888' }}>
-                                                {q.queue_number}
-                                            </span>{' '}
-                                            {isMe ? ' (You)' : ''}
-                                        </td>
-                                        <td>
-                                            <span className={`badge ${st.badge}`}>{st.lbl}</span>
-                                        </td>
-                                    </tr>
-                                );
-                            }}</PaginatedItems>}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </>
-    );
 }
 
 // ─────────────────────────────────────────────────────────────
 // Main page
 // ─────────────────────────────────────────────────────────────
 export default function PatientPortal() {
+    const [collapsed, setCollapsed] = useState(() => typeof window !== 'undefined' && window.innerWidth <= 800);
     const [loading, setLoading] = useState(true);
     const [queueError, setQueueError] = useState('');
     const [queueLoaded, setQueueLoaded] = useState(false);
@@ -625,9 +425,11 @@ export default function PatientPortal() {
                 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
             </Head>
 
-            <div className="layout">
+            <div className={`layout canvas-admin patient-centered ${collapsed ? 'canvas-collapsed' : ''}`}>
                 <Sidebar />
                 <div className="main-content">
+                    <header className="canvas-topbar"><button type="button" className="btn btn-outline btn-sm" aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} aria-expanded={!collapsed} aria-controls="patient-sidebar" onClick={() => setCollapsed(v => !v)}><i className="bi bi-layout-sidebar" aria-hidden="true" /></button><strong>Patient portal</strong><span>USeP · University Clinic</span></header>
+                    <div className="patient-center-content">
                     {loading && <DetailSkeleton fields={2} label="Loading your clinic status" />}
                     {queueError && <p role="alert">{queueError}</p>}
 
@@ -662,6 +464,8 @@ export default function PatientPortal() {
                     {!loading && (!queueError || queueLoaded) && !myEntry && step === 'medcert' && (
                         <MedCertForm submitting={submitting} onBack={() => setStep('purpose')} onSubmit={submitMedCert} />
                     )}
+                    <footer className="patient-footer">University Clinic Information Management System</footer>
+                    </div>
                 </div>
             </div>
 

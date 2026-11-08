@@ -16,16 +16,24 @@ class StoreStaffProfileRequest extends FormRequest
     {
         return [
             // Identity + login (goes on users)
-            'clinic_id' => 'required|string|max:50|unique:users,clinic_id',
+            'clinic_id' => [...InputRules::staffClinicId(), 'unique:users,clinic_id'],
             'firstname' => InputRules::name('required'),
             'middlename' => InputRules::name('nullable'),
             'lastname' => InputRules::name('required'),
-            'usep_email' => 'required|email|max:150|unique:users,usep_email',
+            'usep_email' => [...InputRules::usepEmail(), 'unique:users,usep_email'],
             'role' => 'required|in:admin,doctor,nurse',
             'password' => 'required|string|min:8',
 
             // Profile details (goes on staff_profiles)
             ...InputRules::staffProfile(),
+        ];
+    }
+
+    public function messages(): array
+    {
+        return [
+            'clinic_id.regex' => 'Use the staff Clinic ID format A-001, D-001, or N-001.',
+            'usep_email.regex' => 'Use a USeP email address (name@usep.edu.ph).',
         ];
     }
 }

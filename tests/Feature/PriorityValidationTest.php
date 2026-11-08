@@ -6,6 +6,7 @@ use App\Http\Requests\PatientRegistrationRequest;
 use App\Http\Requests\StoreEndorsedRequest;
 use App\Http\Requests\StoreMedicineIssuanceRequest;
 use App\Http\Requests\StoreQueueRequest;
+use App\Http\Requests\StoreStaffProfileRequest;
 use App\Http\Requests\StoreTriageRequest;
 use App\Http\Requests\UpdateClinicQueueRequest;
 use App\Http\Requests\UpdateEndorsedRequest;
@@ -122,6 +123,40 @@ class PriorityValidationTest extends TestCase
         $this->assertTrue($v->errors()->has('dob'));
         $this->assertTrue($v->errors()->has('mobile_no'));
         $this->assertTrue($this->check(UpdateStaffProfileRequest::class, ['mobile_no' => '0912-345-6789'], ['mobile_no'])->passes());
+    }
+
+    public function test_staff_credentials_require_usep_email_and_structured_clinic_id(): void
+    {
+        $v = $this->check(StoreStaffProfileRequest::class, [
+            'clinic_id' => 'invalid-id',
+            'usep_email' => 'staff@example.com',
+        ], ['clinic_id', 'usep_email']);
+
+        $this->assertTrue($v->errors()->has('clinic_id'));
+        $this->assertTrue($v->errors()->has('usep_email'));
+
+        $valid = $this->check(StoreStaffProfileRequest::class, [
+            'clinic_id' => 'N-001',
+            'usep_email' => 'nurse@usep.edu.ph',
+        ], ['clinic_id', 'usep_email']);
+        $this->assertFalse($valid->errors()->has('clinic_id'));
+        $this->assertFalse($valid->errors()->has('usep_email'));
+    }
+
+    public function test_triage_rejects_measurements_outside_safe_entry_ranges(): void
+    {
+        $v = $this->check(StoreTriageRequest::class, [
+            'heart_rate' => '221',
+            'temperature' => '46',
+            'resp_rate' => '61',
+            'o2_saturation' => '101',
+            'weight' => '301',
+            'height' => '251',
+        ], ['heart_rate', 'temperature', 'resp_rate', 'o2_saturation', 'weight', 'height']);
+
+        foreach (['heart_rate', 'temperature', 'resp_rate', 'o2_saturation', 'weight', 'height'] as $field) {
+            $this->assertTrue($v->errors()->has($field), $field);
+        }
     }
 
     public function test_role_references_and_actor_attribution_cannot_be_forged(): void
