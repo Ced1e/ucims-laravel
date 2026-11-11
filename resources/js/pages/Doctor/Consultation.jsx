@@ -1,6 +1,6 @@
 import { MetricSkeleton, DetailSkeleton, ListSkeleton, TableSkeletonRows } from '@/components/data-skeletons';
 import { prescriptionError, requestError } from '@/lib/clinical-validation.mjs';
-import { isCalendarDate } from '@/lib/registration-validation.mjs';
+import { isCalendarDate, localToday } from '@/lib/registration-validation.mjs';
 import PaginatedItems from '../../components/paginated-items.jsx';
 import { useState, useEffect, useCallback } from 'react';
 import { Head, usePage, router } from '@inertiajs/react';
@@ -457,8 +457,9 @@ function ExamineModal({ item, onClose, onFinalized, showToast }) {
                                     <label>ICD-10 Code (optional)</label>
                                     <input
                                         placeholder="e.g. J06.9"
+                                        maxLength={20}
                                         value={diag.icd_10_code}
-                                        onChange={(e) => setDiag({ ...diag, icd_10_code: e.target.value })}
+                                        onChange={(e) => setDiag({ ...diag, icd_10_code: e.target.value.toUpperCase() })}
                                     />
                                 </div>
                                 <div className="modal-footer" style={{ border: 'none', paddingTop: 8 }}>
@@ -1076,13 +1077,14 @@ function MedCertListDoctor({ certs, loading, onReview }) {
     );
 }
 
-function Blank({ value, onChange, width = 170, type = 'text', placeholder = '' }) {
+function Blank({ value, onChange, width = 170, type = 'text', placeholder = '', ...props }) {
     return (
         <input
             type={type}
             value={value}
             placeholder={placeholder}
             onChange={(e) => onChange(e.target.value)}
+            {...props}
             style={{
                 border: 'none',
                 borderBottom: '1.5px solid #333',
@@ -1116,8 +1118,8 @@ function ReviewMedCertModal({ cert, onClose, onReleased, showToast }) {
     const issuedDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
     async function handleRelease() {
-        if (form.exam_date && !isCalendarDate(form.exam_date)) {
-            showToast('Enter a valid examination date.', 'error'); return;
+        if (form.exam_date && (!isCalendarDate(form.exam_date) || form.exam_date > localToday())) {
+            showToast('Enter a valid examination date (cannot be in the future).', 'error'); return;
         }
         if (!form.license_no.trim()) {
             showToast('Please enter the physician license number before releasing.', 'error');
@@ -1182,7 +1184,7 @@ function ReviewMedCertModal({ cert, onClose, onReleased, showToast }) {
                     </p>
                     <p>
                         examined by the undersigned at this office on{' '}
-                        <Blank type="date" value={form.exam_date} onChange={(v) => setForm({ ...form, exam_date: v })} width={160} /> and found
+                        <Blank type="date" max={localToday()} value={form.exam_date} onChange={(v) => setForm({ ...form, exam_date: v })} width={160} /> and found
                         him/her to be with
                     </p>
                     <Blank

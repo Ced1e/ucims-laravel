@@ -2,6 +2,7 @@ import { ChartNoAxesCombined, Users, ShieldCheck, ClipboardCheck, PanelLeftOpen,
 import { Button } from '@/components/ui/button';
 import { DetailSkeleton, ListSkeleton, TableSkeletonRows, MetricSkeleton, ChartSkeleton } from '@/components/data-skeletons';
 import { localToday } from '@/lib/registration-validation.mjs';
+import { formatClinicId, formatPhilippineMobile, usepEmailError } from '@/lib/input-validation.mjs';
 import PaginatedItems from '../../components/paginated-items.jsx';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Head, usePage, router } from '@inertiajs/react';
@@ -427,6 +428,15 @@ function EditStaffModal({ member, onClose, onSaved, showToast }) {
             showToast('First name, last name and email are required.', 'error');
             return;
         }
+        const emailErr = usepEmailError(form.usep_email);
+        if (emailErr) {
+            showToast(emailErr, 'error');
+            return;
+        }
+        if (form.mobile_no && !/^09\d{2}-?\d{3}-?\d{4}$/.test(form.mobile_no.trim()) && !/^09\d{9}$/.test(form.mobile_no.trim())) {
+            showToast('Enter a valid mobile number (e.g. 0912-345-6789 or 09123456789).', 'error');
+            return;
+        }
         setSaving(true);
         try {
             await axios.put(`/api/records/staff/${member.id}`, form);
@@ -469,11 +479,11 @@ function EditStaffModal({ member, onClose, onSaved, showToast }) {
                             </select>
                         </div>
                         <div className="field"><label>Date of Birth *</label><input type="date" max={localToday()} value={form.dob} onChange={set('dob')} /></div>
-                        <div className="field"><label>Mobile No. *</label><input maxLength={20} value={form.mobile_no} onChange={set('mobile_no')} /></div>
+                        <div className="field"><label>Mobile No. *</label><input placeholder="09XXXXXXXXX" maxLength={11} inputMode="numeric" value={form.mobile_no} onChange={(e) => setForm({ ...form, mobile_no: formatPhilippineMobile(e.target.value) })} /></div>
                     </div>
                     <div className="grid2">
-                        <div className="field"><label>Landline No.</label><input maxLength={20} value={form.landline_no} onChange={set('landline_no')} /></div>
-                        <div className="field"><label>USeP Email *</label><input type="email" maxLength={150} value={form.usep_email} onChange={set('usep_email')} /></div>
+                        <div className="field"><label>Landline No.</label><input placeholder="(082) xxx-xxxx" maxLength={20} value={form.landline_no} onChange={set('landline_no')} /></div>
+                        <div className="field"><label>USeP Email *</label><input type="email" placeholder="staff@usep.edu.ph" maxLength={150} pattern="^[A-Za-z0-9._%+\-]+@usep\.edu\.ph$" value={form.usep_email} onChange={set('usep_email')} /></div>
                     </div>
                     <div className="card-title mt16" style={{ fontSize: '.9rem', color: 'var(--maroon)' }}>
                         <i className="bi bi-geo-alt"></i> 2. Complete Address
@@ -597,6 +607,19 @@ function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
             showToast('Please fill all required (*) fields. Password min 8 chars.', 'error');
             return;
         }
+        if (!/^[ADN]-\d{3}$/.test(form.clinic_id.trim())) {
+            showToast('Clinic ID must match staff format (A-001, D-001, or N-001).', 'error');
+            return;
+        }
+        const emailErr = usepEmailError(form.usep_email);
+        if (emailErr) {
+            showToast(emailErr, 'error');
+            return;
+        }
+        if (form.mobile_no && !/^09\d{9}$/.test(form.mobile_no.replace(/\D/g, ''))) {
+            showToast('Mobile number must be a valid 11-digit Philippine mobile (09XXXXXXXXX).', 'error');
+            return;
+        }
         setCreating(true);
         try {
             await axios.post('/staff', form);
@@ -679,11 +702,11 @@ function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
                             </select>
                         </div>
                         <div className="field"><label>Date of Birth *</label><input type="date" max={localToday()} value={form.dob} onChange={set('dob')} /></div>
-                        <div className="field"><label>Mobile No. *</label><input placeholder="09xx-xxx-xxxx" maxLength={20} value={form.mobile_no} onChange={set('mobile_no')} /></div>
+                        <div className="field"><label>Mobile No. *</label><input placeholder="09XXXXXXXXX" maxLength={11} inputMode="numeric" value={form.mobile_no} onChange={(e) => setForm({ ...form, mobile_no: formatPhilippineMobile(e.target.value) })} /></div>
                     </div>
                     <div className="grid2">
                         <div className="field"><label>Landline No.</label><input placeholder="(082) xxx-xxxx" maxLength={20} value={form.landline_no} onChange={set('landline_no')} /></div>
-                        <div className="field"><label>USeP Email *</label><input type="email" placeholder="staff@usep.edu.ph" maxLength={150} value={form.usep_email} onChange={set('usep_email')} /></div>
+                        <div className="field"><label>USeP Email *</label><input type="email" placeholder="staff@usep.edu.ph" maxLength={150} pattern="^[A-Za-z0-9._%+\-]+@usep\.edu\.ph$" value={form.usep_email} onChange={set('usep_email')} /></div>
                     </div>
 
                     <div className="card-title mt16" style={{ fontSize: '.9rem', color: 'var(--maroon)' }}>
@@ -719,7 +742,7 @@ function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
                         <i className="bi bi-shield-lock"></i> 4. System Credentials
                     </div>
                     <div className="grid2 mb16">
-                        <div className="field mb0"><label>Clinic ID Number *</label><input placeholder="N-001" maxLength={50} value={form.clinic_id} onChange={set('clinic_id')} /></div>
+                        <div className="field mb0"><label>Clinic ID Number *</label><input placeholder="N-001" maxLength={5} pattern="^[ADN]-\d{3}$" value={form.clinic_id} onChange={(e) => setForm({ ...form, clinic_id: formatClinicId(e.target.value, 'staff') })} /></div>
                         <div className="field mb0"><label>Password * (min 8)</label><input type="password" placeholder="••••••••" value={form.password} onChange={set('password')} /></div>
                     </div>
                     <button className="btn btn-primary w100" disabled={creating} onClick={handleCreate}>

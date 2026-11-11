@@ -43,6 +43,7 @@ void createInertiaApp({
             case lowerName === 'tvqueue':
             case lowerName === 'auth/login':
             case lowerName === 'previews/homedesigns':
+            case lowerName === 'previews/homerefresh':
             case lowerName === 'previews/queuedesigns':
             case lowerName === 'previews/admindesigns':
             case lowerName === 'previews/adminreferencedesigns':

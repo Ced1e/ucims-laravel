@@ -1,4 +1,5 @@
 import { registrationLimits, isCalendarDate, localToday } from '@/lib/registration-validation.mjs';
+import { formatPhilippineMobile } from '@/lib/input-validation.mjs';
 import React from 'react';
 import { Field, SectionTitle } from './Common';
 
@@ -118,7 +119,15 @@ export default function StepPersonal({ data, set, errors }) {
             </div>
 
             <Field label="Your Contact No." required error={errors.contact_no} hint="Format: 09XXXXXXXXX">
-                <input type="tel" placeholder="09XXXXXXXXX" {...bind('contact_no')} />
+                <input
+                    type="tel"
+                    inputMode="numeric"
+                    maxLength={11}
+                    pattern="^09\d{9}$"
+                    placeholder="09XXXXXXXXX"
+                    value={data.contact_no}
+                    onChange={(e) => set('contact_no', formatPhilippineMobile(e.target.value))}
+                />
             </Field>
 
             <div className="card-title mt16" style={{ fontSize: '.9rem' }}>
@@ -129,7 +138,15 @@ export default function StepPersonal({ data, set, errors }) {
                     <input placeholder="Full name" {...bind('em_name')} />
                 </Field>
                 <Field label="Contact No." required error={errors.em_contact}>
-                    <input type="tel" placeholder="09XXXXXXXXX" {...bind('em_contact')} />
+                    <input
+                        type="tel"
+                        inputMode="numeric"
+                        maxLength={11}
+                        pattern="^09\d{9}$"
+                        placeholder="09XXXXXXXXX"
+                        value={data.em_contact}
+                        onChange={(e) => set('em_contact', formatPhilippineMobile(e.target.value))}
+                    />
                 </Field>
                 <Field label="Relationship" required error={errors.em_rel}>
                     <input placeholder="e.g. Mother" {...bind('em_rel')} />

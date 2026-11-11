@@ -30,6 +30,7 @@ Route::get('/', function () {
         'canRegister' => Route::has('register'),
         'laravelVersion' => Application::VERSION,
         'phpVersion' => PHP_VERSION,
+        'initialDesign' => max(1, min(5, (int) request('design', 1))),
     ]);
 })->name('home');
 
@@ -78,7 +79,12 @@ if (app()->environment('local')) {
     });
     Route::get('/previews/home-designs', function () {
         return Inertia::render('previews/HomeDesigns', [
-            'initialDesign' => max(1, min(10, (int) request('design', 1))),
+            'initialDesign' => max(1, min(5, (int) request('design', 1))),
+        ]);
+    });
+    Route::get('/previews/home-refresh', function () {
+        return Inertia::render('previews/HomeRefresh', [
+            'initialDesign' => max(1, min(5, (int) request('design', 1))),
         ]);
     });
 }

@@ -53,8 +53,8 @@ export default function Login({ status }: { status?: string }) {
                     <form onSubmit={submit} className="clinic-entry-form" aria-busy={processing}>
                         <div className="clinic-entry-field">
                             <label htmlFor="clinic-id">Clinic ID</label>
-                            <input id="clinic-id" name="clinic_id" type="text" value={data.clinic_id} autoComplete="username" required placeholder="Enter your Clinic ID" onChange={(e) => setData('clinic_id', e.target.value)} aria-invalid={Boolean(errors.clinic_id)} aria-describedby={errors.clinic_id ? 'clinic-id-hint clinic-id-error' : 'clinic-id-hint'} />
-                            <p id="clinic-id-hint" className="clinic-entry-hint">Use the Clinic ID assigned to your account.</p>
+                            <input id="clinic-id" name="clinic_id" type="text" autoCapitalize="characters" maxLength={10} value={data.clinic_id} autoComplete="username" required placeholder="e.g. 2024-00001 or N-001" onChange={(e) => setData('clinic_id', e.target.value.toUpperCase())} aria-invalid={Boolean(errors.clinic_id)} aria-describedby={errors.clinic_id ? 'clinic-id-hint clinic-id-error' : 'clinic-id-hint'} />
+                            <p id="clinic-id-hint" className="clinic-entry-hint">Use the Clinic ID assigned to your account (e.g. 2024-00001 or N-001).</p>
                             {errors.clinic_id && <p id="clinic-id-error" className="clinic-entry-error" role="alert">{errors.clinic_id}</p>}
                         </div>
                         <div className="clinic-entry-field">

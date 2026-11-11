@@ -41,6 +41,15 @@ class PriorityValidationTest extends TestCase
         parent::setUp();
         $this->assertSame('sqlite', config('database.default'));
         $this->assertSame(':memory:', config('database.connections.sqlite.database'));
+
+        if (! Schema::hasTable('users')) {
+            Schema::create('users', function ($table) {
+                $table->integer('user_id')->primary();
+                $table->string('clinic_id')->nullable()->unique();
+                $table->string('role');
+                $table->string('usep_email')->nullable()->unique();
+            });
+        }
     }
 
     private function check(string $class, array $data, array $fields, ?Model $record = null, ?User $user = null)
@@ -161,14 +170,12 @@ class PriorityValidationTest extends TestCase
 
     public function test_role_references_and_actor_attribution_cannot_be_forged(): void
     {
-        Schema::create('users', function ($table) {
-            $table->integer('user_id')->primary();
-            $table->string('role');
-            $table->string('usep_email')->nullable();
-        });
+        DB::table('users')->delete();
         DB::table('users')->insert([
-            ['user_id' => 1, 'role' => 'nurse'], ['user_id' => 2, 'role' => 'patient'],
-            ['user_id' => 3, 'role' => 'doctor'], ['user_id' => 4, 'role' => 'nurse'],
+            ['user_id' => 1, 'clinic_id' => 'N-001', 'role' => 'nurse', 'usep_email' => 'nurse1@usep.edu.ph'],
+            ['user_id' => 2, 'clinic_id' => '2024-00001', 'role' => 'patient', 'usep_email' => 'patient@usep.edu.ph'],
+            ['user_id' => 3, 'clinic_id' => 'D-001', 'role' => 'doctor', 'usep_email' => 'doctor@usep.edu.ph'],
+            ['user_id' => 4, 'clinic_id' => 'N-002', 'role' => 'nurse', 'usep_email' => 'nurse2@usep.edu.ph'],
         ]);
         $nurse = (new User)->forceFill(['user_id' => 1, 'role' => 'nurse']);
         foreach ([2, 3, 4] as $id) {

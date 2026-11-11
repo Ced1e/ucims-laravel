@@ -1,3 +1,4 @@
+import { formatClinicId, patterns } from '@/lib/input-validation.mjs';
 import React from 'react';
 import { Field, SectionTitle } from './Common';
 
@@ -14,7 +15,13 @@ export default function StepAccount({ data, set, errors }) {
 
             <div className="field-row">
                 <Field label="Student / Faculty ID" required error={errors.clinic_id} hint="Format: 2024-00001">
-                    <input placeholder="e.g. 2024-00001" maxLength={10} value={data.clinic_id} onChange={(e) => set('clinic_id', e.target.value)} />
+                    <input
+                        placeholder="e.g. 2024-00001"
+                        maxLength={10}
+                        pattern={patterns.patientClinicId}
+                        value={data.clinic_id}
+                        onChange={(e) => set('clinic_id', formatClinicId(e.target.value, 'patient'))}
+                    />
                 </Field>
                 <Field label="Account Type" required error={errors.patient_type}>
                     <select value={data.patient_type} onChange={(e) => set('patient_type', e.target.value)}>
@@ -26,11 +33,25 @@ export default function StepAccount({ data, set, errors }) {
             </div>
 
             <div className="field-row">
-                <Field label="USeP Email Address" required error={errors.usep_email}>
-                    <input type="email" maxLength={150} value={data.usep_email} onChange={(e) => set('usep_email', e.target.value)} />
+                <Field label="USeP Email Address" required error={errors.usep_email} hint="Must be an official @usep.edu.ph address">
+                    <input
+                        type="email"
+                        maxLength={150}
+                        placeholder="name@usep.edu.ph"
+                        pattern="^[A-Za-z0-9._%+\-]+@usep\.edu\.ph$"
+                        value={data.usep_email}
+                        onChange={(e) => set('usep_email', e.target.value)}
+                    />
                 </Field>
                 <Field label="Confirm Email" required error={errors.usep_email_confirmation}>
-                    <input type="email" placeholder="Confirm your email" maxLength={150} value={data.usep_email_confirmation} onChange={(e) => set('usep_email_confirmation', e.target.value)} />
+                    <input
+                        type="email"
+                        placeholder="Confirm your email"
+                        maxLength={150}
+                        pattern="^[A-Za-z0-9._%+\-]+@usep\.edu\.ph$"
+                        value={data.usep_email_confirmation}
+                        onChange={(e) => set('usep_email_confirmation', e.target.value)}
+                    />
                 </Field>
             </div>
 

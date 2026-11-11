@@ -1,4 +1,5 @@
 import { registrationLimits } from '@/lib/registration-validation.mjs';
+import { formatBloodPressure } from '@/lib/input-validation.mjs';
 import React from 'react';
 import { Field, SectionTitle } from './Common';
 
@@ -35,32 +36,39 @@ export default function StepHealth({ data, set, errors }) {
             </div>
             <div className="field-row3">
                 <Field label="Height (cm)" required error={errors.height}>
-                    <input type="number" step="0.1" placeholder="e.g. 165" {...bind('height')} />
+                    <input type="number" min="50" max="250" step="0.1" placeholder="e.g. 165" {...bind('height')} />
                 </Field>
                 <Field label="Weight (kg)" required error={errors.weight}>
-                    <input type="number" step="0.1" placeholder="e.g. 60" {...bind('weight')} />
+                    <input type="number" min="10" max="300" step="0.1" placeholder="e.g. 60" {...bind('weight')} />
                 </Field>
                 <Field label="Blood Pressure" required error={errors.blood_pressure}>
-                    <input placeholder="e.g. 120/80" {...bind('blood_pressure')} />
+                    <input
+                        placeholder="e.g. 120/80"
+                        maxLength={7}
+                        inputMode="numeric"
+                        pattern="^\d{2,3}/\d{2,3}$"
+                        value={data.blood_pressure}
+                        onChange={(e) => set('blood_pressure', formatBloodPressure(e.target.value))}
+                    />
                 </Field>
             </div>
             <div className="field-row3">
                 <Field label="Pulse Rate (bpm)" required error={errors.pulse_rate}>
-                    <input type="number" placeholder="e.g. 72" {...bind('pulse_rate')} />
+                    <input type="number" min="30" max="220" step="1" placeholder="e.g. 72" {...bind('pulse_rate')} />
                 </Field>
                 <Field label="Resp. Rate (/min)" required error={errors.resp_rate}>
-                    <input type="number" placeholder="e.g. 18" {...bind('resp_rate')} />
+                    <input type="number" min="5" max="60" step="1" placeholder="e.g. 18" {...bind('resp_rate')} />
                 </Field>
                 <Field label="Temperature (°C)" required error={errors.temp}>
-                    <input type="number" step="0.1" placeholder="e.g. 36.5" {...bind('temp')} />
+                    <input type="number" min="30" max="45" step="0.1" placeholder="e.g. 36.5" {...bind('temp')} />
                 </Field>
             </div>
             <div className="field-row">
                 <Field label="Cardiac Rate — At Rest (bpm)" required error={errors.cr_rest}>
-                    <input type="number" placeholder="e.g. 70" {...bind('cr_rest')} />
+                    <input type="number" min="30" max="220" step="1" placeholder="e.g. 70" {...bind('cr_rest')} />
                 </Field>
                 <Field label="Cardiac Rate — After Activity (bpm)" required error={errors.cr_activity}>
-                    <input type="number" placeholder="e.g. 98" {...bind('cr_activity')} />
+                    <input type="number" min="30" max="250" step="1" placeholder="e.g. 98" {...bind('cr_activity')} />
                 </Field>
             </div>
 

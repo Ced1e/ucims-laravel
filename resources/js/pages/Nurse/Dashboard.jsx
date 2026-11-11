@@ -1,5 +1,6 @@
 import { TableSkeletonRows, MetricSkeleton, DetailSkeleton, ListSkeleton } from '@/components/data-skeletons';
 import { requestError } from '@/lib/clinical-validation.mjs';
+import { formatBloodPressure } from '@/lib/input-validation.mjs';
 import PaginatedItems from '../../components/paginated-items.jsx';
 import { useState, useEffect, useCallback } from 'react';
 import { Head, usePage, router } from '@inertiajs/react';
@@ -230,6 +231,29 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
             setError('Blood pressure and chief complaint are required.');
             return;
         }
+        if (!/^\d{2,3}\/\d{2,3}$/.test(form.blood_pressure.trim())) {
+            setError('Blood pressure must be in standard systolic/diastolic format (e.g. 120/80).');
+            return;
+        }
+        const checkRange = (val, min, max, label) => {
+            if (val === '' || val == null) return null;
+            const n = Number(val);
+            if (Number.isNaN(n) || n < min || n > max) {
+                return `${label} must be between ${min} and ${max}.`;
+            }
+            return null;
+        };
+        const rangeError =
+            checkRange(form.heart_rate, 30, 220, 'Heart rate') ||
+            checkRange(form.temperature, 30, 45, 'Temperature') ||
+            checkRange(form.resp_rate, 5, 60, 'Respiratory rate') ||
+            checkRange(form.o2_saturation, 0, 100, 'O₂ saturation') ||
+            checkRange(form.weight, 10, 300, 'Weight') ||
+            checkRange(form.height, 50, 250, 'Height');
+        if (rangeError) {
+            setError(rangeError);
+            return;
+        }
         setSaving(true);
         setError(null);
         try {
@@ -319,15 +343,23 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
                                 <label>Blood Pressure (mmHg) *</label>
                                 <input
                                     placeholder="e.g. 120/80"
-                                    maxLength={50} value={form.blood_pressure}
-                                    onChange={(e) => setForm({ ...form, blood_pressure: e.target.value })}
+                                    maxLength={7}
+                                    inputMode="numeric"
+                                    pattern="^\d{2,3}/\d{2,3}$"
+                                    value={form.blood_pressure}
+                                    onChange={(e) => setForm({ ...form, blood_pressure: formatBloodPressure(e.target.value) })}
                                 />
                             </div>
                             <div className="field">
                                 <label>Heart Rate (bpm)</label>
                                 <input
                                     placeholder="e.g. 78"
-                                    maxLength={50} inputMode="decimal" value={form.heart_rate}
+                                    type="number"
+                                    min="30"
+                                    max="220"
+                                    step="1"
+                                    inputMode="numeric"
+                                    value={form.heart_rate}
                                     onChange={(e) => setForm({ ...form, heart_rate: e.target.value })}
                                 />
                             </div>
@@ -337,7 +369,12 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
                                 <label>Temperature (°C)</label>
                                 <input
                                     placeholder="e.g. 36.8"
-                                    maxLength={50} inputMode="decimal" value={form.temperature}
+                                    type="number"
+                                    min="30"
+                                    max="45"
+                                    step="0.1"
+                                    inputMode="decimal"
+                                    value={form.temperature}
                                     onChange={(e) => setForm({ ...form, temperature: e.target.value })}
                                 />
                             </div>
@@ -345,7 +382,12 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
                                 <label>Respiratory Rate (breaths/min)</label>
                                 <input
                                     placeholder="e.g. 18"
-                                    maxLength={50} inputMode="decimal" value={form.resp_rate}
+                                    type="number"
+                                    min="5"
+                                    max="60"
+                                    step="1"
+                                    inputMode="numeric"
+                                    value={form.resp_rate}
                                     onChange={(e) => setForm({ ...form, resp_rate: e.target.value })}
                                 />
                             </div>
@@ -355,7 +397,12 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
                                 <label>O₂ Saturation (%)</label>
                                 <input
                                     placeholder="e.g. 98"
-                                    maxLength={50} inputMode="decimal" value={form.o2_saturation}
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="1"
+                                    inputMode="numeric"
+                                    value={form.o2_saturation}
                                     onChange={(e) => setForm({ ...form, o2_saturation: e.target.value })}
                                 />
                             </div>
@@ -363,7 +410,12 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
                                 <label>Weight (kg)</label>
                                 <input
                                     placeholder="e.g. 60"
-                                    maxLength={50} inputMode="decimal" value={form.weight}
+                                    type="number"
+                                    min="10"
+                                    max="300"
+                                    step="0.1"
+                                    inputMode="decimal"
+                                    value={form.weight}
                                     onChange={(e) => setForm({ ...form, weight: e.target.value })}
                                 />
                             </div>
@@ -371,7 +423,12 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
                                 <label>Height (cm)</label>
                                 <input
                                     placeholder="e.g. 165"
-                                    maxLength={50} inputMode="decimal" value={form.height}
+                                    type="number"
+                                    min="50"
+                                    max="250"
+                                    step="0.1"
+                                    inputMode="decimal"
+                                    value={form.height}
                                     onChange={(e) => setForm({ ...form, height: e.target.value })}
                                 />
                             </div>
@@ -384,6 +441,7 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
                             <label>Chief Complaint *</label>
                             <input
                                 placeholder="Patient's primary concern"
+                                maxLength={255}
                                 value={form.chief_complaint}
                                 onChange={(e) => setForm({ ...form, chief_complaint: e.target.value })}
                             />
@@ -392,6 +450,7 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
                             <label>Initial Assessment Notes</label>
                             <textarea
                                 placeholder="Nurse's initial observations..."
+                                maxLength={1000}
                                 value={form.initial_notes}
                                 onChange={(e) => setForm({ ...form, initial_notes: e.target.value })}
                             />
@@ -1419,7 +1478,7 @@ function ManageMedsModal({ item, onClose, showToast, onIssued }) {
                 </div>
                 <div className="field">
                     <label>Instructions</label>
-                    <input value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} />
+                    <input maxLength={1000} placeholder="e.g. Take after meals" value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} />
                 </div>
                 <button className="btn btn-primary btn-sm mb8" disabled={saving} onClick={handleSave}>
                     {saving ? 'Saving…' : <><i className="bi bi-plus"></i> Add to Issued List</>}

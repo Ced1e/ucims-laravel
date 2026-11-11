@@ -202,7 +202,7 @@ function MedCertForm({ onBack, onSubmit, submitting }) {
                 </div>
                 <div className="field">
                     <label>Additional Notes (optional)</label>
-                    <input placeholder="Any additional information..." value={notes} onChange={(e) => setNotes(e.target.value)} />
+                    <input placeholder="Any additional information..." maxLength={1000} value={notes} onChange={(e) => setNotes(e.target.value)} />
                 </div>
                 {error && (
                     <p className="text-xs" style={{ color: '#C0392B' }}>
