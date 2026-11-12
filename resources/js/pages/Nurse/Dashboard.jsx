@@ -192,7 +192,9 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
     const [mode, setMode] = useState(initialMode);
     useEffect(() => {
         if (mode === 'view') return;
-        const token = crypto.randomUUID();
+        const token = typeof crypto !== 'undefined' && crypto.randomUUID
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
         let pending = Promise.resolve();
         const update = (active) => {
             pending = pending.then(() => axios.post(`/api/tv-queue/serving/${item.queue_id}`, { active, token })).catch(() => {});
