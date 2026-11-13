@@ -10,11 +10,14 @@ class MedicineIssuance extends Model
     use HasFactory;
 
     protected $table = 'medicine_issuance';
+
     protected $primaryKey = 'issuance_id';
+
     public $timestamps = false;
 
     protected $fillable = [
         'queue_id',
+        'prescription_id',
         'nurse_id',
         'medicine_name',
         'dosage',
@@ -23,6 +26,7 @@ class MedicineIssuance extends Model
         'issued_date',
         'duration',
         'frequency',
+        'route',
     ];
 
     protected $casts = [
@@ -37,5 +41,10 @@ class MedicineIssuance extends Model
     public function nurse()
     {
         return $this->belongsTo(User::class, 'nurse_id', 'user_id');
+    }
+
+    public function prescription()
+    {
+        return $this->belongsTo(Prescription::class, 'prescription_id', 'prescription_id');
     }
 }

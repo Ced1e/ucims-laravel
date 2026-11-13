@@ -2,11 +2,12 @@
 
 use App\Http\Controllers\ClinicQueueController;
 use App\Http\Controllers\EndorsedController;
-use App\Http\Controllers\TriageController;
-use App\Http\Controllers\MedicalCertificateController;
+use App\Http\Controllers\Icd10Controller;
 use App\Http\Controllers\LabRequestController;
+use App\Http\Controllers\MedicalCertificateController;
 use App\Http\Controllers\MedicineIssuanceController;
 use App\Http\Controllers\PrescriptionController;
+use App\Http\Controllers\TriageController;
 use App\Models\ClinicQueue;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -19,6 +20,10 @@ Route::prefix('v1')->middleware(['web', 'auth'])->name('api.')->group(function (
 
     Route::get('doctors', [ClinicQueueController::class, 'doctors']);
     Route::post('queues/{clinicQueue}/endorse', [ClinicQueueController::class, 'endorse']);
+
+    // ICD-10 lookup: search by disease name or by code while diagnosing.
+    Route::get('icd10', [Icd10Controller::class, 'index'])
+        ->middleware('role:doctor,nurse,admin');
 
     Route::apiResource('endorsed', EndorsedController::class)->only(['show', 'update']);
 

@@ -23,6 +23,7 @@
 (() => {
     const root = document.documentElement;
     let scheduled = false;
+    let poll;
     let timeout;
     let waitingSince = Date.now();
     function check() {
@@ -45,7 +46,9 @@
         if (ready) {
             if (root.hasAttribute('data-ui-loading')) root.removeAttribute('data-ui-loading');
             clearTimeout(timeout);
+            clearInterval(poll);
             timeout = undefined;
+            poll = undefined;
             waitingSince = 0;
         } else {
             if (!root.hasAttribute('data-ui-loading')) root.setAttribute('data-ui-loading', '');
@@ -57,10 +60,13 @@
             if (message && message.textContent !== text) message.textContent = text;
             if (retry && retry.hidden === failed) retry.hidden = !failed;
             if (!timeout && !failed) timeout = setTimeout(() => { timeout = undefined; schedule(); }, 10000);
+            // Poll while waiting: requestAnimationFrame is paused in background tabs and
+            // some embedded browsers, which would otherwise strand the overlay forever.
+            if (!poll) poll = setInterval(schedule, 250);
         }
     }
     function schedule() {
-        if (!scheduled) { scheduled = true; requestAnimationFrame(check); }
+        if (!scheduled) { scheduled = true; setTimeout(check, 0); }
     }
     new MutationObserver(schedule).observe(root, { childList: true, subtree: true, attributes: true, attributeFilter: ['href', 'rel', 'data-ui-page'] });
     document.addEventListener('load', schedule, true);

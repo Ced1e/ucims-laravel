@@ -28,6 +28,7 @@ class UpdateMedicineIssuanceRequest extends FormRequest
             'issued_date' => 'nullable|date',
             'duration' => 'nullable|string|max:100',
             'frequency' => 'nullable|string|max:100',
+            'route' => 'nullable|string|max:100',
         ];
     }
 }

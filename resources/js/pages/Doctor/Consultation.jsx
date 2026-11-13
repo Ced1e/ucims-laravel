@@ -131,6 +131,131 @@ function ConsultRow({ item, onExamine, onQuickComplete }) {
 }
 
 // ─────────────────────────────────────────────────────────────
+// Illness / ICD-10 lookup (search by disease name or by code)
+// ─────────────────────────────────────────────────────────────
+function IllnessSearch({ onPick }) {
+    const [mode, setMode] = useState('word');
+    const [query, setQuery] = useState('');
+    const [results, setResults] = useState([]);
+    const [open, setOpen] = useState(false);
+    const [searching, setSearching] = useState(false);
+
+    useEffect(() => {
+        const text = query.trim();
+
+        if (text.length < 2) {
+            setResults([]);
+            setOpen(false);
+            return;
+        }
+
+        let cancelled = false;
+        const timer = setTimeout(() => {
+            setSearching(true);
+            axios
+                .get('/api/v1/icd10', { params: { q: text, by: mode }, timeout: 15000 })
+                .then((res) => {
+                    if (cancelled) return;
+                    setResults(res.data);
+                    setOpen(true);
+                })
+                .catch(() => {
+                    if (!cancelled) setResults([]);
+                })
+                .finally(() => {
+                    if (!cancelled) setSearching(false);
+                });
+        }, 250);
+
+        return () => {
+            cancelled = true;
+            clearTimeout(timer);
+        };
+    }, [query, mode]);
+
+    function pick(item) {
+        onPick(item);
+        setQuery('');
+        setResults([]);
+        setOpen(false);
+    }
+
+    return (
+        <div className="field" style={{ marginBottom: 12 }}>
+            <label>Find Illness / ICD-10</label>
+            <div style={{ display: 'flex', gap: 8 }}>
+                <select
+                    aria-label="Search illnesses by"
+                    value={mode}
+                    onChange={(e) => {
+                        setMode(e.target.value);
+                        setResults([]);
+                        setOpen(false);
+                    }}
+                    style={{ maxWidth: 170 }}
+                >
+                    <option value="word">Disease / condition</option>
+                    <option value="code">ICD-10 code</option>
+                </select>
+                <input
+                    aria-label={mode === 'code' ? 'Search by ICD-10 code' : 'Search by disease name'}
+                    placeholder={mode === 'code' ? 'e.g. J06.9' : 'e.g. upper respiratory infection'}
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onFocus={() => results.length && setOpen(true)}
+                />
+            </div>
+            {searching && <div className="text-xs text-muted mt4">Searching…</div>}
+            {open && !searching && (
+                <div
+                    role="listbox"
+                    aria-label="Illness results"
+                    style={{
+                        marginTop: 6,
+                        border: '1px solid var(--border)',
+                        borderRadius: 8,
+                        maxHeight: 190,
+                        overflowY: 'auto',
+                        background: '#fff',
+                    }}
+                >
+                    {!results.length && (
+                        <div className="text-sm text-muted" style={{ padding: '10px 12px' }}>
+                            No matching illness. Try another word or code.
+                        </div>
+                    )}
+                    {results.map((item) => (
+                        <button
+                            key={item.code}
+                            type="button"
+                            role="option"
+                            aria-selected={false}
+                            onClick={() => pick(item)}
+                            style={{
+                                display: 'block',
+                                width: '100%',
+                                textAlign: 'left',
+                                padding: '8px 12px',
+                                background: 'none',
+                                border: 0,
+                                borderBottom: '1px solid var(--border)',
+                                cursor: 'pointer',
+                            }}
+                        >
+                            <span className="badge b-maroon" style={{ marginRight: 6 }}>{item.code}</span>
+                            <span className="text-sm">{item.name}</span>
+                        </button>
+                    ))}
+                </div>
+            )}
+            <div className="text-xs text-muted mt4">
+                Picking a result fills the diagnosis and ICD-10 code below. You can still edit them.
+            </div>
+        </div>
+    );
+}
+
+// ─────────────────────────────────────────────────────────────
 // Examine modal — 4-tab workflow
 // ─────────────────────────────────────────────────────────────
 function ExamineModal({ item, onClose, onFinalized, showToast }) {
@@ -155,8 +280,8 @@ function ExamineModal({ item, onClose, onFinalized, showToast }) {
     const [rxRows, setRxRows] = useState([]);
     const [finalRemarks, setFinalRemarks] = useState('');
 
-    useEffect(() => {
-        axios.get(`/api/v1/queues/${item.queue_id}`, { timeout: 20000 })
+    const loadDetail = useCallback(() => {
+        return axios.get(`/api/v1/queues/${item.queue_id}`, { timeout: 20000 })
             .then((res) => {
                 const d = res.data;
                 setDetail(d);
@@ -196,6 +321,10 @@ function ExamineModal({ item, onClose, onFinalized, showToast }) {
             .finally(() => setLoading(false));
     }, [item.queue_id]);
 
+    useEffect(() => {
+        loadDetail();
+    }, [loadDetail]);
+
     const endorsedId = detail?.endorsement?.endorsed_id;
 
     async function saveDiagnosis() {
@@ -232,7 +361,7 @@ function ExamineModal({ item, onClose, onFinalized, showToast }) {
     }
 
     async function savePrescriptions() {
-        if (!endorsedId) return;
+        if (!endorsedId || saving) return;
         const validationError = prescriptionError(rxRows, otherLab);
         if (validationError) { showToast(validationError, 'error'); return; }
         setSaving(true);
@@ -271,6 +400,10 @@ function ExamineModal({ item, onClose, onFinalized, showToast }) {
             );
 
             showToast('Prescriptions and lab requests saved.');
+            // Reload so the row ids and detail snapshot match the database;
+            // saving again then replaces the same records instead of stacking
+            // a second copy on top of a stale list.
+            await loadDetail();
             setTab('finalize');
         } catch (e) {
             showToast(requestError(e, 'Failed to save prescriptions.'), 'error');
@@ -445,6 +578,15 @@ function ExamineModal({ item, onClose, onFinalized, showToast }) {
                                     />
                                 </div>
                                 <hr className="div" />
+                                <IllnessSearch
+                                    onPick={(item) =>
+                                        setDiag((current) => ({
+                                            ...current,
+                                            diagnosis: item.name,
+                                            icd_10_code: item.code,
+                                        }))
+                                    }
+                                />
                                 <div className="field">
                                     <label>Diagnosis / Clinical Impression *</label>
                                     <textarea
@@ -1313,7 +1455,7 @@ export default function DoctorDashboard() {
 
     const fetchCerts = useCallback(async () => {
         try {
-            const res = await axios.get('/api/v1/medical-certificates', { timeout: 20000, params: { released: 0 } });
+            const res = await axios.get('/api/v1/medical-certificates', { timeout: 20000, params: { released: 0, endorsed: 1 } });
             setCerts(res.data);
         } catch (e) {
             showToast(requestError(e, 'Failed to load certificate requests.'), 'error');

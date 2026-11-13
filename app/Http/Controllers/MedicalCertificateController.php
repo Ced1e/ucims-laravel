@@ -2,14 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\MedicalCertificate;
+use App\Actions\CloneRecordAction;
 use App\Http\Requests\StoreMedicalCertificateRequest;
 use App\Http\Requests\UpdateMedicalCertificateRequest;
+use App\Models\MedicalCertificate;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use App\Actions\CloneRecordAction;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
 
 class MedicalCertificateController extends Controller
 {
@@ -26,6 +26,13 @@ class MedicalCertificateController extends Controller
 
         if ($request->has('released')) {
             $query->where('is_released', $request->boolean('released'));
+        }
+
+        // The doctor's pending list only receives certificate requests for
+        // patients that have already been endorsed to a physician. The nurse
+        // station keeps seeing every request so it can process the endorsement.
+        if ($request->boolean('endorsed') || $request->user()?->role === 'doctor') {
+            $query->whereHas('queue', fn ($q) => $q->where('endorsed', true));
         }
 
         $certificates = $query->get();
@@ -46,26 +53,26 @@ class MedicalCertificateController extends Controller
 
     public function store(StoreMedicalCertificateRequest $request)
     {
-    // Doctors/admins may issue; a patient may only request one for his/her own visit.
-    Gate::authorize('create', [MedicalCertificate::class, $request->input('queue_id')]);
+        // Doctors/admins may issue; a patient may only request one for his/her own visit.
+        Gate::authorize('create', [MedicalCertificate::class, $request->input('queue_id')]);
 
-    $data = $request->validated();
+        $data = $request->validated();
 
-    if ($request->user()->role === 'patient') {
-        // A request can never mark itself as issued/released or name its own signer.
-        $data = Arr::only($data, ['queue_id', 'diagnosis_reason', 'date_from', 'date_to', 'additional_notes']);
-        $data['is_released'] = false;
-    }
+        if ($request->user()->role === 'patient') {
+            // A request can never mark itself as issued/released or name its own signer.
+            $data = Arr::only($data, ['queue_id', 'diagnosis_reason', 'date_from', 'date_to', 'additional_notes']);
+            $data['is_released'] = false;
+        }
 
-    $data['issued_date'] = $data['issued_date'] ?? now()->format('Y-m-d');
+        $data['issued_date'] = $data['issued_date'] ?? now()->format('Y-m-d');
 
-    $certificate = MedicalCertificate::create($data);
+        $certificate = MedicalCertificate::create($data);
 
-    if ($request->wantsJson()) {
-        return response()->json($certificate, 201);
-    }
+        if ($request->wantsJson()) {
+            return response()->json($certificate, 201);
+        }
 
-    return redirect()->route('medical-certificates.index')->with('success', 'Medical certificate created.');
+        return redirect()->route('medical-certificates.index')->with('success', 'Medical certificate created.');
     }
 
     public function edit(MedicalCertificate $medicalCertificate)
@@ -81,7 +88,7 @@ class MedicalCertificateController extends Controller
 
         $data = $request->validated();
 
-        if (($data['is_released'] ?? false) && !$medicalCertificate->is_released) {
+        if (($data['is_released'] ?? false) && ! $medicalCertificate->is_released) {
             $data['issued_by'] = $request->user()?->user_id;
             $data['issued_date'] = now();
         }
@@ -97,10 +104,11 @@ class MedicalCertificateController extends Controller
 
     public function clone(MedicalCertificate $medicalCertificate, CloneRecordAction $cloner)
     {
-    Gate::authorize('create', MedicalCertificate::class);
+        Gate::authorize('create', MedicalCertificate::class);
 
-    $cloner->execute($medicalCertificate);
-    return redirect()->route('medical-certificates.index')->with('success', 'Medical certificate cloned.');
+        $cloner->execute($medicalCertificate);
+
+        return redirect()->route('medical-certificates.index')->with('success', 'Medical certificate cloned.');
     }
 
     public function destroy(MedicalCertificate $medicalCertificate)
@@ -108,6 +116,7 @@ class MedicalCertificateController extends Controller
         Gate::authorize('delete', $medicalCertificate);
 
         $medicalCertificate->delete();
+
         return redirect()->route('medical-certificates.index')->with('success', 'Medical certificate deleted.');
     }
 }

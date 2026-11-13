@@ -97,11 +97,14 @@ function AnalyticsSection({ showToast }) {
     const [year, setYear] = useState('');
     const [staffFilter, setStaffFilter] = useState('');
     const [groupBy, setGroupBy] = useState('day');
+    const [illnessQ, setIllnessQ] = useState('');
+    const [illnessMode, setIllnessMode] = useState('word');
     const [chartReady, setChartReady] = useState(!!window.Chart);
 
     const trendRef = useRef(null);
     const dayRef = useRef(null);
     const typeRef = useRef(null);
+    const illnessRef = useRef(null);
     const charts = useRef({});
 
     useEffect(() => {
@@ -124,6 +127,8 @@ function AnalyticsSection({ showToast }) {
                 year: v.patient?.ppr_permanent?.year_level || '',
                 doctor: v.endorsement?.doctor ? fullName(v.endorsement.doctor) : '',
                 type: v.visit_type,
+                diagnosis: (v.endorsement?.diagnosis || '').trim(),
+                icd: (v.endorsement?.icd_10_code || '').trim(),
             })).filter((r) => r.date),
         [visits]
     );
@@ -146,6 +151,55 @@ function AnalyticsSection({ showToast }) {
     const uniqueDates = [...new Set(filtered.map((r) => r.date))];
     const avgPerDay = uniqueDates.length ? (filtered.length / uniqueDates.length).toFixed(1) : '0';
     const table = useMemo(() => groupVisits(filtered, groupBy), [filtered, groupBy]);
+
+    // Illness statistics: one row per condition (grouped by ICD-10 code when
+    // available, otherwise by the recorded diagnosis text).
+    const illnesses = useMemo(() => {
+        const groups = new Map();
+
+        filtered.forEach((r) => {
+            if (!r.diagnosis && !r.icd) return;
+
+            const code = r.icd ? r.icd.toUpperCase() : '';
+            const key = code ? `code:${code}` : `text:${r.diagnosis.toLowerCase().replace(/\s+/g, ' ')}`;
+            const current = groups.get(key) || {
+                key,
+                code,
+                name: r.diagnosis || r.icd,
+                count: 0,
+            };
+
+            // Prefer a real description over a bare code as the label.
+            if (r.diagnosis && !current.name) current.name = r.diagnosis;
+            if (r.diagnosis && current.name === current.code) current.name = r.diagnosis;
+            current.count += 1;
+            groups.set(key, current);
+        });
+
+        const rows = [...groups.values()];
+        const total = rows.reduce((sum, row) => sum + row.count, 0);
+
+        return {
+            total,
+            unique: rows.length,
+            rows: rows
+                .map((row) => ({ ...row, percent: total ? Math.round((row.count / total) * 1000) / 10 : 0 }))
+                .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
+        };
+    }, [filtered]);
+
+    const illnessResults = useMemo(() => {
+        const needle = illnessQ.trim().toLowerCase();
+        if (!needle) return illnesses.rows;
+
+        return illnesses.rows.filter((row) =>
+            illnessMode === 'code'
+                ? String(row.code || '').toLowerCase().includes(needle)
+                : String(row.name || '').toLowerCase().includes(needle)
+        );
+    }, [illnesses.rows, illnessQ, illnessMode]);
+
+    const topIllness = illnesses.rows[0];
 
     useEffect(() => {
         if (!chartReady || !window.Chart) return;
@@ -230,11 +284,36 @@ function AnalyticsSection({ showToast }) {
             });
         }
 
+        if (illnessRef.current) {
+            const top = illnessResults.slice(0, 10);
+            charts.current.illness = new Chart(illnessRef.current, {
+                type: 'bar',
+                data: {
+                    labels: top.map((row) => (row.code ? `${row.name} (${row.code})` : row.name)),
+                    datasets: [
+                        {
+                            label: 'Cases',
+                            data: top.map((row) => row.count),
+                            backgroundColor: '#7B1113',
+                            borderRadius: 4,
+                        },
+                    ],
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: { x: { beginAtZero: true, ticks: { stepSize: 1 } } },
+                },
+            });
+        }
+
         return () => {
             Object.values(charts.current).forEach((c) => c && c.destroy());
             charts.current = {};
         };
-    }, [chartReady, filtered]);
+    }, [chartReady, filtered, illnessResults]);
 
     return (
         <>
@@ -315,6 +394,114 @@ function AnalyticsSection({ showToast }) {
                         {loading && <ChartSkeleton />}{!loading && (loadError || !filtered.length) && <p role={loadError ? "alert" : undefined}>{loadError || "No consultation data for these filters."}</p>}<canvas ref={typeRef} style={{ visibility: loading || loadError || !filtered.length ? 'hidden' : 'visible' }}></canvas>
                     </div>
                 </div>
+            </div>
+
+            <div className="card canvas-report-panel" style={{ marginBottom: 20 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', borderBottom: '2px solid var(--border)', marginBottom: 16, paddingBottom: 10 }}>
+                    <div>
+                        <div className="card-title" style={{ marginBottom: 0 }}>
+                            Illness Statistics
+                        </div>
+                        <p className="text-xs text-muted" style={{ margin: '4px 0 0' }}>
+                            Conditions recorded across the filtered consultations.
+                        </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <select
+                            aria-label="Search illnesses by"
+                            value={illnessMode}
+                            onChange={(e) => setIllnessMode(e.target.value)}
+                            style={{ maxWidth: 175 }}
+                        >
+                            <option value="word">Disease / condition</option>
+                            <option value="code">ICD-10 code</option>
+                        </select>
+                        <input
+                            type="search"
+                            aria-label={illnessMode === 'code' ? 'Search illnesses by ICD-10 code' : 'Search illnesses by disease name'}
+                            placeholder={illnessMode === 'code' ? 'Search code, e.g. J06.9' : 'Search condition, e.g. cough'}
+                            value={illnessQ}
+                            onChange={(e) => setIllnessQ(e.target.value)}
+                            style={{ minWidth: 230 }}
+                        />
+                    </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16 }}>
+                    <div className="stat-card">
+                        <div className="stat-num">{loading ? <MetricSkeleton /> : illnesses.unique}</div>
+                        <div className="stat-label">Unique Illnesses</div>
+                    </div>
+                    <div className="stat-card">
+                        <div className="stat-num" style={{ color: 'var(--gold)' }}>{loading ? <MetricSkeleton /> : illnesses.total}</div>
+                        <div className="stat-label">Diagnoses Recorded</div>
+                    </div>
+                    <div className="stat-card">
+                        <div className="stat-num" style={{ fontSize: '1.1rem', lineHeight: 1.35 }}>
+                            {loading ? <MetricSkeleton /> : topIllness ? topIllness.name : '—'}
+                        </div>
+                        <div className="stat-label">
+                            Most Common{topIllness ? ` · ${topIllness.count} case${topIllness.count === 1 ? '' : 's'}` : ''}
+                        </div>
+                    </div>
+                </div>
+
+                {!!illnesses.rows.length && (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 20 }}>
+                        <div>
+                            <div className="text-xs fw6 text-muted" style={{ textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>
+                                Top 10 Conditions
+                            </div>
+                            <div style={{ position: 'relative', height: 280 }}>
+                                {loading && <ChartSkeleton />}
+                                {!loading && !illnessResults.length && (
+                                    <p role="status">No illness matches this search.</p>
+                                )}
+                                <canvas ref={illnessRef} style={{ visibility: loading || !illnessResults.length ? 'hidden' : 'visible' }}></canvas>
+                            </div>
+                        </div>
+                        <div>
+                            <div className="text-xs fw6 text-muted" style={{ textTransform: 'uppercase', letterSpacing: '.5px', marginBottom: 8 }}>
+                                All Recorded Conditions
+                                {illnessQ.trim()
+                                    ? ` · ${illnessResults.length} match${illnessResults.length === 1 ? '' : 'es'}`
+                                    : ` · ${illnesses.rows.length}`}
+                            </div>
+                            <div className="table-wrap" style={{ maxHeight: 280, overflowY: 'auto' }}>
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th>Condition</th>
+                                            <th>ICD-10</th>
+                                            <th>Cases</th>
+                                            <th>Share</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <PaginatedItems items={illnessResults} tableColumns={4} label="illness statistics" pageSize={8}>
+                                            {(row) => (
+                                                <tr key={row.key}>
+                                                    <td className="fw6">{row.name}</td>
+                                                    <td>{row.code || '—'}</td>
+                                                    <td>{row.count}</td>
+                                                    <td>{row.percent}%</td>
+                                                </tr>
+                                            )}
+                                        </PaginatedItems>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {!loading && !illnesses.rows.length && (
+                    <div className="empty-state">
+                        <p role={loadError ? 'alert' : undefined}>
+                            {loadError || 'No diagnoses recorded for the selected filters.'}
+                        </p>
+                    </div>
+                )}
             </div>
 
             <div className="card canvas-report-panel">

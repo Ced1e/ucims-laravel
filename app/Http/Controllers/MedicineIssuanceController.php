@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\MedicineIssuance;
+use App\Actions\CloneRecordAction;
 use App\Http\Requests\StoreMedicineIssuanceRequest;
 use App\Http\Requests\UpdateMedicineIssuanceRequest;
+use App\Models\MedicineIssuance;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use App\Actions\CloneRecordAction;
 use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
 
 class MedicineIssuanceController extends Controller
 {
@@ -46,13 +46,58 @@ class MedicineIssuanceController extends Controller
         $data['issued_date'] = $data['issued_date'] ?? now()->format('Y-m-d H:i:s');
         $data['nurse_id'] = $request->user()->user_id;
 
-        $issuance = MedicineIssuance::create($data);
+        // One medicine per patient visit: re-issuing the same drug/dosage for
+        // the same queue records the dispense on the existing row instead of
+        // adding a second, duplicate entry.
+        $existing = $this->findExistingIssuance($data);
 
-        if ($request->wantsJson()) {
-            return response()->json($issuance->load('nurse'), 201);
+        if ($existing) {
+            $existing->update($data);
+            $issuance = $existing;
+        } else {
+            $issuance = MedicineIssuance::create($data);
         }
 
-        return redirect()->route('medicine-issuances.index')->with('success', 'Medicine issuance logged.');
+        if ($request->wantsJson()) {
+            return response()->json($issuance->load('nurse'), $existing ? 200 : 201);
+        }
+
+        return redirect()->route('medicine-issuances.index')->with(
+            'success',
+            $existing ? 'Existing medicine issuance updated.' : 'Medicine issuance logged.'
+        );
+    }
+
+    /**
+     * Match on visit + medicine name + dosage, ignoring letter case and extra
+     * whitespace ("500 mg" and "500MG" are the same strength). Different
+     * drugs, strengths or visits never match.
+     */
+    private function findExistingIssuance(array $data): ?MedicineIssuance
+    {
+        if (empty($data['queue_id']) || empty($data['medicine_name'])) {
+            return null;
+        }
+
+        $name = $this->normalizeMedicineName($data['medicine_name']);
+        $dosage = $this->normalizeDosage($data['dosage'] ?? '');
+
+        return MedicineIssuance::query()
+            ->where('queue_id', $data['queue_id'])
+            ->orderBy('issuance_id')
+            ->get()
+            ->first(fn (MedicineIssuance $row) => $this->normalizeMedicineName($row->medicine_name) === $name
+                && $this->normalizeDosage($row->dosage) === $dosage);
+    }
+
+    private function normalizeMedicineName(?string $value): string
+    {
+        return mb_strtolower(preg_replace('/\s+/', ' ', trim((string) $value)));
+    }
+
+    private function normalizeDosage(?string $value): string
+    {
+        return preg_replace('/\s+/', '', mb_strtolower(trim((string) $value)));
     }
 
     public function edit(MedicineIssuance $medicineIssuance)
@@ -64,20 +109,22 @@ class MedicineIssuanceController extends Controller
 
     public function update(UpdateMedicineIssuanceRequest $request, MedicineIssuance $medicineIssuance)
     {
-    Gate::authorize('update', $medicineIssuance);
+        Gate::authorize('update', $medicineIssuance);
 
-    $data = $request->validated();
-    unset($data['nurse_id']); // The recorded dispensing actor is not an editable form field.
-    $medicineIssuance->update($data);
-    return redirect()->route('medicine-issuances.index')->with('success', 'Medicine issuance updated.');
+        $data = $request->validated();
+        unset($data['nurse_id']); // The recorded dispensing actor is not an editable form field.
+        $medicineIssuance->update($data);
+
+        return redirect()->route('medicine-issuances.index')->with('success', 'Medicine issuance updated.');
     }
 
     public function clone(MedicineIssuance $medicineIssuance, CloneRecordAction $cloner)
     {
-    Gate::authorize('create', MedicineIssuance::class);
+        Gate::authorize('create', MedicineIssuance::class);
 
-    $cloner->execute($medicineIssuance);
-    return redirect()->route('medicine-issuances.index')->with('success', 'Medicine issuance cloned.');
+        $cloner->execute($medicineIssuance);
+
+        return redirect()->route('medicine-issuances.index')->with('success', 'Medicine issuance cloned.');
     }
 
     public function destroy(MedicineIssuance $medicineIssuance)
@@ -85,6 +132,7 @@ class MedicineIssuanceController extends Controller
         Gate::authorize('delete', $medicineIssuance);
 
         $medicineIssuance->delete();
+
         return redirect()->route('medicine-issuances.index')->with('success', 'Medicine issuance deleted.');
     }
 }

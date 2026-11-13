@@ -1000,6 +1000,22 @@ function filterVisits(visits, q) {
     );
 }
 
+// The database now guarantees one issuance per medicine per visit, but if an
+// older duplicate row is still around it must never render twice.
+function dedupeIssuances(rows = []) {
+    const seen = new Set();
+    return [...rows]
+        .sort((a, b) => (b.issuance_id || 0) - (a.issuance_id || 0))
+        .filter((row) => {
+            const key = [row.medicine_name, row.dosage, row.frequency, row.duration, row.route, row.instructions]
+                .map((part) => String(part || '').trim().toLowerCase().replace(/\s+/g, ' '))
+                .join('|');
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        });
+}
+
 function DailyPatientLog({ visits, loading }) {
     const [q, setQ] = useState('');
     const filtered = filterVisits(visits, q);
@@ -1164,7 +1180,7 @@ function VisitDetailModal({ visit, onClose }) {
     const t = visit.triage;
     const e = visit.endorsement;
     const rx = e?.prescriptions || [];
-    const meds = visit.medicine_issuances || [];
+    const meds = dedupeIssuances(visit.medicine_issuances || []);
     const cert = visit.medical_certificate;
 
     return (
@@ -1267,7 +1283,24 @@ function VisitDetailModal({ visit, onClose }) {
                                 </div>
                                 {<PaginatedItems items={meds} label="meds">{(m) => (
                                     <div key={m.issuance_id} className="text-sm mb8">
-                                        <b>{m.medicine_name}</b> {m.dosage} — Qty {m.quantity}, by {m.nurse ? patientName(m.nurse) : '—'}
+                                        <div>
+                                            <b>{m.medicine_name}</b> {m.dosage} — Qty {m.quantity}
+                                        </div>
+                                        <div className="text-xs text-muted">
+                                            {[
+                                                m.frequency && `Frequency: ${m.frequency}`,
+                                                m.duration && `Duration: ${m.duration}`,
+                                                m.route && `Route: ${m.route}`,
+                                            ].filter(Boolean).join(' · ') || '—'}
+                                        </div>
+                                        {m.instructions && (
+                                            <div className="text-xs text-muted">Instructions: {m.instructions}</div>
+                                        )}
+                                        <div className="text-xs text-muted">
+                                            {m.nurse
+                                                ? `Issued by ${patientName(m.nurse)}`
+                                                : "From the doctor's prescription — not yet dispensed"}
+                                        </div>
                                     </div>
                                 )}</PaginatedItems>}
                             </>
@@ -1347,7 +1380,7 @@ function MedicineList({ patients, loading, onManage, issuanceCounts }) {
                                         </td>
                                         <td>
                                             {issuanceCounts[q.queue_id] ? (
-                                                <span className="badge b-green">{issuanceCounts[q.queue_id]} item(s) issued</span>
+                                                <span className="badge b-green">{issuanceCounts[q.queue_id]} item(s) recorded</span>
                                             ) : (
                                                 <span className="badge b-gray">None</span>
                                             )}
@@ -1372,13 +1405,13 @@ function ManageMedsModal({ item, onClose, showToast, onIssued }) {
     const [list, setList] = useState([]);
     const [loading, setLoading] = useState(true);
     const [doctorRx, setDoctorRx] = useState([]);
-    const [form, setForm] = useState({ medicine_name: '', dosage: '', quantity: '', frequency: '', duration: '', instructions: '' });
+    const [form, setForm] = useState({ medicine_name: '', dosage: '', quantity: '', frequency: '', duration: '', route: '', instructions: '' });
     const [saving, setSaving] = useState(false);
 
     const load = useCallback(() => {
         setLoading(true);
         axios.get('/api/v1/medicine-issuances', { timeout: 20000, params: { queue_id: item.queue_id } })
-            .then((res) => setList(res.data))
+            .then((res) => setList(dedupeIssuances(res.data)))
             .catch(() => showToast('Unable to load issued medicines. Please try again.', 'error'))
             .finally(() => setLoading(false));
     }, [item.queue_id]);
@@ -1391,6 +1424,7 @@ function ManageMedsModal({ item, onClose, showToast, onIssued }) {
     }, [load, item.queue_id]);
 
     async function handleSave() {
+        if (saving) return;
         if (!form.medicine_name.trim() || !form.quantity.trim()) {
             showToast('Medicine name and quantity are required.', 'error');
             return;
@@ -1399,7 +1433,7 @@ function ManageMedsModal({ item, onClose, showToast, onIssued }) {
         try {
             await axios.post('/api/v1/medicine-issuances', { queue_id: item.queue_id, ...form });
             showToast(`Medicine issued to ${patientName(item.patient)}.`);
-            setForm({ medicine_name: '', dosage: '', quantity: '', frequency: '', duration: '', instructions: '' });
+            setForm({ medicine_name: '', dosage: '', quantity: '', frequency: '', duration: '', route: '', instructions: '' });
             load();
             onIssued();
         } catch (e) {
@@ -1436,16 +1470,37 @@ function ManageMedsModal({ item, onClose, showToast, onIssued }) {
                                         <th>Frequency</th>
                                         <th>Duration</th>
                                         <th>Route</th>
+                                        <th>Instructions</th>
+                                        <th></th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {<PaginatedItems items={doctorRx} tableColumns={5} label="doctor Rx">{(rx) => (
+                                    {<PaginatedItems items={doctorRx} tableColumns={7} label="doctor Rx">{(rx) => (
                                         <tr key={rx.prescription_id}>
                                             <td className="fw6">{rx.drug_name}</td>
                                             <td>{rx.dosage}</td>
                                             <td>{rx.frequency}</td>
                                             <td>{rx.duration}</td>
                                             <td>{rx.route}</td>
+                                            <td>{rx.treatment_instructions}</td>
+                                            <td>
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-outline btn-sm"
+                                                    title="Copy this prescription into the form"
+                                                    onClick={() => setForm({
+                                                        medicine_name: rx.drug_name || '',
+                                                        dosage: rx.dosage || '',
+                                                        quantity: '',
+                                                        frequency: rx.frequency || '',
+                                                        duration: rx.duration || '',
+                                                        route: rx.route || '',
+                                                        instructions: rx.treatment_instructions || '',
+                                                    })}
+                                                >
+                                                    Use
+                                                </button>
+                                            </td>
                                         </tr>
                                     )}</PaginatedItems>}
                                 </tbody>
@@ -1478,9 +1533,15 @@ function ManageMedsModal({ item, onClose, showToast, onIssued }) {
                         <input placeholder="e.g. 5 days" maxLength={100} value={form.duration} onChange={(e) => setForm({ ...form, duration: e.target.value })} />
                     </div>
                 </div>
-                <div className="field">
-                    <label>Instructions</label>
-                    <input maxLength={1000} placeholder="e.g. Take after meals" value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} />
+                <div className="field-row">
+                    <div className="field">
+                        <label>Route</label>
+                        <input placeholder="e.g. Oral" maxLength={100} value={form.route} onChange={(e) => setForm({ ...form, route: e.target.value })} />
+                    </div>
+                    <div className="field">
+                        <label>Instructions</label>
+                        <input maxLength={1000} placeholder="e.g. Take after meals" value={form.instructions} onChange={(e) => setForm({ ...form, instructions: e.target.value })} />
+                    </div>
                 </div>
                 <button className="btn btn-primary btn-sm mb8" disabled={saving} onClick={handleSave}>
                     {saving ? 'Saving…' : <><i className="bi bi-plus"></i> Add to Issued List</>}
@@ -1492,13 +1553,28 @@ function ManageMedsModal({ item, onClose, showToast, onIssued }) {
                 </div>
                 {loading && <ListSkeleton />}
                 {!loading && !list.length && <p className="text-muted text-sm">No services issued yet.</p>}
-                {<PaginatedItems items={list} label="list">{(s) => (
-                    <div key={s.issuance_id} style={{ background: '#f9f8f6', padding: '8px 12px', borderRadius: 7, marginBottom: 5, fontSize: '.845rem' }}>
-                        <i className="bi bi-capsule" style={{ color: 'var(--maroon)' }}></i> <b>{s.medicine_name}</b> {s.dosage} — {s.quantity}
-                        <br />
-                        <span className="text-muted">{s.instructions}</span> · by {s.nurse ? patientName(s.nurse) : '—'}
+                {!loading && list.map((s) => (
+                    <div key={s.issuance_id} style={{ background: '#f9f8f6', padding: '10px 12px', borderRadius: 7, marginBottom: 6, fontSize: '.845rem' }}>
+                        <div>
+                            <i className="bi bi-capsule" style={{ color: 'var(--maroon)' }}></i> <b>{s.medicine_name}</b> {s.dosage} — {s.quantity}
+                        </div>
+                        <div className="text-muted" style={{ marginTop: 2 }}>
+                            {[
+                                s.frequency && `Frequency: ${s.frequency}`,
+                                s.duration && `Duration: ${s.duration}`,
+                                s.route && `Route: ${s.route}`,
+                            ].filter(Boolean).join(' · ') || '—'}
+                        </div>
+                        {s.instructions && (
+                            <div className="text-muted">Instructions: {s.instructions}</div>
+                        )}
+                        <div className="text-muted" style={{ marginTop: 2, fontSize: '.78rem' }}>
+                            {s.nurse
+                                ? `Issued by ${patientName(s.nurse)}`
+                                : "From the doctor's prescription — not yet dispensed"}
+                        </div>
                     </div>
-                )}</PaginatedItems>}
+                ))}
 
                 <div className="modal-footer">
                     <button className="btn btn-outline btn-sm" onClick={onClose}>
@@ -1813,14 +1889,22 @@ export default function NurseDashboard() {
                 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
                 <style>{`
                     @media print {
-                        @page { size: landscape; margin: 10mm; }
+                        /* Zero page margin suppresses Chrome's printed page title and URL footer. */
+                        @page { size: landscape; margin: 0; }
+                        html, body { background: #fff !important; }
                         .sidebar, .canvas-sidebar, .canvas-topbar, .page-header p, .hide-print, .modal-overlay { display: none !important; }
-                        .main-content { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+                        .main-content { margin: 0 !important; padding: 10mm !important; width: 100% !important; }
                         .card { box-shadow: none !important; border: none !important; padding: 0 !important; }
-                        table { font-size: 10px !important; }
+                        .table-wrap { overflow: visible !important; }
+                        table { width: 100% !important; font-size: 10px !important; }
                         th, td { padding: 4px 6px !important; }
+                        thead { display: table-header-group; }
+                        tr { break-inside: avoid; page-break-inside: avoid; }
                         .badge { background: none !important; border: 1px solid #999 !important; color: #000 !important; }
                         .num-badge { background: none !important; border: 1px solid #000 !important; color: #000 !important; }
+                        /* Pagination is screen-only: no Previous/Next buttons or page counter. */
+                        nav[aria-label$="pagination"] { display: none !important; }
+                        tr:has(> td > nav[aria-label$="pagination"]) { display: none !important; }
                     }
                 `}</style>
             </Head>
