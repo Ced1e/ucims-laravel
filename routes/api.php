@@ -48,5 +48,5 @@ Route::prefix('v1')->middleware(['web', 'auth'])->name('api.')->group(function (
     Route::apiResource('medicine-issuances', MedicineIssuanceController::class)
         ->parameters(['medicine-issuances' => 'medicineIssuance']);
 
-    Route::apiResource('prescriptions', PrescriptionController::class);
+    Route::apiResource('prescriptions', PrescriptionController::class)->names('api.v1.prescriptions');
 });
