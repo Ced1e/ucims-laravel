@@ -1,14 +1,14 @@
 /* Public entry pages use their own palette, independent of dashboard theme. */
 .clinic-entry { display: grid; grid-template-columns: 1.08fr 1fr; min-height: 100svh; background: #fbfaf7; color: #292320; font-family: 'Open Sans', Arial, sans-serif; color-scheme: light; }
 .clinic-entry *, .clinic-home-actions * { box-sizing: border-box; }
-.clinic-entry-visual { position: relative; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; padding: 48px clamp(32px, 5vw, 88px); background: radial-gradient(ellipse at 85% 75%, #8f272a 0%, transparent 58%), linear-gradient(145deg, #630c18, #37080e); color: #fff; }
+.clinic-entry-visual { position: relative; display: flex; flex-direction: column; justify-content: flex-start; overflow: hidden; padding: 48px clamp(32px, 5vw, 88px); background: radial-gradient(ellipse at 85% 75%, #8f272a 0%, transparent 58%), linear-gradient(145deg, #630c18, #37080e); color: #fff; }
 .clinic-entry-visual::after { content: ''; position: absolute; width: 560px; height: 560px; right: -360px; top: -220px; border: 1px solid #d8b86240; border-radius: 50%; box-shadow: 0 0 0 50px #d8b86208, 0 0 0 100px #d8b86206; pointer-events: none; }
 .clinic-entry-brand { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 16px; width: fit-content; color: #fff; text-decoration: none; font-size: 13px; line-height: 1.6; font-weight: 600; letter-spacing: .02em; }
 .clinic-entry-brand img { width: 62px; height: 62px; object-fit: contain; }
 /* The seal doubles as "back to home" now that the back arrow is gone. */
 .clinic-entry-brand { transition: opacity .15s ease; }
 .clinic-entry-brand:hover { opacity: .84; }
-.clinic-entry-story { position: relative; z-index: 1; padding-top: 64px; }
+.clinic-entry-story { position: relative; z-index: 1; margin-top: auto; margin-bottom: auto; }
 .clinic-entry-eyebrow { margin: 0 0 22px; color: #e4c579; font-size: 11px; font-weight: 700; letter-spacing: .19em; }
 .clinic-entry-story h1 { margin: 0; font-family: Georgia, serif; font-size: clamp(40px, 4.2vw, 66px); font-weight: 400; letter-spacing: -.035em; line-height: 1.12; }
 .clinic-entry-story h1 span { color: #e8cb85; }
@@ -152,7 +152,7 @@
     .clinic-entry-visual { padding-block: clamp(18px, 3.2vh, 44px); }
     .clinic-entry-brand { gap: clamp(10px, 1.6vh, 16px); font-size: clamp(11px, 1.6vh, 13px); }
     .clinic-entry-brand img { width: clamp(44px, 8vh, 62px); height: clamp(44px, 8vh, 62px); }
-    .clinic-entry-story { padding-top: clamp(12px, 3.2vh, 56px); }
+    .clinic-entry-story { margin-top: auto; margin-bottom: auto; }
     .clinic-entry-eyebrow { margin-bottom: clamp(8px, 1.8vh, 20px); font-size: clamp(10px, 1.4vh, 11px); }
     .clinic-entry-story h1 { font-size: clamp(27px, min(4.2vw, 5.2vh), 60px); }
     .clinic-entry-description { margin-top: clamp(10px, 1.8vh, 22px); font-size: clamp(12.5px, 1.85vh, 15px); line-height: 1.6; }
