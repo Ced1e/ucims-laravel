@@ -1,11 +1,13 @@
 import { TableSkeletonRows, MetricSkeleton, DetailSkeleton, ListSkeleton } from '@/components/data-skeletons';
+import UCIMSSelect from '@/components/UCIMSSelect';
 import { requestError } from '@/lib/clinical-validation.mjs';
-import { formatBloodPressure } from '@/lib/input-validation.mjs';
+import { sanitizeVital, validateVital, validateBloodPressure, validateChiefComplaint, validateNotes } from '@/lib/triage-validation.mjs';
 import PaginatedItems from '../../components/paginated-items.jsx';
 import { useState, useEffect, useCallback } from 'react';
 import { Head, usePage, router } from '@inertiajs/react';
 import axios from 'axios';
 import RecordDeletionRequests from './RecordDeletionRequests';
+import { ALL_COLLEGES, ALL_YEAR_LEVELS, ALL_PATIENT_TYPES, sameCollege } from '../../lib/option-order.mjs';
 
 // ─────────────────────────────────────────────────────────────
 // Display helpers (ported from legacy assets/js/shared.js + nurse.js)
@@ -76,7 +78,7 @@ function nowTime() {
 // ─────────────────────────────────────────────────────────────
 // Sidebar (ported from legacy index.html #page-nurse .sidebar)
 // ─────────────────────────────────────────────────────────────
-function Sidebar({ section, onNavigate }) {
+function Sidebar({ section, onNavigate, badges = {} }) {
     const { auth } = usePage().props;
     const user = auth?.user;
     const displayName = user ? [user.firstname, user.lastname].filter(Boolean).join(' ') : 'Nurse';
@@ -113,6 +115,11 @@ function Sidebar({ section, onNavigate }) {
                         aria-current={item.key === section ? 'page' : undefined}
                         className={item.key === section ? 'active' : ''} onClick={() => onNavigate(item.key)}>
                         <i className={`bi ${item.icon}`} aria-hidden="true" /> <span>{item.label}</span>
+                        {(badges[item.key] ?? 0) > 0 && (
+                            <span className="canvas-nav-badge" aria-label={`${badges[item.key]} pending ${item.label}`}>
+                                {badges[item.key] > 99 ? '99+' : badges[item.key]}
+                            </span>
+                        )}
                     </button>
                 ))}</nav>
             </div>
@@ -149,7 +156,7 @@ function QueueItem({ item, onTriage, onViewTriage, onEndorse, onUndoEndorse, onC
                         <i className="bi bi-eye"></i> View Triage
                     </button>
                 )}
-                {item.triaged && !item.endorsed && (
+                {!item.endorsed && (
                     <button className="btn btn-outline btn-sm" onClick={onEndorse}>
                         <i className="bi bi-arrow-right-circle"></i> Endorse
                     </button>
@@ -218,6 +225,30 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
     const [loading, setLoading] = useState(Boolean(item.triaged));
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
+    const [touched, setTouched] = useState({});
+    const [submitAttempted, setSubmitAttempted] = useState(false);
+
+    const markTouched = (name) => setTouched((previous) => (previous[name] ? previous : { ...previous, [name]: true }));
+
+    const updateVital = (name, value) => {
+        setForm((previous) => ({ ...previous, [name]: sanitizeVital(name, value) }));
+        markTouched(name);
+    };
+
+    const updateText = (name, value) => {
+        setForm((previous) => ({ ...previous, [name]: value }));
+        markTouched(name);
+    };
+
+    const fieldError = (name, raw) => {
+        if (!touched[name] && !submitAttempted) return '';
+        const message =
+            name === 'blood_pressure' ? validateBloodPressure(raw)
+            : name === 'chief_complaint' ? validateChiefComplaint(raw)
+            : name === 'initial_notes' ? validateNotes(raw)
+            : validateVital(name, raw);
+        return message ?? '';
+    };
 
     useEffect(() => {
         if (!item.triaged) return;
@@ -229,31 +260,34 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
     }, [item.queue_id, item.triaged]);
 
     async function handleSave() {
-        if (!form.blood_pressure.trim() || !form.chief_complaint.trim()) {
-            setError('Blood pressure and chief complaint are required.');
-            return;
-        }
-        if (!/^\d{2,3}\/\d{2,3}$/.test(form.blood_pressure.trim())) {
-            setError('Blood pressure must be in standard systolic/diastolic format (e.g. 120/80).');
-            return;
-        }
-        const checkRange = (val, min, max, label) => {
-            if (val === '' || val == null) return null;
-            const n = Number(val);
-            if (Number.isNaN(n) || n < min || n > max) {
-                return `${label} must be between ${min} and ${max}.`;
-            }
-            return null;
+        setSubmitAttempted(true);
+        setTouched({
+            blood_pressure: true,
+            heart_rate: true,
+            temperature: true,
+            resp_rate: true,
+            o2_saturation: true,
+            weight: true,
+            height: true,
+            chief_complaint: true,
+            initial_notes: true,
+        });
+        const fieldErrors = {
+            blood_pressure: validateBloodPressure(form.blood_pressure),
+            heart_rate: validateVital('heart_rate', form.heart_rate),
+            temperature: validateVital('temperature', form.temperature),
+            resp_rate: validateVital('resp_rate', form.resp_rate),
+            o2_saturation: validateVital('o2_saturation', form.o2_saturation),
+            weight: validateVital('weight', form.weight),
+            height: validateVital('height', form.height),
+            chief_complaint: validateChiefComplaint(form.chief_complaint),
+            initial_notes: validateNotes(form.initial_notes),
         };
-        const rangeError =
-            checkRange(form.heart_rate, 30, 220, 'Heart rate') ||
-            checkRange(form.temperature, 30, 45, 'Temperature') ||
-            checkRange(form.resp_rate, 5, 60, 'Respiratory rate') ||
-            checkRange(form.o2_saturation, 0, 100, 'O₂ saturation') ||
-            checkRange(form.weight, 10, 300, 'Weight') ||
-            checkRange(form.height, 50, 250, 'Height');
-        if (rangeError) {
-            setError(rangeError);
+        const firstError = ['blood_pressure', 'heart_rate', 'temperature', 'resp_rate', 'o2_saturation', 'weight', 'height', 'chief_complaint', 'initial_notes']
+            .map((name) => fieldErrors[name])
+            .find(Boolean);
+        if (firstError) {
+            setError(firstError);
             return;
         }
         setSaving(true);
@@ -282,6 +316,8 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
             initial_notes: v('initial_notes'),
         });
         setError(null);
+        setTouched({});
+        setSubmitAttempted(false);
         setMode('edit');
     }
 
@@ -344,95 +380,147 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
                             <div className="field">
                                 <label>Blood Pressure (mmHg) *</label>
                                 <input
+                                    id="triage-bp"
                                     placeholder="e.g. 120/80"
-                                    maxLength={7}
+                                    type="text"
                                     inputMode="numeric"
                                     pattern="^\d{2,3}/\d{2,3}$"
+                                    maxLength={7}
+                                    autoComplete="off"
                                     value={form.blood_pressure}
-                                    onChange={(e) => setForm({ ...form, blood_pressure: formatBloodPressure(e.target.value) })}
+                                    aria-invalid={Boolean(fieldError('blood_pressure', form.blood_pressure)) || undefined}
+                                    aria-describedby={fieldError('blood_pressure', form.blood_pressure) ? 'triage-bp-error' : undefined}
+                                    onChange={(e) => updateVital('blood_pressure', e.target.value)}
                                 />
+                                {fieldError('blood_pressure', form.blood_pressure) && (
+                                    <p className="field-error" id="triage-bp-error" role="alert">
+                                        {fieldError('blood_pressure', form.blood_pressure)}
+                                    </p>
+                                )}
                             </div>
                             <div className="field">
                                 <label>Heart Rate (bpm)</label>
                                 <input
+                                    id="triage-hr"
                                     placeholder="e.g. 78"
-                                    type="number"
-                                    min="30"
-                                    max="220"
-                                    step="1"
+                                    type="text"
                                     inputMode="numeric"
+                                    maxLength={3}
+                                    autoComplete="off"
                                     value={form.heart_rate}
-                                    onChange={(e) => setForm({ ...form, heart_rate: e.target.value })}
+                                    aria-invalid={Boolean(fieldError('heart_rate', form.heart_rate)) || undefined}
+                                    aria-describedby={fieldError('heart_rate', form.heart_rate) ? 'triage-hr-error' : undefined}
+                                    onChange={(e) => updateVital('heart_rate', e.target.value)}
                                 />
+                                {fieldError('heart_rate', form.heart_rate) && (
+                                    <p className="field-error" id="triage-hr-error" role="alert">
+                                        {fieldError('heart_rate', form.heart_rate)}
+                                    </p>
+                                )}
                             </div>
                         </div>
                         <div className="field-row">
                             <div className="field">
                                 <label>Temperature (°C)</label>
                                 <input
+                                    id="triage-temp"
                                     placeholder="e.g. 36.8"
-                                    type="number"
-                                    min="30"
-                                    max="45"
-                                    step="0.1"
+                                    type="text"
                                     inputMode="decimal"
+                                    maxLength={4}
+                                    autoComplete="off"
                                     value={form.temperature}
-                                    onChange={(e) => setForm({ ...form, temperature: e.target.value })}
+                                    aria-invalid={Boolean(fieldError('temperature', form.temperature)) || undefined}
+                                    aria-describedby={fieldError('temperature', form.temperature) ? 'triage-temp-error' : undefined}
+                                    onChange={(e) => updateVital('temperature', e.target.value)}
                                 />
+                                {fieldError('temperature', form.temperature) && (
+                                    <p className="field-error" id="triage-temp-error" role="alert">
+                                        {fieldError('temperature', form.temperature)}
+                                    </p>
+                                )}
                             </div>
                             <div className="field">
                                 <label>Respiratory Rate (breaths/min)</label>
                                 <input
+                                    id="triage-rr"
                                     placeholder="e.g. 18"
-                                    type="number"
-                                    min="5"
-                                    max="60"
-                                    step="1"
+                                    type="text"
                                     inputMode="numeric"
+                                    maxLength={2}
+                                    autoComplete="off"
                                     value={form.resp_rate}
-                                    onChange={(e) => setForm({ ...form, resp_rate: e.target.value })}
+                                    aria-invalid={Boolean(fieldError('resp_rate', form.resp_rate)) || undefined}
+                                    aria-describedby={fieldError('resp_rate', form.resp_rate) ? 'triage-rr-error' : undefined}
+                                    onChange={(e) => updateVital('resp_rate', e.target.value)}
                                 />
+                                {fieldError('resp_rate', form.resp_rate) && (
+                                    <p className="field-error" id="triage-rr-error" role="alert">
+                                        {fieldError('resp_rate', form.resp_rate)}
+                                    </p>
+                                )}
                             </div>
                         </div>
                         <div className="field-row3">
                             <div className="field">
                                 <label>O₂ Saturation (%)</label>
                                 <input
+                                    id="triage-o2"
                                     placeholder="e.g. 98"
-                                    type="number"
-                                    min="0"
-                                    max="100"
-                                    step="1"
+                                    type="text"
                                     inputMode="numeric"
+                                    maxLength={3}
+                                    autoComplete="off"
                                     value={form.o2_saturation}
-                                    onChange={(e) => setForm({ ...form, o2_saturation: e.target.value })}
+                                    aria-invalid={Boolean(fieldError('o2_saturation', form.o2_saturation)) || undefined}
+                                    aria-describedby={fieldError('o2_saturation', form.o2_saturation) ? 'triage-o2-error' : undefined}
+                                    onChange={(e) => updateVital('o2_saturation', e.target.value)}
                                 />
+                                {fieldError('o2_saturation', form.o2_saturation) && (
+                                    <p className="field-error" id="triage-o2-error" role="alert">
+                                        {fieldError('o2_saturation', form.o2_saturation)}
+                                    </p>
+                                )}
                             </div>
                             <div className="field">
                                 <label>Weight (kg)</label>
                                 <input
+                                    id="triage-weight"
                                     placeholder="e.g. 60"
-                                    type="number"
-                                    min="10"
-                                    max="300"
-                                    step="0.1"
+                                    type="text"
                                     inputMode="decimal"
+                                    maxLength={5}
+                                    autoComplete="off"
                                     value={form.weight}
-                                    onChange={(e) => setForm({ ...form, weight: e.target.value })}
+                                    aria-invalid={Boolean(fieldError('weight', form.weight)) || undefined}
+                                    aria-describedby={fieldError('weight', form.weight) ? 'triage-weight-error' : undefined}
+                                    onChange={(e) => updateVital('weight', e.target.value)}
                                 />
+                                {fieldError('weight', form.weight) && (
+                                    <p className="field-error" id="triage-weight-error" role="alert">
+                                        {fieldError('weight', form.weight)}
+                                    </p>
+                                )}
                             </div>
                             <div className="field">
                                 <label>Height (cm)</label>
                                 <input
+                                    id="triage-height"
                                     placeholder="e.g. 165"
-                                    type="number"
-                                    min="50"
-                                    max="250"
-                                    step="0.1"
+                                    type="text"
                                     inputMode="decimal"
+                                    maxLength={5}
+                                    autoComplete="off"
                                     value={form.height}
-                                    onChange={(e) => setForm({ ...form, height: e.target.value })}
+                                    aria-invalid={Boolean(fieldError('height', form.height)) || undefined}
+                                    aria-describedby={fieldError('height', form.height) ? 'triage-height-error' : undefined}
+                                    onChange={(e) => updateVital('height', e.target.value)}
                                 />
+                                {fieldError('height', form.height) && (
+                                    <p className="field-error" id="triage-height-error" role="alert">
+                                        {fieldError('height', form.height)}
+                                    </p>
+                                )}
                             </div>
                         </div>
                         <hr className="div" />
@@ -442,20 +530,37 @@ function TriageModal({ mode: initialMode, item, onClose, onSaved }) {
                         <div className="field">
                             <label>Chief Complaint *</label>
                             <input
+                                id="triage-complaint"
                                 placeholder="Patient's primary concern"
+                                type="text"
                                 maxLength={255}
+                                autoComplete="off"
                                 value={form.chief_complaint}
-                                onChange={(e) => setForm({ ...form, chief_complaint: e.target.value })}
+                                aria-invalid={Boolean(fieldError('chief_complaint', form.chief_complaint)) || undefined}
+                                aria-describedby={fieldError('chief_complaint', form.chief_complaint) ? 'triage-complaint-error' : undefined}
+                                onChange={(e) => updateText('chief_complaint', e.target.value)}
                             />
+                            {fieldError('chief_complaint', form.chief_complaint) && (
+                                <p className="field-error" id="triage-complaint-error" role="alert">
+                                    {fieldError('chief_complaint', form.chief_complaint)}
+                                </p>
+                            )}
                         </div>
                         <div className="field">
                             <label>Initial Assessment Notes</label>
                             <textarea
+                                id="triage-notes"
                                 placeholder="Nurse's initial observations..."
                                 maxLength={1000}
                                 value={form.initial_notes}
-                                onChange={(e) => setForm({ ...form, initial_notes: e.target.value })}
+                                aria-invalid={Boolean(fieldError('initial_notes', form.initial_notes)) || undefined}
+                                aria-describedby="triage-notes-meta"
+                                onChange={(e) => updateText('initial_notes', e.target.value)}
                             />
+                            <p className="field-hint" id="triage-notes-meta">
+                                {form.initial_notes.length}/1000 characters
+                                {fieldError('initial_notes', form.initial_notes) ? ` — ${fieldError('initial_notes', form.initial_notes)}` : ''}
+                            </p>
                         </div>
                     </>
                 )}
@@ -513,14 +618,14 @@ function EndorseModal({ item, doctors, onClose, onConfirm }) {
 
                 <div className="field">
                     <label>Select Doctor</label>
-                    <select value={docId} onChange={(e) => setDocId(e.target.value)}>
+                    <UCIMSSelect value={docId} onChange={(e) => setDocId(e.target.value)} title="Select Doctor">
                         <option value="">— Choose a doctor —</option>
                         {doctors.map((d) => (
                             <option key={d.user_id} value={d.user_id}>
                                 Dr. {d.firstname} {d.lastname}
                             </option>
                         ))}
-                    </select>
+                    </UCIMSSelect>
                 </div>
                 {doctors.length === 0 && (
                     <p className="text-xs text-muted mt8">No doctor accounts found yet. An admin needs to create one first.</p>
@@ -553,11 +658,6 @@ function EndorseModal({ item, doctors, onClose, onConfirm }) {
 // ─────────────────────────────────────────────────────────────
 // Record Management
 // ─────────────────────────────────────────────────────────────
-function uniqueVals(list, path) {
-    const vals = list.map((p) => path.split('.').reduce((o, k) => o?.[k], p)).filter(Boolean);
-    return [...new Set(vals)];
-}
-
 function RecordsSearch({ patients, loading, onView, onHistory, showToast }) {
     const [recTab, setRecTab] = useState('search');
     const [q, setQ] = useState('');
@@ -565,16 +665,17 @@ function RecordsSearch({ patients, loading, onView, onHistory, showToast }) {
     const [year, setYear] = useState('');
     const [ptype, setPtype] = useState('');
 
-    const colleges = uniqueVals(patients, 'college_dept');
-    const years = uniqueVals(patients, 'year_level');
-    const ptypes = uniqueVals(patients, 'patient_type');
+    // Full canonical option lists, not just values present in the dataset.
+    const colleges = ALL_COLLEGES;
+    const years = ALL_YEAR_LEVELS;
+    const ptypes = ALL_PATIENT_TYPES;
 
     let filtered = patients;
     if (q.trim()) {
         const ql = q.toLowerCase();
         filtered = filtered.filter((p) => p.name.toLowerCase().includes(ql) || String(p.patientId).toLowerCase().includes(ql));
     }
-    if (college) filtered = filtered.filter((p) => p.college_dept === college);
+    if (college) filtered = filtered.filter((p) => sameCollege(p.college_dept, college));
     if (year) filtered = filtered.filter((p) => p.year_level === year);
     if (ptype) filtered = filtered.filter((p) => p.patient_type === ptype);
 
@@ -596,31 +697,35 @@ function RecordsSearch({ patients, loading, onView, onHistory, showToast }) {
             {recTab === 'search' && (
                 <div className="card">
                     <div className="card-title">Search &amp; Filter Patient Records</div>
-                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
-                        <input
-                            style={{ flex: 2, minWidth: 200 }}
-                            placeholder="Search by name or ID..."
-                            value={q}
-                            onChange={(e) => setQ(e.target.value)}
-                        />
-                        <select style={{ flex: 1, minWidth: 140 }} value={college} onChange={(e) => setCollege(e.target.value)}>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16, alignItems: 'flex-end' }}>
+                        <div style={{ flex: 2, minWidth: 200 }}>
+                            <label className="ucims-text-label" htmlFor="nurse-records-search">Search</label>
+                            <input
+                                id="nurse-records-search"
+                                className="ucims-text-input"
+                                placeholder="Search by name or ID..."
+                                value={q}
+                                onChange={(e) => setQ(e.target.value)}
+                            />
+                        </div>
+                        <UCIMSSelect style={{ flex: 1, minWidth: 160 }} label="College" value={college} onChange={(e) => setCollege(e.target.value)}>
                             <option value="">All Colleges</option>
                             {colleges.map((c) => (
                                 <option key={c}>{c}</option>
                             ))}
-                        </select>
-                        <select style={{ flex: 1, minWidth: 120 }} value={year} onChange={(e) => setYear(e.target.value)}>
+                        </UCIMSSelect>
+                        <UCIMSSelect style={{ flex: 1, minWidth: 150 }} label="Year Level" value={year} onChange={(e) => setYear(e.target.value)}>
                             <option value="">All Year Levels</option>
                             {years.map((y) => (
                                 <option key={y}>{y}</option>
                             ))}
-                        </select>
-                        <select style={{ flex: 1, minWidth: 120 }} value={ptype} onChange={(e) => setPtype(e.target.value)}>
+                        </UCIMSSelect>
+                        <UCIMSSelect style={{ flex: 1, minWidth: 150 }} label="Type" value={ptype} onChange={(e) => setPtype(e.target.value)}>
                             <option value="">All Types</option>
                             {ptypes.map((t) => (
                                 <option key={t}>{t}</option>
                             ))}
-                        </select>
+                        </UCIMSSelect>
                     </div>
 
                     {loading && <ListSkeleton />}
@@ -736,7 +841,7 @@ function ViewRecordModal({ patientRef, onClose }) {
                         </div>
 
                         {tab === 'personal' && (
-                            <div style={{ maxHeight: '50vh', overflowY: 'auto', paddingRight: 8 }}>
+                            <div className="record-scroll">
                                 <div className="card-title" style={{ fontSize: '.95rem' }}>
                                     Name &amp; Designation
                                 </div>
@@ -763,7 +868,12 @@ function ViewRecordModal({ patientRef, onClose }) {
                                     <Field label="Religion" value={demo?.religion} />
                                     <Field label="Nationality" value={demo?.nationality} />
                                 </div>
-                                <div className="grid2 mb8">
+                                <div className="grid3 mb8">
+                                    <Field label="Birthplace" value={demo?.birthplace} />
+                                    <Field label="University Email" value={data?.usep_email} />
+                                </div>
+                                {/* Same 3-column rhythm as the rest of the record so the address labels line up with the rows above. */}
+                                <div className="grid3 mb8">
                                     <Field label="City Address" value={demo?.city_address} />
                                     <Field label="Provincial Address" value={demo?.prov_address} />
                                 </div>
@@ -776,7 +886,7 @@ function ViewRecordModal({ patientRef, onClose }) {
                         )}
 
                         {tab === 'health' && (
-                            <div style={{ maxHeight: '50vh', overflowY: 'auto', paddingRight: 8 }}>
+                            <div className="record-scroll">
                                 <div className="card-title" style={{ fontSize: '.95rem' }}>
                                     Initial Vitals
                                 </div>
@@ -790,7 +900,7 @@ function ViewRecordModal({ patientRef, onClose }) {
                                     <Field label="Resp. Rate" value={hr?.resp_rate} />
                                     <Field label="Temperature" value={hr?.temp} />
                                 </div>
-                                <div className="grid2 mb8">
+                                <div className="grid3 mb8">
                                     <Field label="CR at Rest" value={hr?.cr_rest} />
                                     <Field label="CR after Activity" value={hr?.cr_activity} />
                                 </div>
@@ -798,7 +908,7 @@ function ViewRecordModal({ patientRef, onClose }) {
                                     History
                                 </div>
                                 <Field label="General Appearance" value={hr?.gen_appearance} />
-                                <div className="grid2 mt12">
+                                <div className="grid3 mt12">
                                     <Field label="Infectious Diseases" value={hr?.infectious_diseases} />
                                     <Field label="Social History" value={hr?.social_hx} />
                                 </div>
@@ -809,7 +919,7 @@ function ViewRecordModal({ patientRef, onClose }) {
                         )}
 
                         {tab === 'systems' && (
-                            <div style={{ maxHeight: '50vh', overflowY: 'auto', paddingRight: 8 }}>
+                            <div className="record-scroll">
                                 <div className="card-title" style={{ fontSize: '.95rem' }}>
                                     Review of Systems
                                 </div>
@@ -833,7 +943,7 @@ function ViewRecordModal({ patientRef, onClose }) {
                         )}
 
                         {tab === 'questionnaire' && (
-                            <div style={{ maxHeight: '50vh', overflowY: 'auto', paddingRight: 8 }}>
+                            <div className="record-scroll">
                                 <div className="card-title" style={{ fontSize: '.95rem' }}>
                                     Health Questionnaire
                                 </div>
@@ -847,7 +957,7 @@ function ViewRecordModal({ patientRef, onClose }) {
                                     <Field label="Surgery Type" value={q?.surg_type} />
                                     <Field label="When" value={q?.surg_when} />
                                 </div>
-                                <div className="grid2 mb8">
+                                <div className="grid3 mb8">
                                     <Field label="Infectious Diseases" value={q?.infectious_list} />
                                     <Field label="Fainting/Syncope" value={q?.syncope} />
                                 </div>
@@ -861,10 +971,11 @@ function ViewRecordModal({ patientRef, onClose }) {
                                             <Field label="Periods / Year" value={q?.female_periods_yr} />
                                             <Field label="Regular?" value={q?.female_regular} />
                                         </div>
-                                        <div className="grid2">
+                                        <div className="grid3">
                                             <Field label="If Irregular, Specify" value={q?.female_irregular_spec} />
                                             <Field label="Dysmenorrhea" value={q?.female_dysmenorrhea} />
                                         </div>
+                                        <Field label="Other Premenstrual / Menstrual Symptoms" value={q?.female_symptoms} />
                                     </>
                                 )}
                             </div>
@@ -1198,28 +1309,27 @@ function VisitDetailModal({ visit, onClose }) {
                         </div>
                     </div>
                 </div>
-                <div className="tabs" style={{ marginBottom: 16 }}>
-                    <button className={`tab ${tab === 'overview' ? 'active' : ''}`} onClick={() => setTab('overview')}>
-                        Overview
-                    </button>
-                    <button className={`tab ${tab === 'clinical' ? 'active' : ''}`} onClick={() => setTab('clinical')}>
-                        Full Clinical Details
-                    </button>
+                <div className="tabs" style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: 0, borderBottom: 'none' }}>
+                        <button className={`tab ${tab === 'overview' ? 'active' : ''}`} onClick={() => setTab('overview')}>
+                            Overview
+                        </button>
+                        <button className={`tab ${tab === 'clinical' ? 'active' : ''}`} onClick={() => setTab('clinical')}>
+                            Full Clinical Details
+                        </button>
+                    </div>
+                    <div style={{ paddingBottom: 4 }}>
+                        <StatusBadge status={visit.status} />
+                    </div>
                 </div>
 
                 {tab === 'overview' && (
                     <div style={{ maxHeight: '50vh', overflowY: 'auto', paddingRight: 8 }}>
-                        <div className="info-grid mb8">
+                        <div className="info-grid mb8" style={{ gridTemplateColumns: '1fr' }}>
                             <div className="info-item">
                                 <div className="info-lbl">Time In / Out</div>
                                 <div className="info-val">
                                     {visit.time_in} - {visit.time_out || 'N/A'}
-                                </div>
-                            </div>
-                            <div className="info-item">
-                                <div className="info-lbl">Status</div>
-                                <div className="info-val">
-                                    <StatusBadge status={visit.status} />
                                 </div>
                             </div>
                         </div>
@@ -1820,9 +1930,10 @@ export default function NurseDashboard() {
 
     useEffect(() => {
         fetchQueue();
-        const id = setInterval(fetchQueue, 15000);
-            return () => clearInterval(id);
-    }, [fetchQueue]);
+        fetchCerts();
+        const id = setInterval(() => { fetchQueue(); fetchCerts(); }, 15000);
+        return () => clearInterval(id);
+    }, [fetchQueue, fetchCerts]);
 
     useEffect(() => {
         axios.get('/api/v1/doctors', { timeout: 20000 })
@@ -1910,7 +2021,7 @@ export default function NurseDashboard() {
             </Head>
 
             <div className={`layout canvas-admin nurse-canvas ${collapsed ? 'canvas-collapsed' : ''}`}>
-                <Sidebar section={section} onNavigate={setSection} />
+                <Sidebar section={section} onNavigate={setSection} badges={{ queue: queue.filter((q) => ['waiting', 'triaged', 'examined'].includes(q.status)).length, medicine: medsEligible.length, medcert: certs.length }} />
                 <div className="main-content">
                     <header className="canvas-topbar"><button className="btn btn-outline btn-sm" type="button" aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} aria-expanded={!collapsed} aria-controls="nurse-sidebar" onClick={() => setCollapsed(value => !value)}><i className="bi bi-layout-sidebar" aria-hidden="true" /></button><strong>{sectionTitles[section]}</strong><span>USeP · University Clinic</span></header>
                     {section === 'queue' && (

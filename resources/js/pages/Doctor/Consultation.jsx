@@ -2,6 +2,7 @@ import { MetricSkeleton, DetailSkeleton, ListSkeleton, TableSkeletonRows } from 
 import { prescriptionError, requestError } from '@/lib/clinical-validation.mjs';
 import { isCalendarDate, localToday } from '@/lib/registration-validation.mjs';
 import PaginatedItems from '../../components/paginated-items.jsx';
+import UCIMSSelect from '../../components/UCIMSSelect.jsx';
 import { useState, useEffect, useCallback } from 'react';
 import { Head, usePage, router } from '@inertiajs/react';
 import axios from 'axios';
@@ -54,7 +55,7 @@ const LAB_OPTIONS = ['CBC', 'Urinalysis', 'Blood Chemistry', 'Chest X-Ray', 'ECG
 // ─────────────────────────────────────────────────────────────
 // Sidebar (ported from legacy index.html #page-doctor .sidebar)
 // ─────────────────────────────────────────────────────────────
-function Sidebar({ section, onNavigate }) {
+function Sidebar({ section, onNavigate, badges = {} }) {
     const { auth } = usePage().props;
     const user = auth?.user;
     const displayName = user ? [user.firstname, user.lastname].filter(Boolean).join(' ') : 'Doctor';
@@ -85,6 +86,11 @@ function Sidebar({ section, onNavigate }) {
                         aria-current={item.key === section ? 'page' : undefined}
                         className={item.key === section ? 'active' : ''} onClick={() => onNavigate(item.key)}>
                         <i className={`bi ${item.icon}`} aria-hidden="true" /> <span>{item.label}</span>
+                        {(badges[item.key] ?? 0) > 0 && (
+                            <span className="canvas-nav-badge" aria-label={`${badges[item.key]} pending ${item.label}`}>
+                                {badges[item.key] > 99 ? '99+' : badges[item.key]}
+                            </span>
+                        )}
                     </button>
                 ))}</nav>
             </div>
@@ -182,9 +188,9 @@ function IllnessSearch({ onPick }) {
 
     return (
         <div className="field" style={{ marginBottom: 12 }}>
-            <label>Find Illness / ICD-10</label>
+            <label>Standard Condition / ICD-10</label>
             <div style={{ display: 'flex', gap: 8 }}>
-                <select
+                <UCIMSSelect
                     aria-label="Search illnesses by"
                     value={mode}
                     onChange={(e) => {
@@ -192,11 +198,11 @@ function IllnessSearch({ onPick }) {
                         setResults([]);
                         setOpen(false);
                     }}
-                    style={{ maxWidth: 170 }}
+                    style={{ maxWidth: 190 }}
                 >
                     <option value="word">Disease / condition</option>
                     <option value="code">ICD-10 code</option>
-                </select>
+                </UCIMSSelect>
                 <input
                     aria-label={mode === 'code' ? 'Search by ICD-10 code' : 'Search by disease name'}
                     placeholder={mode === 'code' ? 'e.g. J06.9' : 'e.g. upper respiratory infection'}
@@ -244,12 +250,21 @@ function IllnessSearch({ onPick }) {
                         >
                             <span className="badge b-maroon" style={{ marginRight: 6 }}>{item.code}</span>
                             <span className="text-sm">{item.name}</span>
+                            {item.standard && (
+                                <span className="badge b-green" style={{ marginLeft: 6 }}>Standard</span>
+                            )}
+                            {item.standard && item.official && item.official !== item.name && (
+                                <span className="text-xs text-muted" style={{ display: 'block', marginTop: 2 }}>
+                                    {item.official}
+                                </span>
+                            )}
                         </button>
                     ))}
                 </div>
             )}
             <div className="text-xs text-muted mt4">
-                Picking a result fills the diagnosis and ICD-10 code below. You can still edit them.
+                Picking a standard result fills the standardized condition name and its ICD-10 code below, so the
+                illness statistics stay consistent. You can still edit them.
             </div>
         </div>
     );
@@ -683,11 +698,11 @@ function ExamineModal({ item, onClose, onFinalized, showToast }) {
                                             </div>
                                             <div className="field">
                                                 <label>Route</label>
-                                                <select value={r.route} onChange={(e) => updateRxRow(r.id, 'route', e.target.value)}>
+                                                <UCIMSSelect value={r.route} onChange={(e) => updateRxRow(r.id, 'route', e.target.value)}>
                                                     {['Oral', 'Topical', 'IV', 'IM', 'Inhaled'].map((opt) => (
                                                         <option key={opt}>{opt}</option>
                                                     ))}
-                                                </select>
+                                                </UCIMSSelect>
                                             </div>
                                         </div>
                                         <div className="field">
@@ -1082,7 +1097,12 @@ function ExamSummaryModal({ visit, onClose }) {
 function printCertificate(cert, patient, form) {
     const formatDt = (d) => (d ? new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '_________________');
     const today = new Date();
-    const logoUrl = `${window.location.origin}/assets/img/logo.png`;
+    const dayOfMonth = today.getDate();
+    const ordinal = dayOfMonth % 10 === 1 && dayOfMonth !== 11 ? 'st'
+        : dayOfMonth % 10 === 2 && dayOfMonth !== 12 ? 'nd'
+            : dayOfMonth % 10 === 3 && dayOfMonth !== 13 ? 'rd' : 'th';
+    // Transparent seal (no black square behind it) — logo.png has an opaque black matte.
+    const logoUrl = `${window.location.origin}/assets/img/University%20of%20Southeastern%20Philippines%20Seal.png`;
 
     const html = `<!DOCTYPE html>
 <html>
@@ -1090,51 +1110,136 @@ function printCertificate(cert, patient, form) {
 <meta charset="utf-8">
 <title>Medical Certificate</title>
 <style>
-    @page { size: portrait; margin: 18mm; }
-    body { font-family: 'Times New Roman', Times, serif; margin: 0; padding: 30px; color: #111; }
-    .letter { max-width: 680px; margin: 0 auto; }
-    table.letterhead { width: 100%; border-collapse: collapse; border: 1.5px solid #000; margin-bottom: 26px; font-family: Arial, Helvetica, sans-serif; }
-    table.letterhead td { padding: 10px 14px; vertical-align: middle; }
-    table.letterhead td:first-child { width: 90px; text-align: center; border-right: 1.5px solid #000; }
-    table.letterhead td:last-child { text-align: center; font-size: 9pt; }
-    .body-text { line-height: 2.2; font-size: 1.05rem; }
-    .sig { margin-top: 60px; text-align: right; font-family: Arial, Helvetica, sans-serif; }
-    .sig .name { border-top: 1px solid #000; display: inline-block; padding-top: 4px; font-weight: bold; text-transform: uppercase; min-width: 240px; }
-    .sig .lic { font-size: .85rem; margin-top: 6px; }
-    u { text-underline-offset: 3px; }
+    /* Full-bleed sheet: zero page margin removes the reserved margin band, so the
+       printed layout is identical everywhere and the sheet supplies its own
+       padding. Chrome's own date/URL strip is controlled by the print dialog's
+       "Headers and footers" checkbox. */
+    @page { size: A4 portrait; margin: 0; }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: #fff; }
+    body {
+        font-family: 'Times New Roman', Times, serif;
+        color: #111;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    .sheet {
+        position: relative;
+        width: 210mm;
+        min-height: 297mm;
+        margin: 0 auto;
+        padding: 18mm 22mm 20mm;
+        overflow: hidden;
+        background: #fff;
+    }
+
+    /* Borderless letterhead — seal sits beside the agency text. */
+    .letterhead {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10mm;
+        margin-bottom: 12mm;
+    }
+    .letterhead img {
+        width: 20mm;
+        height: auto;
+        display: block;
+        flex: 0 0 auto;
+    }
+    .letterhead .agency {
+        text-align: center;
+        font-family: Arial, Helvetica, sans-serif;
+        line-height: 1.5;
+    }
+    .letterhead .republic { font-size: 8.5pt; }
+    .letterhead .university { font-size: 12pt; font-weight: 700; }
+    .letterhead .clinic { font-size: 8.5pt; }
+
+    h1.title {
+        margin: 0 0 9mm;
+        text-align: center;
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 15pt;
+        font-weight: 700;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+    }
+
+    .body-text { font-size: 11.5pt; line-height: 2; text-align: justify; }
+    .body-text p { margin: 0 0 5mm; text-indent: 12mm; }
+    .body-text p.salutation {
+        margin-bottom: 6mm;
+        text-indent: 0;
+        font-weight: 700;
+        letter-spacing: .01em;
+    }
+    .fill { border-bottom: 1px solid #111; font-weight: 700; }
+
+    .sig {
+        margin-top: 24mm;
+        display: flex;
+        justify-content: flex-end;
+        font-family: Arial, Helvetica, sans-serif;
+    }
+    .sig .block { width: 74mm; text-align: center; }
+    .sig .line { border-top: 1px solid #111; }
+    .sig .name { margin-top: 5px; font-size: 11pt; font-weight: 700; text-transform: uppercase; }
+    .sig .lic { margin-top: 3px; font-size: 9pt; color: #333; }
+
+    @media screen {
+        body { background: #e9e6e7; }
+        .sheet { box-shadow: 0 8px 30px rgba(0,0,0,.18); margin: 16px auto; }
+    }
 </style>
 </head>
 <body>
-<div class="letter">
-    <table class="letterhead">
-        <tr>
-            <td><img src="${logoUrl}" style="width:72px;" onerror="this.style.display='none'" alt=""></td>
-            <td>
-                Republic of the Philippines<br><b style="font-size:10.5pt;">University of Southeastern Philippines</b><br>
-                University Clinic &mdash; I&ntilde;igo St., Bo. Obrero, Davao City
-            </td>
-        </tr>
-    </table>
+<div class="sheet">
+    <header class="letterhead">
+        <img src="${logoUrl}" alt="USeP seal">
+        <div class="agency">
+            <div class="republic">Republic of the Philippines</div>
+            <div class="university">University of Southeastern Philippines</div>
+            <div class="clinic">University Clinic &mdash; I&ntilde;igo St., Bo. Obrero, Davao City</div>
+        </div>
+    </header>
+
+    <h1 class="title">Medical Certificate</h1>
+
     <div class="body-text">
-        <p style="font-weight:bold;">TO WHOM IT MAY CONCERN:</p>
-        <p style="text-indent:30px;">
-            This is to certify that <b><u>&nbsp;${patientName(patient)}&nbsp;</u></b>
-            of <b><u>&nbsp;${form.affiliation || 'N/A'}&nbsp;</u></b>
-            has been examined by the undersigned at this office on <b><u>&nbsp;${formatDt(form.exam_date)}&nbsp;</u></b>
-            and found him/her to be with <b><u>&nbsp;${form.findings || '_______________________'}&nbsp;</u></b>.
+        <p class="salutation">TO WHOM IT MAY CONCERN:</p>
+        <p>
+            This is to certify that <span class="fill">${patientName(patient)}</span>
+            of <span class="fill">${form.affiliation || 'N/A'}</span>
+            has been examined by the undersigned at this office on <span class="fill">${formatDt(form.exam_date)}</span>
+            and found him/her to be with <span class="fill">${form.findings || '&nbsp;'}</span>.
         </p>
-        <p style="text-indent:30px;">
-            This certification is issued upon his/her request for the purpose of:
-            <b><u>&nbsp;${form.purpose || cert.diagnosis_reason || '_______________________'}&nbsp;</u></b>.
+        <p>
+            This certification is issued upon his/her request for
+            <span class="fill">${form.purpose || cert.diagnosis_reason || '&nbsp;'}</span>
+            and for whatever purposes it may serve him/her.
         </p>
-        <p style="text-indent:30px;">Issued this ${today.getDate()} day of ${today.toLocaleDateString('en-US', { month: 'long' })}, ${today.getFullYear()} at Davao City, Philippines.</p>
+        <p>
+            Issued this ${dayOfMonth}${ordinal} day of ${today.toLocaleDateString('en-US', { month: 'long' })}, ${today.getFullYear()}
+            at Davao City, Philippines.
+        </p>
     </div>
+
     <div class="sig">
-        <div class="name">${form.physician_name || '_______________________'}</div>
-        <div class="lic">License No. ${form.license_no || '_______________'}</div>
+        <div class="block">
+            <div class="line"></div>
+            <div class="name">${form.physician_name || '_______________________'}</div>
+            <div class="lic">License No. ${form.license_no || '_______________'}</div>
+        </div>
     </div>
 </div>
-<script>window.onload = function () { setTimeout(function () { window.print(); }, 150); };</script>
+<script>
+    (function () {
+        var run = function () { setTimeout(function () { window.print(); }, 250); };
+        if (document.readyState === 'complete') run();
+        else window.addEventListener('load', run);
+    })();
+</script>
 </body>
 </html>`;
 
@@ -1306,6 +1411,10 @@ function ReviewMedCertModal({ cert, onClose, onReleased, showToast }) {
                 <div className="alert alert-info text-sm mb16">
                     <i className="bi bi-info-circle"></i> <b>Status:</b> Visit is marked complete. Fill out the blanks below. The document will
                     be formatted properly with the USeP header upon clicking "Release &amp; Print".
+                    <div className="text-xs mt4" style={{ opacity: 0.85 }}>
+                        In the print dialog, switch off <b>Headers and&nbsp;footers</b> so the browser's date and
+                        &ldquo;about:blank&rdquo; line stay off the page. Chrome remembers that choice.
+                    </div>
                 </div>
 
                 <div
@@ -1466,13 +1575,11 @@ export default function DoctorDashboard() {
 
     useEffect(() => {
         fetchQueue();
-        const id = setInterval(fetchQueue, 15000);
+        fetchCerts();
+        fetchLabs();
+        const id = setInterval(() => { fetchQueue(); fetchCerts(); fetchLabs(); }, 15000);
         return () => clearInterval(id);
-    }, [fetchQueue]);
-
-    useEffect(() => {
-        if (section === 'medcert') fetchCerts();
-    }, [section, fetchCerts]);
+    }, [fetchQueue, fetchCerts, fetchLabs]);
 
     const active = queue.filter((q) => q.status === 'with-doctor').sort((a, b) => (a.queue_number || 0) - (b.queue_number || 0));
 
@@ -1500,7 +1607,7 @@ export default function DoctorDashboard() {
             </Head>
 
             <div className={`layout canvas-admin doctor-focus ${sidebarCollapsed ? 'canvas-collapsed' : ''}`}>
-                <Sidebar section={section} onNavigate={setSection} />
+                <Sidebar section={section} onNavigate={setSection} badges={{ consultations: active.length, medcert: certs.length, labs: labs.length }} />
                 <div className="main-content">
                     <header className="canvas-topbar doctor-topbar">
                         <button type="button" className="btn btn-outline btn-sm" aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'} aria-expanded={!sidebarCollapsed} aria-controls="doctor-sidebar" onClick={() => setSidebarCollapsed(value => !value)}><i className="bi bi-layout-sidebar" aria-hidden="true" /></button>

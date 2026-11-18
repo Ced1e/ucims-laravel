@@ -4,3 +4,8 @@
 @media print{.nurse-canvas .main-content{margin:0!important;width:100%!important}.nurse-canvas .canvas-sidebar,.nurse-canvas .canvas-topbar{display:none!important}}
 .nurse-canvas .nurse-record-actions{width:1%;white-space:nowrap;padding-left:24px;padding-right:14px}
 .nurse-canvas td.nurse-record-actions>.flex{flex-wrap:nowrap}
+/* Keep the brand and the sign-out footer pinned inside the fixed sidebar; only the nav list scrolls on short screens. */
+.nurse-canvas .canvas-sidebar{overflow:hidden}
+.nurse-canvas .canvas-brand,.nurse-canvas .canvas-user{flex:0 0 auto}
+.nurse-canvas .canvas-user{background:#faf9f9}
+.nurse-canvas .canvas-nav-area{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin}

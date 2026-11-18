@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { paginate, listIdentity } from '../lib/pagination.mjs';
 
 /**
@@ -23,19 +24,71 @@ export default function PaginatedItems({ items = [], children, tableColumns, aut
         return () => clearInterval(timer);
     }, [autoAdvance, result.pageCount]);
     const go = page => setPosition({ page, signature });
+
+    // Truncated numbered pagination: always first + last, neighbours around the
+    // current page, ellipses in between — or a flat window near the edges.
+    const pageCount = result.pageCount;
+    const page = result.page;
+    const entries = [];
+    if (pageCount <= 7) {
+        for (let p = 1; p <= pageCount; p += 1) entries.push(p);
+    } else {
+        const wanted = new Set([1, pageCount, page - 1, page, page + 1]);
+        if (page <= 4) {
+            [2, 3, 4, 5].forEach(p => wanted.add(p));
+        } else if (page >= pageCount - 3) {
+            [pageCount - 1, pageCount - 2, pageCount - 3, pageCount - 4].forEach(p => wanted.add(p));
+        }
+        const sorted = [...wanted].filter(p => p >= 1 && p <= pageCount).sort((a, b) => a - b);
+        for (const p of sorted) {
+            if (entries.length > 0 && p - entries[entries.length - 1] > 1) entries.push('…');
+            entries.push(p);
+        }
+    }
+
     const controls = (
-        <nav aria-label={`${label} pagination`} style={{ gridColumn: '1 / -1', width: '100%', flexShrink: 0, display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center', gap: 12, padding: '12px 8px' }}>
-            <button type="button" className="btn btn-outline btn-sm" aria-label={`Previous page of ${label}`} disabled={result.page <= 1} onClick={() => go(result.page - 1)}>Previous</button>
-            <span role="status" aria-live={autoAdvance ? 'off' : 'polite'} style={{ fontSize: '.85rem' }}>
-                {result.start}–{result.end} of {result.total} · Page {result.page} of {result.pageCount}
-            </span>
-            <button type="button" className="btn btn-outline btn-sm" aria-label={`Next page of ${label}`} disabled={result.page >= result.pageCount} onClick={() => go(result.page + 1)}>Next</button>
-            {autoAdvance && result.pageCount > 1 && <span style={{ fontSize: '.75rem' }}>Rotates every 10 seconds</span>}
+        <nav aria-label={`${label} pagination`} className="pg-nav">
+            <button
+                type="button"
+                className="pg-btn pg-arrow"
+                aria-label={`Previous page of ${label}`}
+                disabled={page <= 1}
+                onClick={() => go(page - 1)}
+            >
+                <ChevronLeft size={16} aria-hidden="true" />
+            </button>
+            {entries.map((entry, index) => entry === '…' ? (
+                <span key={`ellipsis-${index}`} className="pg-ellipsis" aria-hidden="true">…</span>
+            ) : (
+                <button
+                    key={entry}
+                    type="button"
+                    className="pg-btn pg-page"
+                    aria-current={entry === page ? 'page' : undefined}
+                    onClick={() => go(entry)}
+                >
+                    {entry}
+                </button>
+            ))}
+            <button
+                type="button"
+                className="pg-btn pg-arrow"
+                aria-label={`Next page of ${label}`}
+                disabled={page >= pageCount}
+                onClick={() => go(page + 1)}
+            >
+                <ChevronRight size={16} aria-hidden="true" />
+            </button>
+            {autoAdvance && pageCount > 1 && <span className="pg-rotate-note">Rotates every 10 seconds</span>}
         </nav>
     );
-    return <>{result.items.map((item, index) => children(item, result.offset + index))}
-        {tableColumns ? <tr><td colSpan={tableColumns}>{controls}</td></tr> : controls}
-    </>;
+
+    return (
+        <>
+            {result.items.map((item, index) => children(item, result.offset + index))}
+            {tableColumns
+                ? <tr><td colSpan={tableColumns}>{controls}</td></tr>
+                : controls}
+        </>
+    );
 }
-
-

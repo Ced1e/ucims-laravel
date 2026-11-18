@@ -1,4 +1,5 @@
 import { ListSkeleton } from '@/components/data-skeletons';
+import UCIMSSelect from '../../components/UCIMSSelect.jsx';
 import PaginatedItems from '../../components/paginated-items.jsx';
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
@@ -112,14 +113,14 @@ export default function RecordDeletionRequests({ patients, showToast }) {
                 <div className="field">
                     <label>Select Patient</label>
                     <input placeholder="Type to filter by name or ID..." value={filter} onChange={(e) => setFilter(e.target.value)} />
-                    <select value={patientId} onChange={(e) => setPatientId(e.target.value)} style={{ marginTop: 6 }}>
+                    <UCIMSSelect value={patientId} onChange={(e) => setPatientId(e.target.value)} style={{ marginTop: 6, width: '100%' }}>
                         <option value="">— Select patient —</option>
                         {options.map((p) => (
                             <option key={p.id} value={p.id}>
                                 {p.name} ({p.patientId})
                             </option>
                         ))}
-                    </select>
+                    </UCIMSSelect>
                 </div>
                 <div className="field">
                     <label>Reason</label>

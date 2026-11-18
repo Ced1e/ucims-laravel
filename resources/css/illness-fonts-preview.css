@@ -1,0 +1,234 @@
+/* ══════════════════════════════════════════════════════
+   Illness font lab — previews/illness-fonts
+   ══════════════════════════════════════════════════════ */
+
+.ifp-page {
+    min-height: 100vh;
+    padding: 28px clamp(16px, 4vw, 44px) 56px;
+    background: var(--bg, #f5f4f0);
+    color: var(--text, #1a1a1a);
+    font-family: 'Open Sans', sans-serif;
+    line-height: 1.5;
+}
+
+.ifp-page * {
+    box-sizing: border-box;
+}
+
+.ifp-top {
+    max-width: 1220px;
+    margin: 0 auto 26px;
+}
+
+.ifp-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--maroon, #7b1113);
+}
+
+.ifp-top h1 {
+    margin: 5px 0 6px;
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(1.65rem, 3vw, 2.1rem);
+    line-height: 1.15;
+    color: var(--maroon, #7b1113);
+}
+
+.ifp-top p {
+    max-width: 80ch;
+    margin: 0;
+    font-size: 0.85rem;
+    line-height: 1.55;
+    color: var(--text-muted, #6a6460);
+}
+
+.ifp-top code {
+    padding: 1px 5px;
+    border: 1px solid var(--border, #ddd9d0);
+    border-radius: 4px;
+    background: #fff;
+    font-size: 0.77rem;
+}
+
+.ifp-top b {
+    color: var(--text, #1a1a1a);
+}
+
+.ifp-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    max-width: 1220px;
+    margin: 0 auto 12px;
+    padding-top: 22px;
+    border-top: 1px solid var(--border, #ddd9d0);
+}
+
+.ifp-head h2 {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    margin: 0;
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.35rem;
+    color: var(--maroon, #7b1113);
+}
+
+.ifp-head-note {
+    font-size: 0.8rem;
+    color: var(--text-muted, #6a6460);
+}
+
+/* ── Badge grid ── */
+.ifp-grid,
+.ifp-title-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
+    gap: 14px;
+    max-width: 1220px;
+    margin: 0 auto 14px;
+}
+
+.ifp-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px 18px;
+    border: 1px solid var(--border, #ddd9d0);
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.ifp-card.is-current {
+    border-color: var(--maroon, #7b1113);
+    box-shadow: 0 0 0 3px rgba(123, 17, 19, 0.12);
+}
+
+.ifp-card-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    min-width: 0;
+}
+
+.ifp-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--gold, #c9a227);
+}
+
+.ifp-card-head h3 {
+    margin: 0;
+    font-size: 1.05rem;
+    line-height: 1.25;
+    color: var(--text, #1a1a1a);
+}
+
+.ifp-card-head p {
+    margin: 2px 0 0;
+    font-size: 0.7rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    color: var(--text-muted, #6a6460);
+}
+
+.ifp-cur {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--maroon, #7b1113);
+    color: #fff;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+}
+
+/* ── Badge sample chips (same box, only family changes) ── */
+.ifp-samples {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.ifp-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 13px;
+    border: 1px solid #e6cdcd;
+    border-radius: 6px;
+    background: #f5e8e8;
+    font-size: 0.92rem;
+    letter-spacing: 0.07em;
+    color: var(--maroon, #7b1113);
+}
+
+.ifp-meta {
+    margin: 0;
+    font-size: 0.78rem;
+    letter-spacing: 0.02em;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-muted, #6a6460);
+    padding: 10px 12px;
+    border-top: 1px dashed var(--border, #ddd9d0);
+}
+
+.ifp-note {
+    margin: 0;
+    font-size: 0.76rem;
+    line-height: 1.5;
+    color: var(--text-muted, #6a6460);
+}
+
+.ifp-title {
+    margin: 0;
+    font-size: 1.28rem;
+    line-height: 1.28;
+    letter-spacing: -0.01em;
+    color: var(--text, #1a1a1a);
+    max-width: 34ch;
+    padding-bottom: 12px;
+    border-bottom: 1px dashed var(--border, #ddd9d0);
+}
+
+.ifp-foot-note {
+    max-width: 1220px;
+    margin: 4px auto 0;
+    font-size: 0.75rem;
+    line-height: 1.6;
+    color: var(--text-muted, #6a6460);
+    font-style: italic;
+}
+
+.ifp-foot {
+    max-width: 1220px;
+    margin: 26px auto 0;
+    padding-top: 16px;
+    border-top: 1px solid var(--border, #ddd9d0);
+    font-size: 0.78rem;
+    line-height: 1.6;
+    color: var(--text-muted, #6a6460);
+}
+
+.ifp-foot code {
+    padding: 1px 5px;
+    border: 1px solid var(--border, #ddd9d0);
+    border-radius: 4px;
+    background: #fff;
+    font-size: 0.74rem;
+}

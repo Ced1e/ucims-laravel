@@ -5,6 +5,9 @@
 .clinic-entry-visual::after { content: ''; position: absolute; width: 560px; height: 560px; right: -360px; top: -220px; border: 1px solid #d8b86240; border-radius: 50%; box-shadow: 0 0 0 50px #d8b86208, 0 0 0 100px #d8b86206; pointer-events: none; }
 .clinic-entry-brand { position: relative; z-index: 1; display: inline-flex; align-items: center; gap: 16px; width: fit-content; color: #fff; text-decoration: none; font-size: 13px; line-height: 1.6; font-weight: 600; letter-spacing: .02em; }
 .clinic-entry-brand img { width: 62px; height: 62px; object-fit: contain; }
+/* The seal doubles as "back to home" now that the back arrow is gone. */
+.clinic-entry-brand { transition: opacity .15s ease; }
+.clinic-entry-brand:hover { opacity: .84; }
 .clinic-entry-story { position: relative; z-index: 1; padding-top: 64px; }
 .clinic-entry-eyebrow { margin: 0 0 22px; color: #e4c579; font-size: 11px; font-weight: 700; letter-spacing: .19em; }
 .clinic-entry-story h1 { margin: 0; font-family: Georgia, serif; font-size: clamp(40px, 4.2vw, 66px); font-weight: 400; letter-spacing: -.035em; line-height: 1.12; }
@@ -15,10 +18,9 @@
 .clinic-entry-cross { position: absolute; left: calc(50% - 25px); top: 17px; font-size: 72px; font-weight: 200; line-height: 1; opacity: .2; }
 .clinic-entry-art svg { position: absolute; width: 100%; height: 130px; top: 30px; }
 .clinic-entry-art-label { position: absolute; bottom: 10px; width: 100%; text-align: center; font-size: 9px; letter-spacing: .22em; color: #dfbe8a; }
-.clinic-entry-visual-footer { position: relative; margin: 36px 0 0; font-size: 10px; color: #dec9ca; line-height: 1.6; letter-spacing: .06em; }
 .clinic-entry-panel { display: flex; flex-direction: column; padding: 48px clamp(28px, 5vw, 88px) 28px; }
-.clinic-entry-back { align-self: flex-start; color: #756860; font-size: 12px; text-decoration: none; }
-.clinic-entry-back span { margin-right: 8px; }
+.clinic-entry { position: relative; }
+
 .clinic-entry-form-wrap { width: 100%; max-width: 410px; margin: auto; padding: 64px 0; }
 .clinic-entry-kicker { color: #851d2a; font-size: 10px; font-weight: 700; letter-spacing: .17em; margin: 0 0 14px; }
 .clinic-entry-form-wrap h2 { font-family: Georgia, serif; font-size: clamp(34px, 3.2vw, 46px); line-height: 1.2; font-weight: 400; letter-spacing: -.025em; margin: 0 0 12px; color: #302424; }
@@ -66,8 +68,7 @@
     .clinic-entry-story { padding-top: 36px; }
     .clinic-entry-story h1 { font-size: clamp(34px, 7vw, 48px); }
     .clinic-entry-description { margin-top: 16px; max-width: 500px; font-size: 13px; }
-    .clinic-entry-art, .clinic-entry-visual-footer { display: none; }
-    .clinic-entry-panel { padding: 28px 24px 24px; }
+    .clinic-entry-art,     .clinic-entry-panel { padding: 28px 24px 24px; }
     .clinic-entry-form-wrap { padding: 40px 0; }
     #page-home .home-body { padding: 50px 24px !important; }
     #page-home .home-system { font-size: clamp(32px, 8vw, 50px) !important; }
@@ -123,3 +124,85 @@
 @media (max-width: 760px) { .clinic-entry-silk .clinic-heartbeat { height: 100px; margin-top: 16px; } .clinic-entry-silk .clinic-heartbeat svg { height: 100px; } }
 
 .clinic-entry { --ucims-page-ready: 1; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Fluid viewport fit — the two-panel entry screens must fit a real laptop.
+   Both columns compact from viewport height, so 1280×720, 1366×768 and
+   1440×900 share one visual rhythm instead of the form overflowing and
+   forcing a scrollbar just to reach the Login button.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.clinic-entry { min-height: 100vh; min-height: 100svh; }
+
+@media (min-width: 761px) {
+    /* The login screen is one hero and nothing else: lock it to the viewport so
+       no scrollbar can appear, whatever the laptop's chrome or zoom level.
+       Very short windows fall back to normal scrolling below. */
+    html:has(.clinic-entry) { overflow: hidden; overscroll-behavior: none; }
+    .clinic-entry {
+        height: 100vh;
+        height: 100svh;
+        min-height: 0;
+        overflow: hidden;
+        overscroll-behavior: none;
+    }
+    .clinic-entry-visual, .clinic-entry-panel { min-height: 0; }
+    .clinic-entry-panel { overflow-y: auto; }
+
+    .clinic-entry-visual { padding-block: clamp(18px, 3.2vh, 44px); }
+    .clinic-entry-brand { gap: clamp(10px, 1.6vh, 16px); font-size: clamp(11px, 1.6vh, 13px); }
+    .clinic-entry-brand img { width: clamp(44px, 8vh, 62px); height: clamp(44px, 8vh, 62px); }
+    .clinic-entry-story { padding-top: clamp(12px, 3.2vh, 56px); }
+    .clinic-entry-eyebrow { margin-bottom: clamp(8px, 1.8vh, 20px); font-size: clamp(10px, 1.4vh, 11px); }
+    .clinic-entry-story h1 { font-size: clamp(27px, min(4.2vw, 5.2vh), 60px); }
+    .clinic-entry-description { margin-top: clamp(10px, 1.8vh, 22px); font-size: clamp(12.5px, 1.85vh, 15px); line-height: 1.6; }
+    .clinic-entry-art { height: clamp(70px, 15vh, 200px); margin-top: clamp(8px, 1.8vh, 26px); }
+
+    .clinic-entry-panel { padding-block: clamp(14px, 3vh, 44px) clamp(10px, 2vh, 24px); }
+    .clinic-entry-form-wrap { padding-block: clamp(8px, 2.2vh, 56px); }
+    .clinic-entry-kicker { margin-bottom: clamp(6px, 1.4vh, 14px); }
+    .clinic-entry-form-wrap h2 { font-size: clamp(24px, min(3.2vw, 5.2vh), 46px); margin-bottom: clamp(6px, 1.2vh, 12px); }
+    .clinic-entry-intro { margin-bottom: clamp(12px, 2.6vh, 34px); font-size: clamp(13px, 1.8vh, 14px); }
+    .clinic-entry-form { gap: clamp(11px, 2.2vh, 22px); }
+    .clinic-entry-field > label { margin-bottom: clamp(5px, .9vh, 9px); }
+    .clinic-entry-field input { height: clamp(42px, 6.4vh, 52px); }
+    .clinic-entry-hint { margin-top: clamp(4px, .9vh, 8px); font-size: clamp(10px, 1.5vh, 11px); line-height: 1.5; }
+    .clinic-entry-submit { min-height: clamp(42px, 6.4vh, 52px); padding-block: clamp(10px, 1.6vh, 14px); }
+    .clinic-entry-register { margin-top: clamp(10px, 2.4vh, 28px); }
+    .clinic-entry-help { margin-top: clamp(10px, 2.2vh, 30px); padding-top: clamp(9px, 1.8vh, 24px); }
+
+    /* Burgundy Silk sizes several pieces with higher specificity — mirror them. */
+    .clinic-entry-silk .clinic-entry-brand { gap: clamp(10px, 1.7vh, 18px); font-size: clamp(12px, 1.9vh, 18px); }
+    .clinic-entry-silk .clinic-entry-brand img { width: clamp(46px, 9vh, 84px); height: clamp(46px, 9vh, 84px); }
+    .clinic-entry-silk .clinic-entry-story h1 { font-size: clamp(26px, min(3.8vw, 5vh), 56px); }
+    .clinic-entry-silk .clinic-entry-description { font-size: clamp(12.5px, 1.9vh, 16px); }
+    .clinic-entry-silk .clinic-entry-art { height: clamp(64px, 14vh, 132px); margin-top: clamp(8px, 1.8vh, 26px); }
+    .clinic-entry-silk .clinic-heartbeat { height: clamp(64px, 14vh, 132px); }
+    .clinic-entry-silk .clinic-heartbeat svg { height: 100%; }
+}
+
+.clinic-entry-wordmark small { font-size: clamp(10.5px, 1.6vh, 14px); }
+
+/* Short laptop viewports: drop the decorative heartbeat rather than squeeze it. */
+@media (min-width: 761px) and (max-height: 700px) {
+    .clinic-entry-art, .clinic-entry-silk .clinic-entry-art { display: none; }
+    .clinic-entry-silk .clinic-entry-story h1 { font-size: clamp(26px, min(3.4vw, 4.8vh), 46px); }
+}
+
+/* Extra slack on short laptops so an error or status message still fits on the
+   single screen instead of nudging the layout past the viewport. */
+@media (min-width: 761px) and (max-height: 620px) {
+    .clinic-entry-form-wrap { padding-block: 0; }
+    .clinic-entry-intro { margin-bottom: clamp(8px, 1.8vh, 16px); }
+    .clinic-entry-form { gap: clamp(8px, 1.8vh, 14px); }
+    .clinic-entry-register { margin-top: 10px; }
+    .clinic-entry-help { margin-top: 10px; padding-top: 10px; font-size: 10px; line-height: 1.6; }
+}
+
+/* Below this height the form truly cannot fit; let the page scroll again
+   rather than clip the Login button. */
+@media (min-width: 761px) and (max-height: 470px) {
+    html:has(.clinic-entry) { overflow-y: auto; }
+    .clinic-entry { height: auto; min-height: 100vh; overflow: visible; }
+    .clinic-entry-panel { overflow-y: visible; }
+}

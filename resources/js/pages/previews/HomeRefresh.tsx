@@ -18,8 +18,8 @@ import {
     Stethoscope,
     UserPlus,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import type { ReactNode } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { ReactNode, RefObject } from 'react';
 
 /*
  * UCIMS Homepage — Design 1 (Refined Legacy Classic) with 3 UX Feels
@@ -226,9 +226,17 @@ function smoothScrollTo(id: string) {
 // ─────────────────────────────────────────────────────────────
 // Header & Hero (Design 1: Refined Legacy Classic)
 // ─────────────────────────────────────────────────────────────
-function Header({ activeSection, scrolled }: { activeSection: string; scrolled: boolean }) {
+function Header({
+    activeSection,
+    scrolled,
+    headerRef,
+}: {
+    activeSection: string;
+    scrolled: boolean;
+    headerRef: RefObject<HTMLElement | null>;
+}) {
     return (
-        <header className={`hr-header ${scrolled ? 'is-scrolled' : ''}`}>
+        <header ref={headerRef} className={`hr-header ${scrolled ? 'is-scrolled' : ''}`}>
             <div className="hr-container hr-header-inner">
                 <Link href="/" className="hr-brand" aria-label="USeP University Clinic home">
                     <img src={SEAL} width={50} height={50} alt="" />
@@ -299,9 +307,12 @@ function ObjectiveCard({ ux }: { ux: number }) {
     const [peekOpen, setPeekOpen] = useState(true);
 
     return (
-        <div className="hr-objective-card">
-            <h2>SYSTEM OBJECTIVE</h2>
-            <p>{OBJECTIVE_TEXT}</p>
+        <div className="hr-objective">
+            <div className="hr-objective-head">
+                <span className="hr-objective-label">System Objective</span>
+                <p className="hr-objective-lead">What the university clinic system sets out to achieve.</p>
+            </div>
+            <p className="hr-objective-text">{OBJECTIVE_TEXT}</p>
 
             {/* UX Feel 2: Interactive Quick-Jump Section Chips */}
             {ux === 2 && (
@@ -445,7 +456,7 @@ function Services({ ux }: { ux: number }) {
     );
 }
 
-function About() {
+function About({ ux }: { ux: number }) {
     return (
         <section id="hr-about" className="hr-section hr-about">
             <div className="hr-container">
@@ -470,6 +481,7 @@ function About() {
                         <figcaption>UCIMS Project Team · University of Southeastern Philippines</figcaption>
                     </figure>
                 </div>
+                <ObjectiveCard ux={ux} />
                 <div className="hr-pillars">
                     {pillars.map(({ title, Icon, text }) => (
                         <article key={title} className="hr-card hr-pillar">
@@ -545,6 +557,32 @@ export default function HomeRefresh({
     });
     const [activeSection, setActiveSection] = useState<string>('hero');
     const [scrolled, setScrolled] = useState(false);
+    const rootRef = useRef<HTMLDivElement>(null);
+    const headerRef = useRef<HTMLElement>(null);
+
+    // Publish the real header height so the maroon stage and the section
+    // anchors always clear the fixed header, at every breakpoint.
+    useEffect(() => {
+        const header = headerRef.current;
+        const root = rootRef.current;
+
+        if (!header || !root) return;
+
+        const sync = () => {
+            root.style.setProperty('--hr-header-h', `${Math.round(header.getBoundingClientRect().height)}px`);
+        };
+
+        sync();
+        const observer = new ResizeObserver(sync);
+        observer.observe(header);
+        window.addEventListener('resize', sync);
+
+        return () => {
+            observer.disconnect();
+            window.removeEventListener('resize', sync);
+        };
+    }, []);
+
 
     useEffect(() => {
         const onScroll = () => {
@@ -573,7 +611,7 @@ export default function HomeRefresh({
     }
 
     return (
-        <div className={`hp hr hr-ux-${design}`}>
+        <div ref={rootRef} className={`hp hr hr-ux-${design}`}>
             <Head title={showPicker ? `UCIMS · ${choice.name}` : 'University Clinic Information Management System'} />
             <a className="hr-skip" href="#hr-main">
                 Skip to content
@@ -581,7 +619,7 @@ export default function HomeRefresh({
 
             {/* Full-Viewport Maroon Stage (100vh, No Yellow Underline) */}
             <div className="hr-stage">
-                <Header activeSection={activeSection} scrolled={scrolled} />
+                <Header activeSection={activeSection} scrolled={scrolled} headerRef={headerRef} />
                 <section id="hr-main" className="hr-hero">
                     <div className="hr-container hr-hero-inner">
                         <div className="hr-hero-top">
@@ -596,8 +634,6 @@ export default function HomeRefresh({
                             </p>
                             <Actions />
                         </div>
-
-                        <ObjectiveCard ux={design} />
 
                         {/* Smooth Scroll-Down UX Cue */}
                         <button
@@ -617,7 +653,7 @@ export default function HomeRefresh({
 
             <main>
                 <Services ux={design} />
-                <About />
+                <About ux={design} />
                 <Contact />
             </main>
             <Footer />

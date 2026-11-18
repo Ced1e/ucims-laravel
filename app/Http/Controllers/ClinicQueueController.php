@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\ClinicQueue;
 use App\Models\User;
 use App\Models\Endorsed;
+use App\Support\MedicalConditions;
 use App\Http\Requests\StoreQueueRequest;
 use App\Http\Requests\UpdateClinicQueueRequest;
 use Illuminate\Http\Request;
@@ -51,7 +52,22 @@ class ClinicQueueController extends Controller
                 ]);
         }
 
-        return response()->json($query->get());
+        $rows = $query->get();
+
+        // Reports ask for the standardized condition alongside each completed
+        // visit so equivalent diagnoses group under one name and ICD-10 code.
+        if ($request->boolean('completed') && $request->boolean('with_conditions')) {
+            $conditions = app(MedicalConditions::class);
+
+            $rows->each(function (ClinicQueue $row) use ($conditions) {
+                $row->setAttribute('condition', $conditions->resolve(
+                    $row->endorsement?->diagnosis,
+                    $row->endorsement?->icd_10_code,
+                ));
+            });
+        }
+
+        return response()->json($rows);
     }
 
     public function store(StoreQueueRequest $request)
@@ -132,6 +148,41 @@ class ClinicQueueController extends Controller
                 ->orderBy('firstname')
                 ->get()
         );
+    }
+
+    /**
+     * Cancel a pending visit from the patient's own portal.
+     * Allowed only while the patient has not been seen yet (waiting / triaged)
+     * and only within the first 5 minutes after joining the queue. Beyond
+     * either point only clinic staff (the nurse) can cancel at the desk.
+     */
+    public function cancelVisit(Request $request, ClinicQueue $clinicQueue)
+    {
+        $user = $request->user();
+
+        if ($user->role !== 'patient' || $clinicQueue->patient_id !== $user->user_id) {
+            abort(403, 'You can only cancel your own visit.');
+        }
+
+        if (in_array($clinicQueue->status, ['done', 'cancelled'], true)) {
+            abort(409, 'This visit is already completed or cancelled.');
+        }
+
+        if (in_array($clinicQueue->status, ['with-doctor', 'examined'], true)) {
+            abort(403, 'This visit is already with the doctor. A nurse can still cancel it at the desk.');
+        }
+
+        // The queue has no timestamps, so reconstruct the join moment from the
+        // visit date + time_in (both set by the store action, in Asia/Manila).
+        $joined = \Carbon\Carbon::createFromFormat('!Y-m-d g:i A', "{$clinicQueue->date} {$clinicQueue->time_in}", 'Asia/Manila');
+
+        if (! $joined || $joined->diffInSeconds(now('Asia/Manila')) > 300) {
+            abort(403, 'The 5-minute cancellation window has closed. A nurse can still cancel at the desk.');
+        }
+
+        $clinicQueue->update(['status' => 'cancelled']);
+
+        return response()->json($clinicQueue->fresh()->load('patient'));
     }
 
     /**

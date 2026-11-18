@@ -1,0 +1,366 @@
+/* Illness statistics — control lab styles (preview only) */
+
+.idd-page {
+    min-height: 100vh;
+    padding: 28px clamp(16px, 4vw, 44px) 56px;
+    background: var(--bg, #f5f4f0);
+    color: var(--text, #1a1a1a);
+    font-family: 'Open Sans', sans-serif;
+    line-height: 1.5;
+}
+
+.idd-page * {
+    box-sizing: border-box;
+}
+
+.idd-kicker {
+    display: inline-flex;
+    align-items: center;
+    margin: 0;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.74rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--maroon, #7b1113);
+}
+
+.idd-top {
+    max-width: 1220px;
+    margin: 0 auto 22px;
+}
+
+.idd-top h1 {
+    margin: 5px 0 6px;
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(1.65rem, 3vw, 2.1rem);
+    line-height: 1.15;
+    color: var(--maroon, #7b1113);
+}
+
+.idd-top p {
+    max-width: 78ch;
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-muted, #6a6460);
+}
+
+.idd-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr));
+    gap: 14px;
+    max-width: 1220px;
+    margin: 0 auto;
+}
+
+.idd-card {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px 18px;
+    border: 1px solid var(--border, #ddd9d0);
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.idd-card-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.idd-num {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--gold, #c9a227);
+}
+
+.idd-card-head h2 {
+    margin: 0;
+    font-size: 1.02rem;
+    color: var(--text, #1a1a1a);
+}
+
+.idd-best {
+    margin: 2px 0 0;
+    font-size: 0.72rem;
+    color: var(--text-muted, #6a6460);
+}
+
+.idd-best b {
+    margin-right: 4px;
+    font-size: 0.62rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--maroon, #7b1113);
+}
+
+.idd-sample {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px 16px 14px;
+    border: 1px dashed var(--border, #ddd9d0);
+    border-radius: 10px;
+    background: #fbfaf7;
+    min-height: 118px;
+}
+
+.idd-sample-kicker {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted, #6a6460);
+}
+
+.idd-note {
+    margin: 0;
+    font-size: 0.76rem;
+    line-height: 1.55;
+    color: var(--text-muted, #6a6460);
+}
+
+.idd-foot {
+    max-width: 1220px;
+    margin: 26px auto 0;
+    padding-top: 16px;
+    border-top: 1px solid var(--border, #ddd9d0);
+    font-size: 0.78rem;
+    line-height: 1.6;
+    color: var(--text-muted, #6a6460);
+}
+
+.idd-foot code {
+    padding: 1px 5px;
+    border: 1px solid var(--border, #ddd9d0);
+    border-radius: 4px;
+    background: #fff;
+    font-size: 0.74rem;
+}
+
+.idd-status {
+    margin: 0;
+    font-size: 0.72rem;
+    color: var(--text-muted, #6a6460);
+}
+
+.idd-status b {
+    color: var(--text, #1a1a1a);
+}
+
+/* ── 01 native ── */
+.idd-native {
+    max-width: 220px;
+    padding: 8px 10px;
+    border: 1px solid #d9d5cc;
+    border-radius: 8px;
+    background: #fff;
+    font: inherit;
+    font-size: 0.8rem;
+}
+
+/* ── 02 / 03 pill toggles ── */
+.idd-pills {
+    display: inline-flex;
+    padding: 3px;
+    gap: 3px;
+    border: 1px solid #ddd9d0;
+    border-radius: 10px;
+    background: #fff;
+    max-width: 100%;
+}
+
+.idd-pills button {
+    min-height: 36px;
+    padding: 7px 13px;
+    border: 0;
+    border-radius: 8px;
+    background: transparent;
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-muted, #6a6460);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.idd-pills-icon button {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding-inline: 12px;
+}
+
+.idd-pills button.is-active {
+    background: var(--maroon, #7b1113);
+    color: #fff;
+    box-shadow: 0 2px 6px rgba(123, 17, 19, 0.28);
+}
+
+/* ── 04 line tabs ── */
+.idd-linetabs {
+    display: inline-flex;
+    gap: 18px;
+    border-bottom: 1px solid var(--border, #ddd9d0);
+}
+
+.idd-linetabs button {
+    padding: 8px 2px 10px;
+    border: 0;
+    background: transparent;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-muted, #6a6460);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    cursor: pointer;
+}
+
+.idd-linetabs button.is-active {
+    color: var(--maroon, #7b1113);
+    border-bottom-color: var(--maroon, #7b1113);
+}
+
+/* ── 05 / 06 popovers ── */
+.idd-popover-root {
+    position: relative;
+    display: inline-flex;
+    flex-direction: column;
+    gap: 8px;
+    max-width: 260px;
+}
+
+.idd-select {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    min-height: 38px;
+    padding: 7px 11px;
+    border: 1px solid #ddd9d0;
+    border-radius: 8px;
+    background: #fff;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text, #1a1a1a);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+}
+
+.idd-select > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.idd-select:hover,
+.idd-menu-button:hover {
+    border-color: var(--maroon, #7b1113);
+}
+
+.idd-menu-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    min-height: 38px;
+    padding: 7px 11px;
+    border: 1px solid #ddd9d0;
+    border-radius: 8px;
+    background: #fff;
+    font-family: inherit;
+    font-size: 0.8rem;
+    color: var(--text, #1a1a1a);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+}
+
+.idd-menu-button b {
+    font-weight: 700;
+    color: var(--maroon, #7b1113);
+}
+
+.idd-select svg:last-child,
+.idd-menu-button svg:last-child {
+    flex-shrink: 0;
+    transition: transform 0.15s ease;
+}
+
+.idd-select svg.is-open,
+.idd-menu-button svg.is-open {
+    transform: rotate(180deg);
+}
+
+.idd-menu {
+    position: absolute;
+    z-index: 40;
+    top: calc(100% - 20px);
+    left: 0;
+    min-width: 236px;
+    padding: 4px;
+    border: 1px solid #ddd9d0;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
+}
+
+.idd-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    min-height: 36px;
+    padding: 7px 9px;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    font-family: inherit;
+    font-size: 0.79rem;
+    font-weight: 500;
+    color: var(--text, #1a1a1a);
+    text-align: left;
+    cursor: pointer;
+}
+
+.idd-menu-item > span:first-child {
+    display: inline-flex;
+    color: var(--text-muted, #6a6460);
+}
+
+.idd-menu-label {
+    flex: 1;
+    min-width: 0;
+}
+
+.idd-menu-item:hover {
+    background: #f6f1ec;
+}
+
+.idd-menu-item.is-active {
+    background: #f5e8e8;
+    color: var(--maroon, #7b1113);
+    font-weight: 600;
+}
+
+.idd-menu-item.is-active > span:first-child {
+    color: var(--maroon, #7b1113);
+}
+
+.idd-page :is(button, select, a, input):focus-visible {
+    outline: 2px solid var(--maroon, #7b1113);
+    outline-offset: 2px;
+    border-radius: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .idd-page * {
+        transition: none !important;
+        animation: none !important;
+    }
+}

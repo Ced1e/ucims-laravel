@@ -5,15 +5,15 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from '@/components/ui/separator';
 import { Head, Link } from '@inertiajs/react';
 import axios from 'axios';
-import { Check, Clock3, HeartPulse, Maximize2, Minimize2, Stethoscope } from 'lucide-react';
+import { Clock3, HeartPulse, Maximize2, Minimize2, Stethoscope } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-const empty = { waiting: [], nurse: [], doctor: [], done: [] };
+const empty = { waiting: [], nurse: [], doctor: [] };
 const number = (value) => String(value).padStart(3, '0');
 
 function WaitingStrip({ entries }) {
     const [page, setPage] = useState(0);
-    const perPage = 4;
+    const perPage = 8;
     const pages = Math.ceil(entries.length / perPage);
 
     useEffect(() => {
@@ -60,7 +60,6 @@ function TicketStation({
     loading,
     locationLabel,
     requirementLabel,
-    summary,
 }) {
     const serving = entries.filter((e) => e.serving);
     const others = entries.filter((e) => !e.serving);
@@ -71,16 +70,7 @@ function TicketStation({
           : '—';
     const isCalling = serving.length > 0;
     const hasAssigned = entries.length > 0;
-
-    const statusBadge = !ready
-        ? loading
-            ? 'SYNCING'
-            : 'OFFLINE'
-        : isCalling
-          ? 'CALLING NOW'
-          : hasAssigned
-            ? 'IN SESSION'
-            : 'BAY OPEN';
+    const queued = isCalling ? others : others.slice(1);
 
     return (
         <Card className={`q5-ticket ${nurse ? 'is-nurse' : 'is-doctor'} ${isCalling ? 'is-calling' : ''}`}>
@@ -89,7 +79,6 @@ function TicketStation({
                     <CardDescription className="q5-ticket-eyebrow">{code}</CardDescription>
                     <CardTitle className="q5-ticket-title">{title}</CardTitle>
                 </div>
-                <Badge className={`q5-ticket-badge ${isCalling ? 'is-gold' : 'is-maroon'}`}>{statusBadge}</Badge>
             </CardHeader>
 
             <CardContent className="q5-ticket-body">
@@ -109,7 +98,6 @@ function TicketStation({
                                     {nurse ? <HeartPulse data-icon="inline-start" /> : <Stethoscope data-icon="inline-start" />}
                                     {nurse ? 'Proceed to Window 1' : 'Consultation Room 2'}
                                 </Badge>
-                                <p className="q5-ticket-desc">{summary}</p>
                             </div>
                         </div>
 
@@ -135,20 +123,18 @@ function TicketStation({
                 )}
             </CardContent>
 
-            <CardFooter className="q5-ticket-foot">
-                <span className="q5-foot-label">{nurse ? 'QUEUED AT THIS STATION' : 'NEXT FOR PHYSICIAN'}</span>
-                <div className="q5-foot-chips">
-                    {(isCalling ? others : others.slice(1)).length > 0 ? (
-                        (isCalling ? others : others.slice(1)).slice(0, 4).map((e) => (
+            {queued.length > 0 && (
+                <CardFooter className="q5-ticket-foot">
+                    <span className="q5-foot-label">{nurse ? 'QUEUED AT THIS STATION' : 'NEXT FOR PHYSICIAN'}</span>
+                    <div className="q5-foot-chips">
+                        {queued.slice(0, 4).map((e) => (
                             <Badge key={e.queueNumber} variant="outline" className="q5-queue-pill">
                                 {number(e.queueNumber)}
                             </Badge>
-                        ))
-                    ) : (
-                        <span className="q5-foot-empty">No additional tickets queued at this bay</span>
-                    )}
-                </div>
-            </CardFooter>
+                        ))}
+                    </div>
+                </CardFooter>
+            )}
         </Card>
     );
 }
@@ -186,10 +172,6 @@ export default function TvQueue() {
                                       .map((e) => ({
                                           queueNumber: e.queueNumber,
                                           serving: e.serving === true,
-                                          completedTime:
-                                              key === 'done' && typeof e.completedTime === 'string'
-                                                  ? e.completedTime.trim()
-                                                  : null,
                                       }))
                                 : [],
                         ]),
@@ -286,18 +268,20 @@ export default function TvQueue() {
                     </div>
 
                     <div className="q5-rail-bottom">
-                        <Button variant="outline" size="lg" className="q5-tv-btn" onClick={fullscreen}>
+                        <Button
+                            variant="outline"
+                            size="lg"
+                            className={`q5-tv-btn${full ? ' is-exit' : ''}`}
+                            onClick={fullscreen}
+                        >
                             {full ? <Minimize2 data-icon="inline-start" /> : <Maximize2 data-icon="inline-start" />}
-                            {full ? 'Exit Fullscreen TV Mode' : 'Enter Fullscreen TV Mode'}
+                            {full ? 'Exit TV mode' : 'Enter Fullscreen TV Mode'}
                         </Button>
                         {error && (
                             <small className="q5-error" role="alert">
                                 {error}
                             </small>
                         )}
-                        <p className="q5-privacy-note">
-                            Patient names are hidden on public displays. Listen for your 3-digit ticket number.
-                        </p>
                     </div>
                 </aside>
 
@@ -312,7 +296,7 @@ export default function TvQueue() {
                         </div>
                     )}
 
-                    <div className="q5-tickets">
+                    <div className="q5-bento">
                         <TicketStation
                             code="STATION 01 · TRIAGE & VITALS"
                             title="Nurse Station"
@@ -322,7 +306,6 @@ export default function TvQueue() {
                             loading={loading}
                             locationLabel="Triage Bay 01 · Ground Floor"
                             requirementLabel="Present USeP ID Card"
-                            summary="Blood pressure, temperature, weight, and initial intake check."
                         />
                         <TicketStation
                             code="STATION 02 · MEDICAL CONSULTATION"
@@ -333,11 +316,8 @@ export default function TvQueue() {
                             loading={loading}
                             locationLabel="Consultation Room 02"
                             requirementLabel="Referred from Triage Bay"
-                            summary="Medical examination, diagnosis, prescription, and clearance issuance."
                         />
-                    </div>
 
-                    <div className="q5-bottom-deck">
                         <Card className="q5-deck-card">
                             <CardHeader className="q5-deck-head">
                                 <div>
@@ -353,56 +333,12 @@ export default function TvQueue() {
                             </CardHeader>
                             <CardContent className="q5-deck-content">
                                 {loading ? (
-                                    <ListSkeleton columns={4} rows={1} label="Loading waiting queue" />
+                                    <ListSkeleton columns={4} rows={2} label="Loading waiting queue" />
                                 ) : board.waiting.length ? (
                                     <WaitingStrip entries={board.waiting} />
                                 ) : (
                                     <div className="q5-inline-empty">
                                         <strong>{ready ? 'No patients currently in lobby queue' : 'Syncing waiting list'}</strong>
-                                        <span>
-                                            {ready
-                                                ? 'Checked-in ticket numbers appear here in order of arrival.'
-                                                : 'Connecting to clinic queue server.'}
-                                        </span>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        <Card className="q5-deck-card">
-                            <CardHeader className="q5-deck-head">
-                                <div>
-                                    <CardTitle className="q5-deck-title">Completed Visits</CardTitle>
-                                    <CardDescription className="q5-deck-sub">Latest 5 discharged today</CardDescription>
-                                </div>
-                                <Badge variant="outline" className="q5-today-badge">
-                                    Today
-                                </Badge>
-                            </CardHeader>
-                            <CardContent className="q5-deck-content">
-                                {loading ? (
-                                    <ListSkeleton columns={5} rows={1} label="Loading completed visits" />
-                                ) : board.done.length ? (
-                                    <div className="q5-done-chips">
-                                        {board.done.slice(0, 5).map((e) => (
-                                            <Badge key={e.queueNumber} variant="secondary" className="q5-done-pill">
-                                                <Check data-icon="inline-start" />
-                                                <span>{number(e.queueNumber)}</span>
-                                                <span className="q5-sep" aria-hidden="true">
-                                                    ·
-                                                </span>
-                                                {e.completedTime ? (
-                                                    <time aria-label={`Completed at ${e.completedTime}`}>{e.completedTime}</time>
-                                                ) : (
-                                                    <span>Discharged</span>
-                                                )}
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                ) : (
-                                    <div className="q5-inline-empty">
-                                        <strong>{ready ? 'No completed visits recorded yet today' : 'Syncing completed visits'}</strong>
-                                        <span>{ready ? 'Discharged ticket numbers and timestamps appear here.' : 'Please wait.'}</span>
                                     </div>
                                 )}
                             </CardContent>

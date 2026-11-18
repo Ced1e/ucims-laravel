@@ -24,7 +24,7 @@ export default function Login({ status }: { status?: string }) {
         <main className="clinic-entry clinic-entry-silk">
             <Head title="UCIMS - Login" />
             <section className="clinic-entry-visual" aria-labelledby="clinic-entry-title">
-                <Link href="/" className="clinic-entry-brand" aria-label="UCIMS home">
+                <Link href="/" className="clinic-entry-brand" aria-label="UCIMS home" title="Back to home">
                     <img src="/assets/img/University of Southeastern Philippines Seal.png" alt="USeP logo" />
                     <span className="clinic-entry-wordmark"><span>University of<br />Southeastern Philippines</span><small>University Clinic</small></span>
                 </Link>
@@ -41,10 +41,9 @@ export default function Login({ status }: { status?: string }) {
                         </svg>
                     </div>
                 </div>
-                <p className="clinic-entry-visual-footer">University Clinic Information Management System</p>
+
             </section>
             <section className="clinic-entry-panel" aria-labelledby="login-title">
-                <Link href="/" className="clinic-entry-back"><span aria-hidden="true">←</span> Back to home</Link>
                 <div className="clinic-entry-form-wrap">
                     <p className="clinic-entry-kicker">WELCOME TO UCIMS</p>
                     <h2 id="login-title">Welcome back.</h2>

@@ -15,7 +15,16 @@
 @import './doctor-focus.css';
 @import './nurse-live-canvas.css';
 @import './patient-centered.css';
+@import './date-picker.css';
 @import './patient-queue.css';
+@import './illness-statistics-designs.css';
+@import './illness-statistics-designs-2.css';
+@import './illness-statistics-designs-3.css';
+@import './illness-statistics-designs-4.css';
+@import './admin-illness-explorer.css';
+@import './illness-fonts-preview.css';
+@import './illness-dropdowns-preview.css';
+@import './objective-designs.css';
 
 :root { --ucims-base-ready: 1; }
 
@@ -159,5 +168,425 @@
     }
 }
 
+/* â”€â”€ Truncated numbered pagination â€” shared by all PaginatedItems lists â”€â”€â”€â”€â”€â”€â”€ */
+.pg-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    grid-column: 1 / -1;
+    width: 100%;
+    padding: 12px 8px;
+}
+
+.pg-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 10px;
+    border: 1px solid #d8d2ca;
+    border-radius: 9px;
+    background: #fff;
+    color: #4e0a10;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+    cursor: pointer;
+    transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.pg-btn:hover:not(:disabled) {
+    background: #f7f2ec;
+    border-color: #a99686;
+}
+
+.pg-btn:focus-visible {
+    outline: 3px solid #c9982e;
+    outline-offset: 2px;
+}
+
+.pg-btn:disabled {
+    opacity: 0.38;
+    cursor: not-allowed;
+}
+
+.pg-page[aria-current='page'],
+.pg-page[aria-current='page']:hover {
+    background: #791527;
+    border-color: #791527;
+    color: #fff;
+}
+
+.pg-arrow {
+    min-width: 36px;
+}
+
+.pg-ellipsis {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 36px;
+    color: #8a7d74;
+    font-size: 13px;
+    line-height: 1;
+    user-select: none;
+}
+
+.pg-rotate-note {
+    font-size: 11px;
+    color: #8a7d74;
+    margin-left: 6px;
+}
+
+@media (max-width: 480px) {
+    .pg-btn { min-width: 32px; height: 32px; font-size: 12px; padding: 0 6px; }
+    .pg-ellipsis { min-width: 24px; height: 32px; }
+}
 
 
+
+
+/* -- Account Creation Guide: fills the right column of the admin grid --- */
+.guide-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 14px 0;
+}
+
+.guide-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 14px;
+    border: 1px solid #ece7e8;
+    border-radius: 12px;
+    background: #fdfbfa;
+}
+
+.guide-chip {
+    flex: 0 0 auto;
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 13px;
+    font-family: inherit;
+    letter-spacing: 0.04em;
+}
+
+.guide-chip--nurse {
+    background: #f7ecee;
+    color: #791527;
+}
+
+.guide-chip--doctor {
+    background: #faf3d7;
+    color: #8a6d1f;
+}
+
+.guide-chip--admin {
+    background: #e8eff7;
+    color: #1f4e79;
+}
+
+.guide-rules {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-top: 1px solid #f1e9eb;
+    padding-top: 14px;
+}
+
+.guide-rule {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 0.8rem;
+    color: #4a4446;
+    line-height: 1.45;
+}
+
+.guide-rule i {
+    color: #791527;
+    font-size: 1rem;
+    flex: 0 0 auto;
+}
+
+/* -- UCIMSSelect: system-standard dropdown (rules follow below) --------------------------- */
+.ucims-select {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+    width: 100%;
+    max-width: 100%;
+}
+
+.ucims-select__label {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #8d8285;
+}
+
+.ucims-select__control {
+    display: inline-flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    width: 100%;
+    min-width: 0;
+    height: 44px;
+    padding: 0 16px;
+    background: #fff;
+    color: #2b2728;
+    border: 1px solid #e3dcde;
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(43, 33, 36, 0.05);
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.3;
+    text-align: left;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.ucims-select__control:hover:not(:disabled) {
+    border-color: #cfc3c7;
+}
+
+.ucims-select__control:focus-visible,
+.ucims-select__control[aria-expanded="true"] {
+    border-color: #7b1230;
+    box-shadow: 0 0 0 3px rgba(123, 18, 48, 0.14);
+}
+
+.ucims-select__control:disabled {
+    background: #faf8f8;
+    color: #b3aaac;
+    cursor: not-allowed;
+}
+
+.ucims-select__value {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ucims-select__chev {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    color: #55504f;
+    transition: transform 0.18s ease;
+}
+
+.ucims-select__control[aria-expanded="true"] .ucims-select__chev {
+    transform: rotate(180deg);
+}
+
+.ucims-select__panel {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    z-index: 80;
+    min-width: 100%;
+    width: max-content;
+    max-width: 360px;
+    max-height: 280px;
+    overflow-y: auto;
+    margin: 0;
+    padding: 6px;
+    list-style: none;
+    background: #fff;
+    border: 1px solid #e7e0e2;
+    border-radius: 12px;
+    box-shadow: 0 18px 44px rgba(43, 28, 33, 0.18), 0 2px 8px rgba(43, 28, 33, 0.08);
+    animation: ucims-select-in 0.14s ease;
+}
+
+@keyframes ucims-select-in {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.ucims-select__option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 10px 12px;
+    border-radius: 9px;
+    font-size: 13px;
+    color: #2b2728;
+    cursor: pointer;
+    user-select: none;
+    outline: none;
+}
+
+.ucims-select__option:hover,
+.ucims-select__option.is-active {
+    background: #f6e9ec;
+}
+
+.ucims-select__option.is-active {
+    box-shadow: inset 0 0 0 2px #3b82f6;
+}
+
+.ucims-select__option.is-selected {
+    background: #f6e9ec;
+    color: #5c0d24;
+    font-weight: 600;
+}
+
+.ucims-select__option-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ucims-select__badge {
+    flex: 0 0 auto;
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: #ece7e8;
+    color: #6b5e61;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+}
+
+.ucims-select__option.is-selected .ucims-select__badge {
+    background: #e3cfd4;
+    color: #5c0d24;
+}
+
+.ucims-select--error .ucims-select__control {
+    border-color: #c0392b;
+}
+
+.ucims-select--error .ucims-select__control:focus-visible,
+.ucims-select--error .ucims-select__control[aria-expanded="true"] {
+    border-color: #c0392b;
+    box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.16);
+}
+
+/* -- Standalone text control in the same visual language --------------
+   Keeps filter rows and form grids aligned with the dropdowns:
+   same label, same 44px height, same radius/border/focus ring. */
+.ucims-text-label {
+    display: block;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #8d8285;
+    margin-bottom: 6px;
+}
+
+.ucims-text-input {
+    height: 44px;
+    width: 100%;
+    padding: 0 16px;
+    background: #fff;
+    color: #2b2728;
+    border: 1px solid #e3dcde;
+    border-radius: 12px;
+    box-shadow: 0 1px 2px rgba(43, 33, 36, 0.05);
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.3;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.ucims-text-input:hover {
+    border-color: #cfc3c7;
+}
+
+.ucims-text-input:focus-visible {
+    border-color: #7b1230;
+    box-shadow: 0 0 0 3px rgba(123, 18, 48, 0.14);
+}
+
+/* Invalid field highlight: any control inside .field[data-invalid] goes red */
+.field[data-invalid] > input,
+.field[data-invalid] > textarea,
+.field[data-invalid] > select,
+.field[data-invalid] .ucims-select__control {
+    border-color: #b02a37;
+    background-color: #fdf2f3;
+}
+
+.field[data-invalid] .ucims-select__label {
+    color: #b02a37;
+}
+
+.ucims-text-input::placeholder {
+    color: #b3aaac;
+}
+
+/* -- Questionnaire radios: minimal circular, filled-ring selected ----- */
+.uc-radio-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #2b2728;
+    transition: color 0.15s ease;
+}
+
+.uc-radio-row:hover {
+    color: #5c0d24;
+}
+
+.uc-radio-row input.uc-radio {
+    width: 19px;
+    height: 19px;
+    margin: 0;
+    padding: 0;
+    flex: 0 0 auto;
+    appearance: none;
+    -webkit-appearance: none;
+    border-radius: 50%;
+    border: 2px solid #e3dcde;
+    background: #fff;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.uc-radio-row input.uc-radio:hover {
+    border-color: #cfc3c7;
+}
+
+.uc-radio-row input.uc-radio:checked {
+    border-color: #791527;
+    background: #791527;
+    box-shadow: inset 0 0 0 4px #fff;
+}
+
+.uc-radio-row input.uc-radio:focus-visible:not(:checked) {
+    box-shadow: 0 0 0 3px rgba(121, 21, 39, 0.16);
+}
+
+.uc-radio-row input.uc-radio:focus-visible:checked {
+    box-shadow: inset 0 0 0 4px #fff, 0 0 0 3px rgba(121, 21, 39, 0.28);
+}

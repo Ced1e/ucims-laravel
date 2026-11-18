@@ -1,7 +1,9 @@
-import { registrationLimits, isCalendarDate, localToday } from '@/lib/registration-validation.mjs';
+import { registrationLimits, isCalendarDate, localToday, minBirthDate } from '@/lib/registration-validation.mjs';
 import { formatPhilippineMobile } from '@/lib/input-validation.mjs';
+import DatePicker from '@/components/date-picker.jsx';
 import React from 'react';
 import { Field, SectionTitle } from './Common';
+import UCIMSSelect from '@/components/UCIMSSelect';
 
 export const COLLEGES = [
     'College of Information and Computing (CIC)',
@@ -18,7 +20,7 @@ export const YEAR_LEVELS = ['1st Year', '2nd Year', '3rd Year', '4th Year', '5th
 export const CIVIL_STATUS = ['Single', 'Married', 'Widowed', 'Separated'];
 
 export function calcAge(dob) {
-    if (!isCalendarDate(dob) || dob > localToday() || dob <= '1900-01-01') return '';
+    if (!isCalendarDate(dob) || dob > localToday() || dob < minBirthDate()) return '';
     const [y, m, d] = String(dob).split('-').map(Number);
     if (!y || !m || !d) return '';
     const today = new Date();
@@ -29,6 +31,8 @@ export function calcAge(dob) {
 
 export default function StepPersonal({ data, set, errors }) {
     const bind = (k, extra = {}) => ({ maxLength: k.startsWith('sr_') ? 100 : registrationLimits[k], value: data[k], onChange: (e) => set(k, e.target.value), ...extra });
+    // Letter-only fields: never let a digit into the box (validated live too).
+    const letterBind = (k) => ({ maxLength: registrationLimits[k], value: data[k], onChange: (e) => set(k, e.target.value.replace(/\d/g, '')) });
     const isFaculty = data.college_dept === FACULTY_OPTION;
 
     return (
@@ -37,52 +41,61 @@ export default function StepPersonal({ data, set, errors }) {
 
             <div className="field-row3">
                 <Field label="Surname" required error={errors.lastname}>
-                    <input placeholder="Dela Cruz" {...bind('lastname')} />
+                    <input placeholder="Dela Cruz" {...letterBind('lastname')} />
                 </Field>
                 <Field label="First Name" required error={errors.firstname}>
-                    <input placeholder="Juan" {...bind('firstname')} />
+                    <input placeholder="Juan" {...letterBind('firstname')} />
                 </Field>
                 <Field label="Middle Name" required error={errors.middlename}>
-                    <input placeholder="Santos" {...bind('middlename')} />
+                    <input placeholder="Santos" {...letterBind('middlename')} />
                 </Field>
             </div>
 
             <div className="field-row3">
                 <Field label="Birthdate" required error={errors.dob}>
-                    <input type="date" max={localToday()} min="1900-01-02" {...bind('dob')} />
+                    <DatePicker
+                        id="dob"
+                        label="Birthdate"
+                        placeholder="Select birthdate"
+                        value={data.dob}
+                        min={minBirthDate()}
+                        max={localToday()}
+                        initialMonth={`${new Date().getFullYear() - 19}-01-01`}
+                        onChange={(v) => set('dob', v)}
+                    />
                 </Field>
                 <Field label="Age" hint="Calculated from your birthdate">
                     <input value={calcAge(data.dob)} readOnly placeholder="—" />
                 </Field>
                 <Field label="Sex" required error={errors.sex}>
-                    <select {...bind('sex')}>
+                    <UCIMSSelect {...bind('sex')}>
                         <option value="">— Select —</option>
                         <option>Male</option>
                         <option>Female</option>
-                    </select>
+                    </UCIMSSelect>
                 </Field>
             </div>
 
             <div className="field-row3">
                 <Field label="Civil Status" required error={errors.civil_status}>
-                    <select {...bind('civil_status')}>
+                    <UCIMSSelect {...bind('civil_status')}>
                         <option value="">— Select —</option>
                         {CIVIL_STATUS.map((c) => (
                             <option key={c}>{c}</option>
                         ))}
-                    </select>
+                    </UCIMSSelect>
                 </Field>
                 <Field label="Religion" required error={errors.religion}>
-                    <input placeholder="e.g. Roman Catholic" {...bind('religion')} />
+                    <input placeholder="e.g. Roman Catholic" {...letterBind('religion')} />
                 </Field>
                 <Field label="Nationality" required error={errors.nationality}>
-                    <input placeholder="e.g. Filipino" {...bind('nationality')} />
+                    <input placeholder="e.g. Filipino" {...letterBind('nationality')} />
                 </Field>
             </div>
 
             <div className="field-row">
                 <Field label="College / Designation" required error={errors.college_dept}>
-                    <select
+                    <UCIMSSelect
                         value={data.college_dept}
                         onChange={(e) => {
                             set('college_dept', e.target.value);
@@ -94,15 +107,15 @@ export default function StepPersonal({ data, set, errors }) {
                         {COLLEGES.map((c) => (
                             <option key={c}>{c}</option>
                         ))}
-                    </select>
+                    </UCIMSSelect>
                 </Field>
                 <Field label="Year Level" required={!isFaculty} error={errors.year_level}>
-                    <select {...bind('year_level')} disabled={isFaculty}>
+                    <UCIMSSelect {...bind('year_level')} disabled={isFaculty}>
                         <option value="">— Select —</option>
                         {YEAR_LEVELS.map((y) => (
                             <option key={y}>{y}</option>
                         ))}
-                    </select>
+                    </UCIMSSelect>
                 </Field>
             </div>
 
@@ -135,7 +148,7 @@ export default function StepPersonal({ data, set, errors }) {
             </div>
             <div className="field-row3">
                 <Field label="Name" required error={errors.em_name}>
-                    <input placeholder="Full name" {...bind('em_name')} />
+                    <input placeholder="Full name" {...letterBind('em_name')} />
                 </Field>
                 <Field label="Contact No." required error={errors.em_contact}>
                     <input
@@ -149,7 +162,7 @@ export default function StepPersonal({ data, set, errors }) {
                     />
                 </Field>
                 <Field label="Relationship" required error={errors.em_rel}>
-                    <input placeholder="e.g. Mother" {...bind('em_rel')} />
+                    <input placeholder="e.g. Mother" {...letterBind('em_rel')} />
                 </Field>
             </div>
         </>

@@ -4,7 +4,7 @@ import React from 'react';
 
 export function Field({ label, required, error, hint, children }) {
     return (
-        <div className="field">
+        <div className="field" data-invalid={error ? '' : undefined}>
             {label && (
                 <label>
                     {label}
@@ -24,10 +24,10 @@ export function Field({ label, required, error, hint, children }) {
 
 export function YesNo({ value, onChange, name }) {
     return (
-        <div style={{ display: 'flex', gap: 22, margin: '4px 0 8px' }}>
+        <div style={{ display: 'flex', gap: 26, margin: '4px 0 8px', alignItems: 'center' }}>
             {['Yes', 'No'].map((opt) => (
-                <label key={opt} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', textTransform: 'none', letterSpacing: 0, fontSize: '.9rem', fontWeight: 500 }}>
-                    <input type="radio" name={name} checked={value === opt} onChange={() => onChange(opt)} style={{ width: 'auto' }} /> {opt}
+                <label key={opt} className="uc-radio-row">
+                    <input type="radio" name={name} value={opt} className="uc-radio" checked={value === opt} onChange={() => onChange(opt)} /> {opt}
                 </label>
             ))}
         </div>

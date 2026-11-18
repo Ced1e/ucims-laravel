@@ -1,5 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
+import UCIMSSelect from '@/components/UCIMSSelect';
 
 export default function Create() {
     const { data, setData, post, processing, errors } = useForm({
@@ -32,15 +33,15 @@ export default function Create() {
 
                     <div>
                         <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-1">Status</label>
-                        <select
+                        <UCIMSSelect
                             value={data.status}
                             onChange={(e) => setData('status', e.target.value)}
-                            className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-gray-900 focus:ring-2 focus:ring-blue-600/20"
+                            className="w-full"
                         >
                             <option value="waiting">Waiting</option>
                             <option value="serving">Serving</option>
                             <option value="completed">Completed</option>
-                        </select>
+                        </UCIMSSelect>
                     </div>
 
                     <button

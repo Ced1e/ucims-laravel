@@ -1,10 +1,11 @@
 import { DetailSkeleton } from '@/components/data-skeletons';
+import DatePicker from '@/components/date-picker.jsx';
 import { certificateRequestError, requestError } from '@/lib/clinical-validation.mjs';
 import PaginatedItems from '../../components/paginated-items.jsx';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Head, usePage, router } from '@inertiajs/react';
 import axios from 'axios';
-import { Check, Clock, HeartPulse, RefreshCw } from 'lucide-react';
+import { Check, Clock, HeartPulse, RefreshCw, XCircle } from 'lucide-react';
 
 function nowTime() {
     return new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
@@ -35,9 +36,9 @@ function Sidebar() {
 
     return (
         <aside className="canvas-sidebar" id="patient-sidebar" aria-label="Patient navigation">
-            <div className="canvas-brand"><img src="/assets/img/University of Southeastern Philippines Seal.png" width="42" height="42" alt="USeP" /><span>USeP Clinic<small>Patient portal</small></span></div>
-            <div className="canvas-nav-area"><p className="canvas-nav-label">Workspace</p><nav><button type="button" className="active" aria-current="page" title="Patient portal" aria-label="Patient portal"><i className="bi bi-heart-pulse" aria-hidden="true" /><span>Patient portal</span></button></nav></div>
-            <div className="canvas-user"><div><strong>{displayName}</strong><small>{user?.clinic_id || 'Patient portal'}</small></div><button type="button" title="Sign out" aria-label="Sign out" onClick={() => router.post('/logout')}><i className="bi bi-box-arrow-left" aria-hidden="true" /><span>Sign out</span></button></div>
+            <div className="canvas-brand"><img src="/assets/img/University of Southeastern Philippines Seal.png" width="42" height="42" alt="USeP" /><span>USeP Clinic<small>Patient Portal</small></span></div>
+            <div className="canvas-nav-area"><p className="canvas-nav-label">Workspace</p><nav><button type="button" className="active" aria-current="page" title="Patient Portal" aria-label="Patient Portal"><i className="bi bi-heart-pulse" aria-hidden="true" /><span>Patient Portal</span></button></nav></div>
+            <div className="canvas-user"><div><strong>{displayName}</strong><small>{user?.clinic_id || 'Patient Portal'}</small></div><button type="button" title="Sign out" aria-label="Sign out" onClick={() => router.post('/logout')}><i className="bi bi-box-arrow-left" aria-hidden="true" /><span>Sign out</span></button></div>
         </aside>
     );
 }
@@ -168,6 +169,11 @@ function MedCertForm({ onBack, onSubmit, submitting }) {
     const [notes, setNotes] = useState('');
     const [error, setError] = useState(null);
 
+    function handleFromChange(next) {
+        setDateFrom(next);
+        if (next && dateTo && dateTo < next) setDateTo('');
+    }
+
     function handleSubmit() {
         const validationError = certificateRequestError(reason, dateFrom, dateTo);
         if (validationError) {
@@ -187,22 +193,33 @@ function MedCertForm({ onBack, onSubmit, submitting }) {
             <div className="card" style={{ maxWidth: 800 }}>
                 <div className="card-title">Request Form</div>
                 <div className="field">
-                    <label>Reason / Purpose *</label>
-                    <textarea maxLength={255} placeholder="Briefly explain why you need this certificate..." value={reason} onChange={(e) => setReason(e.target.value)} />
+                    <label htmlFor="cert-reason">Reason / Purpose *</label>
+                    <textarea id="cert-reason" maxLength={255} placeholder="Briefly explain why you need this certificate..." value={reason} onChange={(e) => setReason(e.target.value)} />
                 </div>
                 <div className="field-row">
                     <div className="field">
-                        <label>Date Needed From</label>
-                        <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} />
+                        <label htmlFor="cert-date-from">Date Needed From</label>
+                        <DatePicker
+                            id="cert-date-from"
+                            label="Date needed from"
+                            value={dateFrom}
+                            onChange={handleFromChange}
+                        />
                     </div>
                     <div className="field">
-                        <label>Date Needed To</label>
-                        <input type="date" min={dateFrom || undefined} value={dateTo} onChange={(e) => setDateTo(e.target.value)} />
+                        <label htmlFor="cert-date-to">Date Needed To</label>
+                        <DatePicker
+                            id="cert-date-to"
+                            label="Date needed to"
+                            value={dateTo}
+                            min={dateFrom || undefined}
+                            onChange={setDateTo}
+                        />
                     </div>
                 </div>
                 <div className="field">
-                    <label>Additional Notes (optional)</label>
-                    <input placeholder="Any additional information..." maxLength={1000} value={notes} onChange={(e) => setNotes(e.target.value)} />
+                    <label htmlFor="cert-notes">Additional Notes (optional)</label>
+                    <input id="cert-notes" placeholder="Any additional information..." maxLength={1000} value={notes} onChange={(e) => setNotes(e.target.value)} />
                 </div>
                 {error && (
                     <p className="text-xs" style={{ color: '#C0392B' }}>
@@ -222,11 +239,41 @@ function MedCertForm({ onBack, onSubmit, submitting }) {
     );
 }
 
+// Deadline for the patient to undo their own visit (5 minutes after joining).
+// clinic_queue keeps no timestamps, so the join moment is reconstructed from the
+// visit date + time_in (both set by the store action, in Asia/Manila).
+function cancelDeadline(entry) {
+    if (!entry?.date || !entry?.time_in) return null;
+    const match = /^(\d{1,2}):(\d{2})\s*([AP]M)$/i.exec(String(entry.time_in).trim());
+    if (!match) return null;
+    let hours = Number(match[1]) % 12;
+    if (/pm/i.test(match[3])) hours += 12;
+    const date = new Date(`${String(entry.date).slice(0, 10)}T00:00:00`);
+    if (Number.isNaN(date.getTime())) return null;
+    date.setHours(hours, Number(match[2]), 0, 0);
+    return date.getTime() + 5 * 60 * 1000;
+}
+
 // ─────────────────────────────────────────────────────────────
 // Step 3: Queue ticket / live status
 // ─────────────────────────────────────────────────────────────
-function QueueTicket({ entry, onRefresh, onLeave, refreshing, countdown }) {
+function QueueTicket({ entry, onRefresh, onLeave, refreshing, countdown, onCancelVisit, cancellingVisit }) {
     const [allQueue, setAllQueue] = useState([]);
+    const [secondsLeft, setSecondsLeft] = useState(null);
+
+    const canStillCancel = ['waiting', 'triaged'].includes(entry.status);
+    const deadline = canStillCancel ? cancelDeadline(entry) : null;
+
+    useEffect(() => {
+        if (!deadline) {
+            setSecondsLeft(null);
+            return undefined;
+        }
+        const tick = () => setSecondsLeft(Math.max(0, Math.floor((deadline - Date.now()) / 1000)));
+        tick();
+        const id = setInterval(tick, 1000);
+        return () => clearInterval(id);
+    }, [deadline]);
 
     const loadAll = useCallback(() => {
         axios.get('/api/v1/queues', { timeout: 20000 })
@@ -265,6 +312,25 @@ function QueueTicket({ entry, onRefresh, onLeave, refreshing, countdown }) {
                 <footer className="cq-ticket-footer"><span><span className="cq-dot" />{done ? 'Visit completed' : 'Updates automatically'}</span><span>{done && countdown !== null && countdown > 0 ? `Returning to the start in ${countdown}s…` : 'USeP · University Clinic'}</span></footer>
             </section>
             {!done && <div className="cq-position"><span><strong>{aheadCount}</strong> patient(s) ahead</span><span>Follow the clinic staff’s instructions when called.</span></div>}
+            {canStillCancel && deadline && (
+                secondsLeft !== null && secondsLeft > 0 ? (
+                    <div className="cq-cancel-box">
+                        <div className="cq-cancel-copy">
+                            <strong>Pending clinic visit</strong>
+                            <span>You have <b>{`${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, '0')}`}</b> to cancel this visit. After that, only the nurse can cancel at the desk.</span>
+                        </div>
+                        <button className="cq-cancel-btn" disabled={cancellingVisit} onClick={() => { if (confirm('Cancel this visit?')) onCancelVisit(); }}>
+                            <XCircle size={15} aria-hidden="true" />
+                            {cancellingVisit ? 'Cancelling…' : 'Cancel visit'}
+                        </button>
+                    </div>
+                ) : (
+                    <div className="cq-cancel-box cq-cancel-closed" role="status">
+                        <Clock size={16} aria-hidden="true" />
+                        <span>The 5-minute cancellation window has closed. A nurse can still cancel this visit at the desk.</span>
+                    </div>
+                )
+            )}
             {triage?.blood_pressure && <section className="cq-vitals"><div className="cq-section-heading"><div><h2><HeartPulse size={18} /> Your recorded vital signs</h2><p>From your nurse assessment</p></div></div><dl>{[
                 ['Blood pressure', triage.blood_pressure, 'mmHg'],
                 ['Heart rate', triage.heart_rate, 'bpm'],
@@ -300,6 +366,7 @@ export default function PatientPortal() {
     const [pendingVisit, setPendingVisit] = useState(null); // { type, label }
     const [submitting, setSubmitting] = useState(false);
     const [refreshing, setRefreshing] = useState(false);
+    const [cancellingVisit, setCancellingVisit] = useState(false);
     const [toastMsg, setToastMsg] = useState(null);
     const [countdown, setCountdown] = useState(null);
     const entryRef = useRef(null);
@@ -404,6 +471,21 @@ export default function PatientPortal() {
         }
     }
 
+    async function handleCancelVisit() {
+        if (!myEntry) return;
+        setCancellingVisit(true);
+        try {
+            await axios.post(`/api/v1/queues/${myEntry.queue_id}/cancel`);
+            showToast('Your visit was cancelled.');
+            setMyEntry(null);
+            setStep('purpose');
+        } catch (e) {
+            showToast(requestError(e, 'Could not cancel this visit. A nurse can still cancel at the desk.'), 'error');
+        } finally {
+            setCancellingVisit(false);
+        }
+    }
+
     async function handleRefresh() {
         setRefreshing(true);
         await loadMyQueue();
@@ -428,13 +510,13 @@ export default function PatientPortal() {
             <div className={`layout canvas-admin patient-centered ${collapsed ? 'canvas-collapsed' : ''}`}>
                 <Sidebar />
                 <div className="main-content">
-                    <header className="canvas-topbar"><button type="button" className="btn btn-outline btn-sm" aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} aria-expanded={!collapsed} aria-controls="patient-sidebar" onClick={() => setCollapsed(v => !v)}><i className="bi bi-layout-sidebar" aria-hidden="true" /></button><strong>Patient portal</strong><span>USeP · University Clinic</span></header>
+                    <header className="canvas-topbar"><button type="button" className="btn btn-outline btn-sm" aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} aria-expanded={!collapsed} aria-controls="patient-sidebar" onClick={() => setCollapsed(v => !v)}><i className="bi bi-layout-sidebar" aria-hidden="true" /></button><strong>Patient Portal</strong><span>USeP · University Clinic</span></header>
                     <div className="patient-center-content">
                     {loading && <DetailSkeleton fields={2} label="Loading your clinic status" />}
                     {queueError && <p role="alert">{queueError}</p>}
 
                     {!loading && myEntry && (
-                        <QueueTicket entry={myEntry} onRefresh={handleRefresh} onLeave={handleLeave} refreshing={refreshing} countdown={countdown} />
+                        <QueueTicket entry={myEntry} onRefresh={handleRefresh} onLeave={handleLeave} refreshing={refreshing} countdown={countdown} onCancelVisit={handleCancelVisit} cancellingVisit={cancellingVisit} />
                     )}
 
                     {!loading && (!queueError || queueLoaded) && !myEntry && step === 'purpose' && (
@@ -464,7 +546,6 @@ export default function PatientPortal() {
                     {!loading && (!queueError || queueLoaded) && !myEntry && step === 'medcert' && (
                         <MedCertForm submitting={submitting} onBack={() => setStep('purpose')} onSubmit={submitMedCert} />
                     )}
-                    <footer className="patient-footer">University Clinic Information Management System</footer>
                     </div>
                 </div>
             </div>

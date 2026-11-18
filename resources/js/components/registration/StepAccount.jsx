@@ -1,6 +1,7 @@
 import { formatClinicId, patterns } from '@/lib/input-validation.mjs';
 import React from 'react';
 import { Field, SectionTitle } from './Common';
+import UCIMSSelect from '../UCIMSSelect';
 
 export default function StepAccount({ data, set, errors }) {
     const today = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -24,11 +25,11 @@ export default function StepAccount({ data, set, errors }) {
                     />
                 </Field>
                 <Field label="Account Type" required error={errors.patient_type}>
-                    <select value={data.patient_type} onChange={(e) => set('patient_type', e.target.value)}>
+                    <UCIMSSelect value={data.patient_type} onChange={(e) => set('patient_type', e.target.value)}>
                         <option value="">— Select —</option>
                         <option>Student</option>
                         <option>Faculty</option>
-                    </select>
+                    </UCIMSSelect>
                 </Field>
             </div>
 
@@ -79,11 +80,11 @@ export default function StepAccount({ data, set, errors }) {
             {errors.privacy && <div className="text-xs" style={{ color: '#C0392B' }}>{errors.privacy}</div>}
 
             <div className="field-row mt16">
-                <Field label="Digital Signature (type your full name in CAPITAL LETTERS)" required error={errors.signature}>
+                <Field label="Digital Signature" required hint="Type your full name in CAPITAL LETTERS" error={errors.signature}>
                     <input placeholder="JUAN DELA CRUZ" maxLength={150} value={data.signature} onChange={(e) => set('signature', e.target.value.toUpperCase())} />
                 </Field>
                 <Field label="Date">
-                    <input value={today} readOnly />
+                    <input value={today} readOnly style={{ background: '#faf8f8' }} />
                 </Field>
             </div>
         </>

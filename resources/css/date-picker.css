@@ -1,0 +1,424 @@
+/* ─────────────────────────────────────────────────────────────
+   UCIMS date picker — system maroon theme.
+   Layout follows the reference: chevron-paged month header, a
+   Monday-first grid, and a Cancel · selection · action footer.
+   The trigger lives in the field; the panel is portalled to <body>,
+   so both scopes declare the same palette tokens.
+   ───────────────────────────────────────────────────────────── */
+.uc-datepicker,
+.uc-dp-panel {
+    --uc-primary: #791527;
+    --uc-primary-dark: #650d1c;
+    --uc-primary-soft: #f7ecee;
+    --uc-primary-quiet: #f4f1f2;
+    --uc-ink: #342b2e;
+    --uc-muted: #817579;
+    --uc-faint: #c3b9bd;
+    --uc-line: #e5dfe1;
+    --uc-line-soft: #f1e9eb;
+}
+
+.uc-datepicker {
+    position: relative;
+    width: 100%;
+    font-family: inherit;
+    color: var(--uc-ink);
+}
+
+/* Trigger — mirrors the native field input metrics. */
+.uc-datepicker .uc-dp-trigger {
+    width: 100%;
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 11px 14px;
+    border: 1.5px solid var(--uc-line);
+    border-radius: 6px;
+    background: #fdfdfc;
+    color: var(--uc-ink);
+    font: inherit;
+    font-size: 0.9rem;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+.uc-datepicker .uc-dp-trigger:hover {
+    border-color: #c9a9b0;
+    background: #fff;
+}
+
+.uc-datepicker .uc-dp-trigger.is-empty .uc-dp-value {
+    color: #8a7f83;
+}
+
+.uc-datepicker .uc-dp-trigger svg {
+    flex-shrink: 0;
+    color: var(--uc-primary);
+}
+
+.uc-datepicker .uc-dp-trigger:focus-visible {
+    outline: none;
+    border-color: var(--uc-primary);
+    box-shadow: 0 0 0 3px rgba(121, 21, 39, 0.16);
+}
+
+.uc-datepicker .uc-dp-trigger:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+/* Panel — portalled to <body>, so it clears any scrolling ancestor. */
+.uc-dp-panel {
+    position: fixed;
+    z-index: 620;
+    top: 0;
+    left: 0;
+    width: min(344px, calc(100vw - 24px));
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
+    padding: 14px;
+    background: #ffffff;
+    border: 1px solid #efe6e8;
+    border-radius: 16px;
+    box-shadow: 0 24px 60px rgba(52, 11, 20, 0.18), 0 4px 14px rgba(52, 11, 20, 0.08);
+    font-family: inherit;
+    color: var(--uc-ink);
+}
+
+/* Month header: ‹ November 2026 › */
+.uc-dp-panel .uc-dp-head {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) 32px;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.uc-dp-panel .uc-dp-nav {
+    width: 32px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    border: 1px solid transparent;
+    border-radius: 50%;
+    background: transparent;
+    color: #6b5f63;
+    cursor: pointer;
+    transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
+}
+
+.uc-dp-panel .uc-dp-nav:hover {
+    background: var(--uc-primary-soft);
+    border-color: #e8d3d8;
+    color: var(--uc-primary);
+}
+
+.uc-dp-panel .uc-dp-nav:focus-visible {
+    outline: 3px solid rgba(121, 21, 39, 0.3);
+    outline-offset: 1px;
+}
+
+.uc-dp-panel .uc-dp-title {
+    text-align: center;
+    font-size: 13.5px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: var(--uc-ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Weekday row + grid — Monday first, as in the reference. */
+.uc-dp-panel .uc-dp-weekdays,
+.uc-dp-panel .uc-dp-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 2px;
+}
+
+.uc-dp-panel .uc-dp-weekdays {
+    margin-bottom: 4px;
+}
+
+.uc-dp-panel .uc-dp-weekdays span {
+    height: 24px;
+    display: grid;
+    place-items: center;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    color: var(--uc-muted);
+}
+
+/* Day cells. */
+.uc-dp-panel .uc-dp-day {
+    width: 38px;
+    height: 38px;
+    justify-self: center;
+    display: grid;
+    place-items: center;
+    border: 0;
+    background: transparent;
+    border-radius: 50%;
+    color: var(--uc-ink);
+    font: inherit;
+    font-size: 12.5px;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.uc-dp-panel .uc-dp-day:hover:not(:disabled) {
+    background: var(--uc-primary-soft);
+    color: var(--uc-primary-dark);
+}
+
+.uc-dp-panel .uc-dp-day.is-outside {
+    color: var(--uc-faint);
+}
+
+.uc-dp-panel .uc-dp-day.is-today:not(.is-selected) {
+    box-shadow: inset 0 0 0 1.5px #c9a9b0;
+    color: var(--uc-primary);
+    font-weight: 600;
+}
+
+.uc-dp-panel .uc-dp-day.is-selected,
+.uc-dp-panel .uc-dp-day.is-selected:hover {
+    background: var(--uc-primary);
+    color: #ffffff;
+    font-weight: 600;
+    box-shadow: none;
+}
+
+.uc-dp-panel .uc-dp-day:disabled {
+    color: #dcd5d7;
+    cursor: not-allowed;
+}
+
+.uc-dp-panel .uc-dp-day:focus-visible {
+    outline: 3px solid rgba(121, 21, 39, 0.32);
+    outline-offset: 1px;
+}
+
+/* Clickable title: toggles days -> months -> years drill-down. */
+.uc-dp-panel button.uc-dp-title {
+    border: 0;
+    background: transparent;
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: 9px;
+    width: 100%;
+    text-align: center;
+    transition: background 0.14s ease, color 0.14s ease;
+}
+
+.uc-dp-panel button.uc-dp-title:hover {
+    background: var(--uc-primary-soft);
+    color: var(--uc-primary-dark);
+}
+
+.uc-dp-panel button.uc-dp-title:focus-visible {
+    outline: 3px solid rgba(121, 21, 39, 0.32);
+    outline-offset: 1px;
+}
+
+/* Month / year drill-down grids. */
+.uc-dp-panel .uc-dp-mode-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    margin-top: 2px;
+}
+
+.uc-dp-panel .uc-dp-cell {
+    height: 44px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    background: transparent;
+    border-radius: 10px;
+    color: var(--uc-ink);
+    font: inherit;
+    font-size: 12.5px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
+}
+
+.uc-dp-panel .uc-dp-cell:hover:not(:disabled) {
+    background: var(--uc-primary-soft);
+    color: var(--uc-primary-dark);
+}
+
+.uc-dp-panel .uc-dp-cell.is-current:not(.is-selected) {
+    box-shadow: inset 0 0 0 1.5px #c9a9b0;
+    color: var(--uc-primary);
+}
+
+.uc-dp-panel .uc-dp-cell.is-selected,
+.uc-dp-panel .uc-dp-cell.is-selected:hover {
+    background: var(--uc-primary);
+    color: #ffffff;
+    box-shadow: none;
+}
+
+.uc-dp-panel .uc-dp-cell:disabled {
+    color: #dcd5d7;
+    cursor: not-allowed;
+    background: transparent;
+}
+
+.uc-dp-panel .uc-dp-cell:focus-visible {
+    outline: 3px solid rgba(121, 21, 39, 0.32);
+    outline-offset: 1px;
+}
+
+/* Footer: Cancel · selected-date pill · Select */
+.uc-dp-panel .uc-dp-footer {
+    position: sticky;
+    bottom: -14px;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 12px -14px 0;
+    padding: 12px 14px;
+    background: #ffffff;
+    border-top: 1px solid var(--uc-line-soft);
+    border-radius: 0 0 15px 15px;
+}
+
+.uc-dp-panel .uc-dp-cancel {
+    flex: 0 0 auto;
+    border: 0;
+    background: transparent;
+    padding: 8px 4px;
+    border-radius: 7px;
+    color: var(--uc-muted);
+    font: inherit;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: color 0.14s ease;
+}
+
+.uc-dp-panel .uc-dp-cancel:hover {
+    color: var(--uc-primary);
+}
+
+.uc-dp-panel .uc-dp-selection {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 7px 9px;
+    border-radius: 9px;
+    background: var(--uc-primary-quiet);
+    color: var(--uc-primary);
+    font-size: 11.5px;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.uc-dp-panel .uc-dp-selection > span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.uc-dp-panel .uc-dp-selection.is-empty {
+    color: #a1959a;
+    font-weight: 500;
+}
+
+.uc-dp-panel .uc-dp-selection-clear {
+    flex: 0 0 auto;
+    width: 16px;
+    height: 16px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #a1959a;
+    cursor: pointer;
+    transition: background 0.14s ease, color 0.14s ease;
+}
+
+.uc-dp-panel .uc-dp-selection-clear:hover {
+    background: #e8d6da;
+    color: var(--uc-primary);
+}
+
+.uc-dp-panel .uc-dp-confirm {
+    flex: 0 0 auto;
+    border: 1px solid var(--uc-primary);
+    border-radius: 9px;
+    padding: 8px 14px;
+    background: var(--uc-primary);
+    color: #ffffff;
+    font: inherit;
+    font-size: 11.5px;
+    font-weight: 600;
+    line-height: 1.2;
+    cursor: pointer;
+    transition: background 0.14s ease, border-color 0.14s ease, opacity 0.14s ease;
+}
+
+.uc-dp-panel .uc-dp-confirm:hover:not(:disabled) {
+    background: var(--uc-primary-dark);
+    border-color: var(--uc-primary-dark);
+}
+
+.uc-dp-panel .uc-dp-confirm:disabled {
+    opacity: 0.42;
+    cursor: not-allowed;
+}
+
+.uc-dp-panel .uc-dp-cancel:focus-visible,
+.uc-dp-panel .uc-dp-confirm:focus-visible,
+.uc-dp-panel .uc-dp-selection-clear:focus-visible {
+    outline: 3px solid rgba(121, 21, 39, 0.32);
+    outline-offset: 2px;
+}
+
+@media (max-width: 400px) {
+    .uc-dp-panel {
+        padding: 12px;
+        border-radius: 14px;
+    }
+
+    .uc-dp-panel .uc-dp-day {
+        width: 34px;
+        height: 34px;
+        font-size: 12px;
+    }
+
+    .uc-dp-panel .uc-dp-footer {
+        bottom: -12px;
+        margin: 10px -12px 0;
+        padding: 10px 12px;
+        border-radius: 0 0 13px 13px;
+    }
+
+    .uc-dp-panel .uc-dp-selection {
+        font-size: 10.5px;
+        padding: 6px 7px;
+    }
+
+    .uc-dp-panel .uc-dp-confirm {
+        padding: 7px 12px;
+        font-size: 11px;
+    }
+}

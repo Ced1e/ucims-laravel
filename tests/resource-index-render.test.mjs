@@ -8,9 +8,10 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 const require = createRequire(import.meta.url);
 const reactUrl = pathToFileURL(require.resolve('react')).href;
+const lucideUrl = new URL('../node_modules/lucide-react/dist/esm/lucide-react.js', import.meta.url).href;
 const dataUrl = text => 'data:text/javascript;base64,' + Buffer.from(text).toString('base64');
-const compile = source => dataUrl(ts.transpileModule(source,{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.ESNext}}).outputText.replaceAll('"react/jsx-runtime"',JSON.stringify(pathToFileURL(require.resolve('react/jsx-runtime')).href)));
-const pagination = compile(fs.readFileSync(new URL('../resources/js/components/paginated-items.jsx',import.meta.url),'utf8').replace("'react'",JSON.stringify(reactUrl)).replace("'../lib/pagination.mjs'",JSON.stringify(new URL('../resources/js/lib/pagination.mjs',import.meta.url).href)));
+const compile = source => dataUrl(ts.transpileModule(source,{compilerOptions:{jsx:ts.JsxEmit.ReactJSX,module:ts.ModuleKind.ESNext}}).outputText.replaceAll('"react/jsx-runtime"',JSON.stringify(pathToFileURL(require.resolve('react/jsx-runtime')).href)).replaceAll('"lucide-react"',JSON.stringify(lucideUrl)));
+const pagination = compile(fs.readFileSync(new URL('../resources/js/components/paginated-items.jsx',import.meta.url),'utf8').replace("'react'",JSON.stringify(reactUrl)).replace("'../lib/pagination.mjs'",JSON.stringify(new URL('../resources/js/lib/pagination.mjs',import.meta.url).href)).replace("'lucide-react'",JSON.stringify(lucideUrl)));
 const inertia = dataUrl(`import React from ${JSON.stringify(reactUrl)}; export const Head=()=>null; export const Link=({children,...props})=>React.createElement('a',props,children); export const router={post(url){globalThis.__resourceActions.push(url)},delete(url){globalThis.__resourceActions.push(url)}}; export const useForm=()=>router;`);
 const layout = dataUrl('export default function Layout({children}){return children}');
 const cases = [
@@ -39,7 +40,9 @@ for (const [page,prop,pk,route,fields] of cases) {
   assert.ok(markup.includes(`href="/${route}/901/edit"`));
   assert.ok(markup.includes(`href="/${route}/920/edit"`));
   assert.ok(!markup.includes(`href="/${route}/921/edit"`));
-  assert.ok(markup.includes('1–20 of 21'));
+  assert.ok(markup.includes('aria-current="page"'));
+  assert.ok(markup.includes('>2</button>'));
+  assert.ok(!markup.includes('>3</button>'));
   assert.ok(!markup.includes('/undefined/'));
   for (const value of Object.values(fields).filter(v=>typeof v==='string' && v.startsWith('Recorded'))) assert.ok(markup.includes(value),value);
   globalThis.__resourceActions=[];

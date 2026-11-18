@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { validName, isCalendarDate, localToday, normalizePhone, lengthErrors, prepareRegistration } from '@/lib/registration-validation.mjs';
+import { useRef, useState } from 'react';
+import { validName, isCalendarDate, localToday, normalizePhone, lengthErrors, prepareRegistration, minBirthDate, minBirthYear } from '@/lib/registration-validation.mjs';
 import { Head, router } from '@inertiajs/react';
 import StepPersonal, { FACULTY_OPTION, calcAge } from '@/components/registration/StepPersonal';
 import StepHealth, { SYSTEMS } from '@/components/registration/StepHealth';
@@ -7,7 +7,7 @@ import StepQuestionnaire from '@/components/registration/StepQuestionnaire';
 import StepFemale from '@/components/registration/StepFemale';
 import StepAccount from '@/components/registration/StepAccount';
 
-// ── Validation rules ported from the legacy auth.js wizard ──────────────────
+// Validation rules ported from the legacy auth.js wizard
 const NAME_RE = { test: validName };
 
 const PHONE_RE = /^09\d{9}$/;
@@ -47,31 +47,30 @@ function validateStep(key, d) {
     };
 
     if (key === 'personal') {
-        ['lastname', 'firstname', 'middlename'].forEach((k) => {
+        // Names and letter-only fields: block digits while typing (input side) and
+        // validate live with a clear inline message (feedback side).
+        ['lastname', 'firstname', 'middlename', 'religion', 'nationality'].forEach((k) => {
             if (blank(d[k])) e[k] = 'Required.';
             else if (!NAME_RE.test(d[k].trim())) e[k] = "Use letters, spaces, apostrophes, dots or hyphens.";
         });
         if (blank(d.dob)) e.dob = 'Required.';
-        else if (!isCalendarDate(d.dob) || d.dob <= '1900-01-01') e.dob = 'Enter a valid birthdate after January 1, 1900.';
+        else if (!isCalendarDate(d.dob) || d.dob < minBirthDate()) e.dob = `Enter a valid birthdate after January 1, ${minBirthYear()}.`;
         else if (d.dob > localToday()) e.dob = 'Birthdate cannot be in the future.';
         else if (calcAge(d.dob) === '' ) e.dob = 'Enter a valid birthdate.';
         ['sex', 'civil_status', 'college_dept', 'birthplace', 'city_address', 'prov_address'].forEach((k) => req(k, 'Required.'));
-        ['religion', 'nationality'].forEach((k) => {
-            if (blank(d[k])) e[k] = 'Required.';
-
-        });
         if (d.college_dept !== FACULTY_OPTION) req('year_level', 'Required.');
         if (!PHONE_RE.test(digits(d.contact_no))) e.contact_no = 'Enter a valid number (09XXXXXXXXX).';
         if (blank(d.em_name)) e.em_name = 'Required.';
         else if (!NAME_RE.test(d.em_name.trim())) e.em_name = "Use letters, spaces, apostrophes, dots or hyphens.";
         if (!PHONE_RE.test(digits(d.em_contact))) e.em_contact = 'Enter a valid number (09XXXXXXXXX).';
         if (blank(d.em_rel)) e.em_rel = 'Required.';
+        else if (/\d/.test(d.em_rel)) e.em_rel = 'Relationship should not contain numbers (e.g. Mother, Father, Sibling).';
 
     }
 
     if (key === 'health') {
-        if (!inRange(d.height, 50, 250)) e.height = 'Enter height in cm (50–250).';
-        if (!inRange(d.weight, 10, 300)) e.weight = 'Enter weight in kg (10–300).';
+        if (!inRange(d.height, 50, 250)) e.height = 'Enter height in cm (50-250).';
+        if (!inRange(d.weight, 10, 300)) e.weight = 'Enter weight in kg (10-300).';
         if (!/^\d{2,3}\/\d{2,3}$/.test(String(d.blood_pressure).trim())) e.blood_pressure = 'Use the format 120/80.';
         if (!inRange(d.pulse_rate, 30, 220)) e.pulse_rate = 'Enter a value between 30 and 220.';
         if (!inRange(d.resp_rate, 5, 60)) e.resp_rate = 'Enter a value between 5 and 60.';
@@ -79,6 +78,12 @@ function validateStep(key, d) {
         if (!inRange(d.cr_rest, 30, 250)) e.cr_rest = 'Enter a value between 30 and 250.';
         if (!inRange(d.cr_activity, 30, 250)) e.cr_activity = 'Enter a value between 30 and 250.';
         SYSTEMS.forEach(([k]) => req(k, 'Required (write "Unremarkable" if normal).'));
+        // History fields: numbers-only is rejected (e.g. "3" or "1985");
+        // but a mix of letters and numbers is fine ("Type 2 Diabetes").
+        for (const k of ['infectious_diseases', 'social_hx', 'family_hx']) {
+            const v = String(d[k] ?? '').trim();
+            if (!blank(v) && !/\p{L}/u.test(v)) e[k] = 'History must include letters - numbers alone are not enough.';
+        }
     }
 
     if (key === 'questionnaire') {
@@ -115,6 +120,7 @@ function validateStep(key, d) {
 export default function Register() {
     const [data, setData] = useState(INITIAL);
     const [errors, setErrors] = useState({});
+    const [touched, setTouched] = useState({});
     const [stepIdx, setStepIdx] = useState(0);
     const [submitting, setSubmitting] = useState(false);
 
@@ -129,31 +135,61 @@ export default function Register() {
     const current = steps[Math.min(stepIdx, steps.length - 1)];
     const isLast = stepIdx >= steps.length - 1;
 
+    const currentKey = current?.key;
+
+    // Refs hold the latest form state so handlers that call set() multiple
+    // times (e.g. the college dropdown) always validate against the newest data.
+    const dataRef = useRef(INITIAL);
+    const touchedRef = useRef({});
+
+    // Live inline validation: revalidate the current step on every change and
+    // show errors only for fields the user has already touched. A field goes
+    // red as soon as its value becomes wrong, and clears itself when fixed.
+    const validate = (candidate, stepKey, touchedSet) => {
+        const errs = validateStep(stepKey, candidate);
+        const next = {};
+        for (const k of Object.keys(errs)) if (touchedSet[k]) next[k] = errs[k];
+        setErrors(next);
+    };
+
     const set = (k, v) => {
-        setData((d) => {
-            const next = { ...d, [k]: v };
-            if (k === 'sex' && v !== 'Female') {
-                for (const field of STEP_KEYS.female) next[field] = INITIAL[field];
-            }
-            return next;
-        });
-        if (errors[k]) setErrors((e) => ({ ...e, [k]: undefined }));
+        const candidate = { ...dataRef.current, [k]: v };
+        if (k === 'sex' && v !== 'Female') {
+            for (const field of STEP_KEYS.female) candidate[field] = INITIAL[field];
+        }
+        dataRef.current = candidate;
+        setData(candidate);
+        const tset = { ...touchedRef.current, [k]: true };
+        touchedRef.current = tset;
+        setTouched(tset);
+        if (currentKey) validate(candidate, currentKey, tset);
     };
 
     function next() {
-        const e = validateStep(current.key, data);
-        if (Object.keys(e).length) {
-            setErrors(e);
+        const stepKeys = STEP_KEYS[current.key] || [];
+        const tset = { ...touchedRef.current };
+        for (const k of stepKeys) tset[k] = true;
+        touchedRef.current = tset;
+        setTouched(tset);
+        const e = validateStep(current.key, dataRef.current);
+        const visible = {};
+        for (const k of Object.keys(e)) if (tset[k]) visible[k] = e[k];
+        if (Object.keys(visible).length) {
+            setErrors(visible);
             window.scrollTo({ top: 0, behavior: 'smooth' });
             return;
         }
         setErrors({});
+        touchedRef.current = {};
+        setTouched({});
         setStepIdx(stepIdx + 1);
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function back() {
         setErrors({});
+        touchedRef.current = {};
+        setTouched({});
         setStepIdx(Math.max(0, stepIdx - 1));
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -161,15 +197,20 @@ export default function Register() {
     function submit() {
         // Re-validate every step so nothing slips through.
         for (let i = 0; i < steps.length; i++) {
-            const e = validateStep(steps[i].key, data);
+            const e = validateStep(steps[i].key, dataRef.current);
             if (Object.keys(e).length) {
+                const stepKeys = STEP_KEYS[steps[i].key] || [];
+                const all = { ...touchedRef.current };
+                for (const k of stepKeys) all[k] = true;
+                touchedRef.current = all;
+                setTouched(all);
                 setStepIdx(i);
                 setErrors(e);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
                 return;
             }
         }
-        const payload = prepareRegistration(data);
+        const payload = prepareRegistration(dataRef.current);
         setSubmitting(true);
         router.post('/register', payload, {
             preserveScroll: true,
@@ -206,7 +247,7 @@ export default function Register() {
                 <div className="steps">
                     {steps.map((s, i) => (
                         <div key={s.key} className={`step ${i < stepIdx ? 'done' : i === stepIdx ? 'active' : ''}`}>
-                            {i + 1} · {s.label}
+                            {i + 1} {String.fromCharCode(0x00B7)} {s.label}
                         </div>
                     ))}
                 </div>
@@ -237,7 +278,7 @@ export default function Register() {
                         )}
                         {isLast ? (
                             <button className="btn btn-primary" onClick={submit} disabled={submitting}>
-                                {submitting ? 'Creating account…' : <><i className="bi bi-person-check"></i> Create My Account</>}
+                                {submitting ? 'Creating account...' : <><i className="bi bi-person-check"></i> Create My Account</>}
                             </button>
                         ) : (
                             <button className="btn btn-primary" onClick={next}>

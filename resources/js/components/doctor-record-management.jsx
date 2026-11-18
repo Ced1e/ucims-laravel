@@ -1,4 +1,6 @@
 import PaginatedItems from './paginated-items.jsx';
+import UCIMSSelect from './UCIMSSelect.jsx';
+import { ALL_COLLEGES, ALL_YEAR_LEVELS, ALL_PATIENT_TYPES, sameCollege } from '../lib/option-order.mjs';
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 
@@ -33,9 +35,6 @@ function fullName(person) {
     return [person.firstname, person.lastname].filter(Boolean).join(' ') || 'Unknown Patient';
 }
 
-function uniqueVals(list, key) {
-    return [...new Set(list.map((p) => p[key]).filter(Boolean))];
-}
 
 function Field({ label, value }) {
     return (
@@ -55,9 +54,11 @@ function RecordsSearch({ patients, loading, onView, onHistory }) {
     const [year, setYear] = useState('');
     const [ptype, setPtype] = useState('');
 
-    const colleges = uniqueVals(patients, 'college_dept');
-    const years = uniqueVals(patients, 'year_level');
-    const ptypes = uniqueVals(patients, 'patient_type');
+    // Filters show the full canonical option lists — not just the colleges
+    // that happen to have patients today.
+    const colleges = ALL_COLLEGES;
+    const years = ALL_YEAR_LEVELS;
+    const ptypes = ALL_PATIENT_TYPES;
 
     let filtered = patients;
     if (q.trim()) {
@@ -66,7 +67,7 @@ function RecordsSearch({ patients, loading, onView, onHistory }) {
             (p) => String(p.name || '').toLowerCase().includes(ql) || String(p.patientId || '').toLowerCase().includes(ql),
         );
     }
-    if (college) filtered = filtered.filter((p) => p.college_dept === college);
+    if (college) filtered = filtered.filter((p) => sameCollege(p.college_dept, college));
     if (year) filtered = filtered.filter((p) => p.year_level === year);
     if (ptype) filtered = filtered.filter((p) => p.patient_type === ptype);
 
@@ -78,31 +79,35 @@ function RecordsSearch({ patients, loading, onView, onHistory }) {
             </div>
             <div className="card">
                 <div className="card-title">Search &amp; Filter Patient Records</div>
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16 }}>
-                    <input
-                        style={{ flex: 2, minWidth: 200 }}
-                        placeholder="Search by name or ID..."
-                        value={q}
-                        onChange={(e) => setQ(e.target.value)}
-                    />
-                    <select style={{ flex: 1, minWidth: 140 }} value={college} onChange={(e) => setCollege(e.target.value)}>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: 16, alignItems: 'flex-end' }}>
+                    <div style={{ flex: 2, minWidth: 200 }}>
+                        <label className="ucims-text-label" htmlFor="erm-search">Search</label>
+                        <input
+                            id="erm-search"
+                            className="ucims-text-input"
+                            placeholder="Search by name or ID..."
+                            value={q}
+                            onChange={(e) => setQ(e.target.value)}
+                        />
+                    </div>
+                    <UCIMSSelect style={{ flex: 1, minWidth: 160 }} label="College" value={college} onChange={(e) => setCollege(e.target.value)}>
                         <option value="">All Colleges</option>
                         {colleges.map((c) => (
                             <option key={c}>{c}</option>
                         ))}
-                    </select>
-                    <select style={{ flex: 1, minWidth: 120 }} value={year} onChange={(e) => setYear(e.target.value)}>
+                    </UCIMSSelect>
+                    <UCIMSSelect style={{ flex: 1, minWidth: 150 }} label="Year Level" value={year} onChange={(e) => setYear(e.target.value)}>
                         <option value="">All Year Levels</option>
                         {years.map((y) => (
                             <option key={y}>{y}</option>
                         ))}
-                    </select>
-                    <select style={{ flex: 1, minWidth: 120 }} value={ptype} onChange={(e) => setPtype(e.target.value)}>
+                    </UCIMSSelect>
+                    <UCIMSSelect style={{ flex: 1, minWidth: 150 }} label="Type" value={ptype} onChange={(e) => setPtype(e.target.value)}>
                         <option value="">All Types</option>
                         {ptypes.map((t) => (
                             <option key={t}>{t}</option>
                         ))}
-                    </select>
+                    </UCIMSSelect>
                 </div>
 
                 {loading && <p className="text-muted">Loading…</p>}
@@ -181,7 +186,7 @@ function ViewRecordModal({ patientRef, onClose }) {
     const hr = data?.ppr_health_record;
     const q = data?.ppr_health_questionnaire;
 
-    const scroll = { maxHeight: '50vh', overflowY: 'auto', paddingRight: 8 };
+
     const sub = { fontSize: '.95rem' };
 
     return (
@@ -226,7 +231,7 @@ function ViewRecordModal({ patientRef, onClose }) {
                         </div>
 
                         {tab === 'personal' && (
-                            <div style={scroll}>
+                            <div className="record-scroll">
                                 <div className="card-title" style={sub}>
                                     Name &amp; Designation
                                 </div>
@@ -253,7 +258,12 @@ function ViewRecordModal({ patientRef, onClose }) {
                                     <Field label="Religion" value={demo?.religion} />
                                     <Field label="Nationality" value={demo?.nationality} />
                                 </div>
-                                <div className="grid2 mb8">
+                                <div className="grid3 mb8">
+                                    <Field label="Birthplace" value={demo?.birthplace} />
+                                    <Field label="University Email" value={data?.usep_email} />
+                                </div>
+                                {/* Same 3-column rhythm as the rest of the record so the address labels line up with the rows above. */}
+                                <div className="grid3 mb8">
                                     <Field label="City Address" value={demo?.city_address} />
                                     <Field label="Provincial Address" value={demo?.prov_address} />
                                 </div>
@@ -266,7 +276,7 @@ function ViewRecordModal({ patientRef, onClose }) {
                         )}
 
                         {tab === 'health' && (
-                            <div style={scroll}>
+                            <div className="record-scroll">
                                 <div className="card-title" style={sub}>
                                     Initial Vitals
                                 </div>
@@ -280,7 +290,7 @@ function ViewRecordModal({ patientRef, onClose }) {
                                     <Field label="Resp. Rate" value={hr?.resp_rate} />
                                     <Field label="Temperature" value={hr?.temp} />
                                 </div>
-                                <div className="grid2 mb8">
+                                <div className="grid3 mb8">
                                     <Field label="CR at Rest" value={hr?.cr_rest} />
                                     <Field label="CR after Activity" value={hr?.cr_activity} />
                                 </div>
@@ -288,7 +298,7 @@ function ViewRecordModal({ patientRef, onClose }) {
                                     History
                                 </div>
                                 <Field label="General Appearance" value={hr?.gen_appearance} />
-                                <div className="grid2 mt12">
+                                <div className="grid3 mt12">
                                     <Field label="Infectious Diseases" value={hr?.infectious_diseases} />
                                     <Field label="Social History" value={hr?.social_hx} />
                                 </div>
@@ -299,7 +309,7 @@ function ViewRecordModal({ patientRef, onClose }) {
                         )}
 
                         {tab === 'systems' && (
-                            <div style={scroll}>
+                            <div className="record-scroll">
                                 <div className="card-title" style={sub}>
                                     Review of Systems
                                 </div>
@@ -323,7 +333,7 @@ function ViewRecordModal({ patientRef, onClose }) {
                         )}
 
                         {tab === 'questionnaire' && (
-                            <div style={scroll}>
+                            <div className="record-scroll">
                                 <div className="card-title" style={sub}>
                                     Health Questionnaire
                                 </div>
@@ -337,7 +347,7 @@ function ViewRecordModal({ patientRef, onClose }) {
                                     <Field label="Surgery Type" value={q?.surg_type} />
                                     <Field label="When" value={q?.surg_when} />
                                 </div>
-                                <div className="grid2 mb8">
+                                <div className="grid3 mb8">
                                     <Field label="Infectious Diseases" value={q?.infectious_list} />
                                     <Field label="Fainting/Syncope" value={q?.syncope} />
                                 </div>
@@ -351,10 +361,11 @@ function ViewRecordModal({ patientRef, onClose }) {
                                             <Field label="Periods / Year" value={q?.female_periods_yr} />
                                             <Field label="Regular?" value={q?.female_regular} />
                                         </div>
-                                        <div className="grid2">
+                                        <div className="grid3">
                                             <Field label="If Irregular, Specify" value={q?.female_irregular_spec} />
                                             <Field label="Dysmenorrhea" value={q?.female_dysmenorrhea} />
                                         </div>
+                                        <Field label="Other Premenstrual / Menstrual Symptoms" value={q?.female_symptoms} />
                                     </>
                                 )}
                             </div>

@@ -1,0 +1,310 @@
+/* ══════════════════════════════════════════════════════
+   Illness Statistics — round 3 (shadcn preview).
+   Scoped neutral + maroon accent for .sds3-scope.
+   ══════════════════════════════════════════════════════ */
+
+.sds3-scope,
+.dark .sds3-scope {
+    /* Full neutral-light token set so the page reads consistently in dark mode too */
+    --background: oklch(0.982 0.006 60);
+    --foreground: oklch(0.18 0.01 40);
+    --card: oklch(1 0 0);
+    --card-foreground: oklch(0.18 0.01 40);
+    --popover: oklch(1 0 0);
+    --popover-foreground: oklch(0.18 0.01 40);
+    --primary: oklch(0.35 0.146 24);
+    --primary-foreground: oklch(0.985 0 0);
+    --secondary: oklch(0.955 0.012 45);
+    --secondary-foreground: oklch(0.35 0.12 24);
+    --muted: oklch(0.962 0.012 55);
+    --muted-foreground: oklch(0.5 0.02 45);
+    --accent: oklch(0.95 0.022 30);
+    --accent-foreground: oklch(0.42 0.146 24);
+    --destructive: oklch(0.577 0.245 27.325);
+    --destructive-foreground: oklch(0.985 0 0);
+    --border: oklch(0.908 0.01 55);
+    --input: oklch(0.908 0.01 55);
+    --ring: oklch(0.42 0.14 24);
+
+    /* Tailwind v4 @theme aliases substitute var(--x) at :root and inherit the resolved value,
+       so the --color-* set must be overridden directly inside the scope. */
+    --color-background: oklch(0.982 0.006 60);
+    --color-foreground: oklch(0.18 0.01 40);
+    --color-card: oklch(1 0 0);
+    --color-card-foreground: oklch(0.18 0.01 40);
+    --color-popover: oklch(1 0 0);
+    --color-popover-foreground: oklch(0.18 0.01 40);
+    --color-primary: oklch(0.35 0.146 24);
+    --color-primary-foreground: oklch(0.985 0 0);
+    --color-secondary: oklch(0.955 0.012 45);
+    --color-secondary-foreground: oklch(0.35 0.12 24);
+    --color-muted: oklch(0.962 0.012 55);
+    --color-muted-foreground: oklch(0.5 0.02 45);
+    --color-accent: oklch(0.95 0.022 30);
+    --color-accent-foreground: oklch(0.42 0.146 24);
+    --color-destructive: oklch(0.577 0.245 27.325);
+    --color-destructive-foreground: oklch(0.985 0 0);
+    --color-border: oklch(0.908 0.01 55);
+    --color-input: oklch(0.908 0.01 55);
+    --color-ring: oklch(0.42 0.14 24);
+}
+
+.sds3-page {
+    min-height: 100vh;
+    padding: 30px clamp(16px, 4vw, 48px) 64px;
+    background: var(--background);
+    color: var(--foreground);
+    font-family: 'Open Sans', system-ui, sans-serif;
+    line-height: 1.5;
+}
+
+.sds3-page * {
+    box-sizing: border-box;
+}
+
+.sds3-page :is(button, a, input, [role="tab"], summary):focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+/* ── Header ── */
+.sds3-top {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 24px;
+    flex-wrap: wrap;
+    max-width: 1200px;
+    margin: 0 auto 16px;
+}
+
+.sds3-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-size: 0.76rem;
+    font-weight: 600;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--primary);
+}
+
+.sds3-top h1 {
+    margin: 5px 0 6px;
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(1.7rem, 3vw, 2.2rem);
+    line-height: 1.15;
+}
+
+.sds3-top p {
+    max-width: 78ch;
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--muted-foreground);
+}
+
+.sds3-top a {
+    color: var(--primary);
+    text-decoration: underline;
+}
+
+.sds3-top code {
+    padding: 1px 5px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--card);
+    font-size: 0.77rem;
+}
+
+.sds3-top-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+}
+
+/* ── Jump nav ── */
+.sds3-jump {
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    display: flex;
+    gap: 6px;
+    max-width: 1200px;
+    margin: 0 auto 28px;
+    padding: 10px 0;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--border);
+    background: color-mix(in oklab, var(--background) 90%, transparent);
+    backdrop-filter: blur(8px);
+}
+
+.sds3-jump-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 13px;
+    border: 1px solid transparent;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--muted-foreground);
+    text-decoration: none;
+}
+
+.sds3-jump-link b {
+    font-size: 0.68rem;
+    color: var(--primary);
+}
+
+.sds3-jump-link:hover {
+    border-color: var(--border);
+    background: var(--card);
+    color: var(--foreground);
+}
+
+/* ── Sections ── */
+.sds3-section {
+    max-width: 1200px;
+    margin: 0 auto 44px;
+    scroll-margin-top: 72px;
+}
+
+.sds3-section-head {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 16px;
+    align-items: start;
+    margin-bottom: 14px;
+}
+
+.sds3-section-num {
+    padding-right: 14px;
+    border-right: 1px solid var(--border);
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: var(--primary);
+}
+
+.sds3-section-head h2 {
+    margin: 0;
+    font-size: 1.3rem;
+    letter-spacing: -0.01em;
+}
+
+.sds3-section-head p {
+    max-width: 76ch;
+    margin: 3px 0 0;
+    font-size: 0.82rem;
+    line-height: 1.55;
+    color: var(--muted-foreground);
+}
+
+.sds3-best {
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--card);
+    font-size: 0.72rem;
+    white-space: nowrap;
+    color: var(--muted-foreground);
+}
+
+.sds3-best b {
+    margin-right: 4px;
+    font-size: 0.63rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--primary);
+}
+
+/* ── Controls ── */
+.sds3-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.sds3-sort {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 0;
+    border: 0;
+    background: transparent;
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--foreground);
+    cursor: pointer;
+}
+
+/* nowrap children keep intrinsic min-width and defeat truncate inside flex/grid rows — pin everything at this scope */
+.sds3-scope .grid > *,
+.sds3-scope .flex > * {
+    min-width: 0;
+}
+
+/* TabsList is w-fit; let it fill the card so triggers never overflow small screens */
+.sds3-scope [data-slot="tabs-list"] {
+    width: 100%;
+}
+
+.sds3-scope [data-slot="tabs-trigger"] {
+    flex: 1;
+}
+
+/* ── Column chart (Design 12) ── */
+.sds3-col {
+    width: 100%;
+    max-width: 56px;
+    border-radius: 4px 4px 0 0;
+    background: linear-gradient(180deg, var(--primary), oklch(0.25 0.09 24));
+}
+
+.sds3-footer {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+    font-size: 0.78rem;
+    line-height: 1.6;
+    color: var(--muted-foreground);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sds3-page *,
+    .sds3-page *::before,
+    .sds3-page *::after {
+        transition: none !important;
+        animation: none !important;
+    }
+}
+
+@media (max-width: 1020px) {
+    .sds3-section-head {
+        grid-template-columns: auto minmax(0, 1fr);
+    }
+
+    .sds3-best {
+        grid-column: 2;
+        justify-self: start;
+        white-space: normal;
+    }
+}
+
+@media (max-width: 640px) {
+    .sds3-top-controls {
+        width: 100%;
+    }
+
+    .sds3-section-num {
+        font-size: 1.1rem;
+    }
+}

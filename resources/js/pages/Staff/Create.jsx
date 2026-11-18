@@ -1,5 +1,6 @@
 import React from 'react';
 import { Head, useForm, Link } from '@inertiajs/react';
+import UCIMSSelect from '@/components/UCIMSSelect';
 
 export default function Create() {
     const { data, setData, post, processing, errors } = useForm({
@@ -37,11 +38,11 @@ export default function Create() {
                     </div>
                     <div>
                         <label className="block mb-1 font-bold">Role</label>
-                        <select value={data.role} onChange={(e) => setData('role', e.target.value)} className="w-full border rounded p-2">
+                        <UCIMSSelect value={data.role} onChange={(e) => setData('role', e.target.value)} className="w-full">
                             <option value="doctor">Doctor</option>
                             <option value="nurse">Nurse</option>
                             <option value="admin">Admin</option>
-                        </select>
+                        </UCIMSSelect>
                         {errors.role && <div className="text-red-500 text-sm mt-1">{errors.role}</div>}
                     </div>
                 </div>

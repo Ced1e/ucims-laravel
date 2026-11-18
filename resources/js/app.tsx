@@ -32,7 +32,10 @@ void createInertiaApp({
         }
 
         return (resolvePageComponent(path, pages) as Promise<any>).then((page) => {
-            document.documentElement.setAttribute('data-ui-page', name.toLowerCase());
+            // SSR evaluates this module in Node, where document does not exist.
+            if (typeof document !== 'undefined') {
+                document.documentElement.setAttribute('data-ui-page', name.toLowerCase());
+            }
             return page;
         });
     },
@@ -46,6 +49,14 @@ void createInertiaApp({
             case lowerName === 'previews/homerefresh':
             case lowerName === 'previews/queuedesigns':
             case lowerName === 'previews/admindesigns':
+            case lowerName === 'previews/illnessstatisticsdesigns':
+            case lowerName === 'previews/illnessstatisticsdesigns2':
+            case lowerName === 'previews/illnessstatisticsdesigns3':
+            case lowerName === 'previews/illnessstatisticsdesigns4':
+            case lowerName === 'previews/illnessfontpreview':
+            case lowerName === 'previews/illnessdropdownpreview':
+            case lowerName === 'previews/objectivedesigns':
+            case lowerName === 'previews/designindex':
             case lowerName === 'previews/adminreferencedesigns':
             case lowerName === 'previews/authorizationdesigns':
             case lowerName === 'previews/doctordesigns':

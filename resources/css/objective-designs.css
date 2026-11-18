@@ -1,0 +1,452 @@
+/* Local-only preview: System Objective panel designs (About the System). */
+.od-page {
+    --maroon: #6b0f15;
+    --maroon-deep: #48080d;
+    --maroon-ink: #4e0a10;
+    --gold: #e8be5d;
+    --gold-deep: #c9982e;
+    --gold-ink: #2f0609;
+    --cream: #f7f5f2;
+    --paper: #ffffff;
+    --ink: #1f1718;
+    --muted: #6c625f;
+    --line: #e7e0d8;
+    --font: 'Instrument Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    background: var(--cream);
+    color: var(--ink);
+    font-family: var(--font);
+    color-scheme: light;
+    padding-bottom: 72px;
+}
+
+/* ── Picker bar ─────────────────────────────────────────────────────────── */
+.od-picker {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    padding: 12px 28px;
+    background: rgb(247 245 242 / 0.92);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+}
+
+.od-picker strong {
+    font-size: 14px;
+    line-height: 1.3;
+}
+
+.od-picker small {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+}
+
+.od-picker-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-left: auto;
+}
+
+.od-picker-group button {
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: 10px;
+    border: 1px solid #d8d2ca;
+    background: #fff;
+    color: var(--maroon-ink);
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.18s, border-color 0.18s, color 0.18s;
+}
+
+.od-picker-group button:hover { border-color: var(--maroon); }
+.od-picker-group button[aria-pressed='true'] {
+    background: var(--maroon);
+    border-color: var(--maroon);
+    color: #fff;
+}
+.od-picker-group button:focus-visible {
+    outline: 3px solid var(--gold-deep);
+    outline-offset: 3px;
+}
+
+.od-caption {
+    display: flex;
+    align-items: baseline;
+    gap: 18px;
+    flex-wrap: wrap;
+    max-width: 1180px;
+    margin: 26px auto 0;
+    padding: 0 28px;
+}
+
+.od-caption h1 {
+    font-size: 21px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--maroon-ink);
+}
+
+.od-caption p {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--muted);
+    max-width: 720px;
+}
+
+.od-caption .od-rationale {
+    margin-top: 4px;
+    font-size: 11.5px;
+    color: #8a7d74;
+}
+
+/* ── About context mock ─────────────────────────────────────────────────── */
+.od-stage {
+    max-width: 1180px;
+    margin: 22px auto 0;
+    padding: 0 28px;
+}
+
+.od-about {
+    display: grid;
+    grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.1fr);
+    align-items: center;
+    gap: 48px;
+    padding: 34px 8px 6px;
+}
+
+.od-about-copy .od-eyebrow {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--maroon);
+}
+
+.od-about-copy h2 {
+    margin-top: 12px;
+    font-size: clamp(28px, 3vw, 38px);
+    font-weight: 700;
+    letter-spacing: -0.035em;
+    line-height: 1.12;
+    color: var(--ink);
+}
+
+.od-about-copy > p {
+    margin-top: 16px;
+    font-size: 15px;
+    line-height: 1.72;
+    color: #3c3330;
+    max-width: 56ch;
+}
+
+.od-purpose {
+    margin-top: 22px;
+    padding: 20px 22px;
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: #fbfaf7;
+}
+
+.od-purpose h3 {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+.od-purpose p {
+    margin-top: 6px;
+    font-size: 13.5px;
+    line-height: 1.65;
+    color: var(--muted);
+}
+
+.od-photo {
+    position: relative;
+    border-radius: 18px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    box-shadow: 0 18px 44px rgb(45 8 12 / 0.16);
+}
+
+.od-photo img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    object-fit: cover;
+}
+
+.od-photo figcaption {
+    position: absolute;
+    inset: auto 0 0 0;
+    padding: 18px 18px 12px;
+    background: linear-gradient(180deg, transparent, rgb(20 2 4 / 0.82));
+    color: rgb(255 245 238 / 0.92);
+    font-size: 10.5px;
+    letter-spacing: 0.04em;
+}
+
+/* ── Base shared bits for objective panels ──────────────────────────────── */
+.od-objective {
+    margin-top: 34px;
+    border-radius: 16px;
+    font-size: 15px;
+}
+
+.od-objective .od-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.17em;
+    text-transform: uppercase;
+}
+
+.od-objective .od-text {
+    line-height: 1.72;
+}
+
+/* ═══ Design 1 — Maroon Statement (brand-refined current split) ═══════════ */
+.od-obj-1 {
+    display: grid;
+    grid-template-columns: minmax(200px, 0.6fr) minmax(0, 2fr);
+    align-items: start;
+    gap: 26px 48px;
+    padding: 30px 38px;
+    color: #fff;
+    border: 1px solid rgb(232 190 93 / 0.3);
+    background:
+        radial-gradient(120% 150% at 4% 0%, rgb(232 190 93 / 0.2) 0%, transparent 56%),
+        linear-gradient(180deg, #5c0d13 0%, #43070b 100%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08), 0 16px 40px rgb(45 8 12 / 0.18);
+}
+
+.od-obj-1 .od-label { color: var(--gold); }
+
+.od-obj-1-head {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-right: 28px;
+    border-right: 1px solid rgb(232 190 93 / 0.3);
+}
+
+.od-obj-1-head p {
+    font-size: 13px;
+    line-height: 1.55;
+    color: rgb(255 245 238 / 0.72);
+}
+
+.od-obj-1 .od-text {
+    color: rgb(255 245 238 / 0.94);
+}
+
+/* ═══ Design 2 — Swiss Objective (Swiss minimal, grid + single accent) ═══ */
+.od-obj-2 {
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    gap: 30px 44px;
+    align-items: start;
+    padding: 28px 34px;
+    background: var(--paper);
+    border-top: 2px solid var(--ink);
+    border-bottom: 2px solid var(--ink);
+}
+
+.od-obj-2-index {
+    font-size: clamp(44px, 5vw, 64px);
+    font-weight: 700;
+    letter-spacing: -0.05em;
+    line-height: 0.9;
+    color: var(--maroon);
+}
+
+.od-obj-2-rule {
+    width: 2px;
+    align-self: stretch;
+    background: var(--ink);
+}
+
+.od-obj-2 .od-label {
+    display: block;
+    color: var(--ink);
+    border-left: 6px solid var(--maroon);
+    padding-left: 12px;
+}
+
+.od-obj-2 .od-text {
+    max-width: 74ch;
+    color: #241d1a;
+    font-size: 15.5px;
+}
+
+/* ═══ Design 3 — Soft Clinical (soft-UI / neumorphism health pattern) ═════ */
+.od-obj-3 {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 26px 30px;
+    align-items: center;
+    padding: 30px 34px;
+    background: var(--cream);
+    border-radius: 22px;
+    border: 1px solid #eee9e0;
+    box-shadow:
+        -8px -8px 20px rgb(255 255 255 / 0.9),
+        10px 12px 26px rgb(57 30 22 / 0.18),
+        inset 0 1px 0 rgb(255 255 255 / 0.9);
+}
+
+.od-obj-3-badge {
+    display: grid;
+    place-items: center;
+    width: 78px;
+    height: 78px;
+    border-radius: 24px;
+    color: var(--gold-deep);
+    background: linear-gradient(145deg, #ffffff, #ece7de);
+    box-shadow:
+        inset 3px 3px 8px rgb(57 30 22 / 0.16),
+        inset -3px -3px 8px rgb(255 255 255 / 0.9);
+}
+
+.od-obj-3 .od-label { color: var(--maroon); }
+
+.od-obj-3 .od-text {
+    margin-top: 6px;
+    color: #463a33;
+}
+
+/* ═══ Design 4 — Editorial Motto (academic pull-quote) ═══════════════════ */
+.od-obj-4 {
+    max-width: 860px;
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+    padding: 30px 24px 10px;
+    background: transparent;
+}
+
+.od-obj-4-quote {
+    display: flex;
+    justify-content: center;
+    color: var(--gold-deep);
+}
+
+.od-obj-4 .od-label {
+    margin-top: 6px;
+    color: var(--maroon);
+}
+
+.od-obj-4-rule {
+    width: 72px;
+    height: 3px;
+    background: var(--gold);
+    margin: 16px auto 14px;
+    border-radius: 999px;
+}
+
+.od-obj-4 .od-text {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: clamp(17px, 2.1vw, 21px);
+    font-style: italic;
+    line-height: 1.8;
+    color: #33261f;
+    text-wrap: balance;
+}
+
+.od-obj-4-foot {
+    margin-top: 16px;
+    font-size: 10.5px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: #a08d80;
+}
+
+/* ═══ Design 5 — Mission Band (full-bleed maroon mission strip) ══════════ */
+.od-obj-5 {
+    width: 100vw;
+    margin-left: calc(50% - 50vw);
+    margin-top: 38px;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 40px;
+    padding: 34px clamp(28px, 6vw, 80px);
+    background:
+        radial-gradient(90% 160% at 8% 0%, rgb(232 190 93 / 0.16) 0%, transparent 55%),
+        linear-gradient(160deg, #370813, #5c0d13 60%, #43070b);
+    border-block: 1px solid rgb(232 190 93 / 0.4);
+    color: #fff;
+}
+
+.od-obj-5-icon {
+    display: grid;
+    place-items: center;
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    border: 1px solid rgb(232 190 93 / 0.55);
+    color: var(--gold);
+    background: rgb(232 190 93 / 0.08);
+}
+
+.od-obj-5 .od-label { color: var(--gold); }
+
+.od-obj-5-lead {
+    display: block;
+    margin-top: 2px;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgb(255 245 238 / 0.62);
+}
+
+.od-obj-5 .od-text {
+    margin-top: 8px;
+    color: rgb(255 245 238 / 0.94);
+    font-size: 15.5px;
+}
+
+.od-obj-5-mark {
+    font-family: Georgia, serif;
+    font-size: clamp(24px, 2.6vw, 36px);
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: transparent;
+    -webkit-text-stroke: 1px rgb(232 190 93 / 0.7);
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    user-select: none;
+    white-space: nowrap;
+}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media (max-width: 980px) {
+    .od-about { grid-template-columns: 1fr; gap: 28px; }
+    .od-caption { margin-top: 18px; }
+}
+
+@media (max-width: 900px) {
+    .od-obj-1,
+    .od-obj-2,
+    .od-obj-3,
+    .od-obj-5 { grid-template-columns: 1fr; }
+    .od-obj-1-head { border-right: 0; padding-right: 0; border-bottom: 1px solid rgb(232 190 93 / 0.3); padding-bottom: 18px; }
+    .od-obj-5-mark { display: none; }
+    .od-obj-5 { gap: 22px; }
+}
+
+@media (max-width: 700px) {
+    .od-stage, .od-caption { padding-left: 18px; padding-right: 18px; }
+    .od-obj-1, .od-obj-2, .od-obj-3 { padding: 24px 20px; }
+    .od-picker { padding: 10px 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .od-picker-group button { transition: none; }
+}

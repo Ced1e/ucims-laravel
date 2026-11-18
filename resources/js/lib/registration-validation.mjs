@@ -21,6 +21,18 @@ export function localToday() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
+
+/** Realistic human longevity cap for birth dates (110 years). */
+export const MAX_HUMAN_AGE = 110;
+export function minBirthYear() {
+    return new Date().getFullYear() - MAX_HUMAN_AGE;
+}
+/** Earliest accepted birthdate: exactly MAX_HUMAN_AGE years before today. */
+export function minBirthDate() {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - MAX_HUMAN_AGE);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
 export function normalizePhone(value) {
     // Accept spacing/dashes for readability, never silently turn letters into digits.
     return String(value ?? '').trim().replace(/[ ()-]/g,'');

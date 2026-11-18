@@ -72,6 +72,29 @@ if (app()->environment('local')) {
             'initialDesign' => max(1, min(15, (int) request('design', 1))),
         ]);
     });
+    Route::get('/previews/illness-statistics', function () {
+        return Inertia::render('previews/IllnessStatisticsDesigns');
+    });
+    Route::get('/previews/illness-statistics-2', function () {
+        return Inertia::render('previews/IllnessStatisticsDesigns2');
+    });
+    Route::get('/previews/illness-statistics-3', function () {
+        return Inertia::render('previews/IllnessStatisticsDesigns3');
+    });
+    Route::get('/previews/illness-statistics-4', function () {
+        return Inertia::render('previews/IllnessStatisticsDesigns4');
+    });
+    Route::get('/previews/illness-fonts', function () {
+        return Inertia::render('previews/IllnessFontPreview');
+    });
+    Route::get('/previews/illness-dropdowns', function () {
+        return Inertia::render('previews/IllnessDropdownPreview');
+    });
+    Route::get('/previews/objective-designs', function () {
+        return Inertia::render('previews/ObjectiveDesigns', [
+            'initialDesign' => max(1, min(5, (int) request('design', 1))),
+        ]);
+    });
     Route::get('/previews/queue-designs', function () {
         return Inertia::render('previews/QueueDesigns', [
             'initialDesign' => max(1, min(10, (int) request('design', 1))),
@@ -87,6 +110,7 @@ if (app()->environment('local')) {
             'initialDesign' => max(1, min(5, (int) request('design', 1))),
         ]);
     });
+    Route::get('/previews', fn () => Inertia::render('previews/DesignIndex'));
 }
 
 // Public waiting-room display.

@@ -1,5 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
 import AppLayout from '@/layouts/app-layout';
+import UCIMSSelect from '@/components/UCIMSSelect';
 
 export default function Edit({ consultation, patients }: { consultation: any; patients: any[] }) {
     const { data, setData, put, processing, errors } = useForm({
@@ -22,12 +23,12 @@ export default function Edit({ consultation, patients }: { consultation: any; pa
                 <form onSubmit={submit} className="space-y-4">
                     <div>
                         <label className="block text-xs font-bold uppercase text-[#333] mb-1">Select Patient</label>
-                        <select value={data.patient_id} onChange={e => setData('patient_id', e.target.value)} className="w-full p-2.5 border rounded-lg text-sm">
+                        <UCIMSSelect value={data.patient_id} onChange={e => setData('patient_id', e.target.value)} className="w-full">
                             <option value="">-- Choose Patient --</option>
                             {patients?.map(p => (
                                 <option key={p.user_id} value={p.user_id}>{p.firstname} {p.lastname}</option>
                             ))}
-                        </select>
+                        </UCIMSSelect>
                         {errors.patient_id && <div className="text-red-600 text-xs mt-1">{errors.patient_id}</div>}
                     </div>
 
@@ -44,11 +45,11 @@ export default function Edit({ consultation, patients }: { consultation: any; pa
 
                     <div>
                         <label className="block text-xs font-bold uppercase text-[#333] mb-1">Status</label>
-                        <select value={data.status} onChange={e => setData('status', e.target.value)} className="w-full p-2.5 border rounded-lg text-sm">
+                        <UCIMSSelect value={data.status} onChange={e => setData('status', e.target.value)} className="w-full">
                             <option value="pending">Pending</option>
                             <option value="completed">Completed</option>
                             <option value="cancelled">Cancelled</option>
-                        </select>
+                        </UCIMSSelect>
                     </div>
 
                     <button type="submit" disabled={processing} className="w-full bg-[#760000] text-white py-2.5 rounded-lg font-semibold text-sm">

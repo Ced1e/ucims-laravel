@@ -103,7 +103,9 @@ it('searches the ICD-10 catalogue by disease name', function () {
 
     expect($rows)->not->toBeEmpty()
         ->and($rows[0]['code'])->toBe('J06.9')
-        ->and($rows[0]['name'])->toContain('upper respiratory');
+        ->and(strtolower($rows[0]['name']))->toContain('upper respiratory')
+        ->and($rows[0]['standard'])->toBeTrue()
+        ->and($rows[0]['official'])->toContain('upper respiratory');
 });
 
 it('searches the ICD-10 catalogue by code', function () {
