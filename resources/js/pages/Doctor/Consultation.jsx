@@ -140,7 +140,6 @@ function ConsultRow({ item, onExamine, onQuickComplete }) {
 // Illness / ICD-10 lookup (search by disease name or by code)
 // ─────────────────────────────────────────────────────────────
 function IllnessSearch({ onPick }) {
-    const [mode, setMode] = useState('word');
     const [query, setQuery] = useState('');
     const [results, setResults] = useState([]);
     const [open, setOpen] = useState(false);
@@ -159,7 +158,7 @@ function IllnessSearch({ onPick }) {
         const timer = setTimeout(() => {
             setSearching(true);
             axios
-                .get('/api/v1/icd10', { params: { q: text, by: mode }, timeout: 15000 })
+                .get('/api/v1/icd10', { params: { q: text, by: 'any' }, timeout: 15000 })
                 .then((res) => {
                     if (cancelled) return;
                     setResults(res.data);
@@ -177,7 +176,7 @@ function IllnessSearch({ onPick }) {
             cancelled = true;
             clearTimeout(timer);
         };
-    }, [query, mode]);
+    }, [query]);
 
     function pick(item) {
         onPick(item);
@@ -189,28 +188,13 @@ function IllnessSearch({ onPick }) {
     return (
         <div className="field" style={{ marginBottom: 12 }}>
             <label>Standard Condition / ICD-10</label>
-            <div style={{ display: 'flex', gap: 8 }}>
-                <UCIMSSelect
-                    aria-label="Search illnesses by"
-                    value={mode}
-                    onChange={(e) => {
-                        setMode(e.target.value);
-                        setResults([]);
-                        setOpen(false);
-                    }}
-                    style={{ maxWidth: 190 }}
-                >
-                    <option value="word">Disease / condition</option>
-                    <option value="code">ICD-10 code</option>
-                </UCIMSSelect>
-                <input
-                    aria-label={mode === 'code' ? 'Search by ICD-10 code' : 'Search by disease name'}
-                    placeholder={mode === 'code' ? 'e.g. J06.9' : 'e.g. upper respiratory infection'}
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    onFocus={() => results.length && setOpen(true)}
-                />
-            </div>
+            <input
+                aria-label="Search by condition name or ICD-10 code"
+                placeholder="Search condition or ICD-10 code (e.g. upper respiratory infection, J06.9)"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => results.length && setOpen(true)}
+            />
             {searching && <div className="text-xs text-muted mt4">Searching…</div>}
             {open && !searching && (
                 <div
@@ -227,7 +211,7 @@ function IllnessSearch({ onPick }) {
                 >
                     {!results.length && (
                         <div className="text-sm text-muted" style={{ padding: '10px 12px' }}>
-                            No matching illness. Try another word or code.
+                            No matching condition or code. Try different words.
                         </div>
                     )}
                     {results.map((item) => (
@@ -263,8 +247,8 @@ function IllnessSearch({ onPick }) {
                 </div>
             )}
             <div className="text-xs text-muted mt4">
-                Picking a standard result fills the standardized condition name and its ICD-10 code below, so the
-                illness statistics stay consistent. You can still edit them.
+                Type a condition name or an ICD-10 code — picking a result fills the standardized condition name and its
+                ICD-10 code below, so the illness statistics stay consistent. You can still edit them.
             </div>
         </div>
     );
@@ -1364,18 +1348,32 @@ function ReviewMedCertModal({ cert, onClose, onReleased, showToast }) {
 
     const issuedDate = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 
-    async function handleRelease() {
+    const validateForm = () => {
         if (form.exam_date && (!isCalendarDate(form.exam_date) || form.exam_date > localToday())) {
-            showToast('Enter a valid examination date (cannot be in the future).', 'error'); return;
+            showToast('Enter a valid examination date (cannot be in the future).', 'error');
+            return false;
         }
         if (!form.license_no.trim()) {
-            showToast('Please enter the physician license number before releasing.', 'error');
-            return;
+            showToast('Please enter the physician license number first.', 'error');
+            return false;
         }
         if (!form.findings.trim()) {
-            showToast('Please fill in the findings blank before releasing.', 'error');
-            return;
+            showToast('Please fill in the findings blank first.', 'error');
+            return false;
         }
+        return true;
+    };
+
+    function handlePreview() {
+        // Print preview only — opens the certificate for viewing/printing WITHOUT
+        // releasing it or completing the visit. The request stays in the queue.
+        if (!validateForm()) return;
+        printCertificate(cert, patient, form);
+        showToast('Print preview opened. Nothing has been released yet.', 'success');
+    }
+
+    async function handleRelease() {
+        if (!validateForm()) return;
         setSaving(true);
         try {
             await axios.put(`/api/v1/medical-certificates/${cert.certificate_id}`, {
@@ -1390,7 +1388,7 @@ function ReviewMedCertModal({ cert, onClose, onReleased, showToast }) {
                 await axios.put(`/api/v1/queues/${cert.queue_id}`, { status: 'done', time_out: nowTime() });
             }
             printCertificate(cert, patient, form);
-            showToast('Certificate released and sent to print.');
+            showToast('Certificate confirmed. Print window opened.');
             onReleased();
         } catch (e) {
             showToast(requestError(e, 'Failed to release the certificate.'), 'error');
@@ -1409,11 +1407,14 @@ function ReviewMedCertModal({ cert, onClose, onReleased, showToast }) {
                     <i className="bi bi-file-medical"></i> Medical Certificate Processing
                 </div>
                 <div className="alert alert-info text-sm mb16">
-                    <i className="bi bi-info-circle"></i> <b>Status:</b> Visit is marked complete. Fill out the blanks below. The document will
-                    be formatted properly with the USeP header upon clicking "Release &amp; Print".
+                    <i className="bi bi-info-circle"></i> <b>Status:</b> Visit is marked complete. Fill out the blanks below. The document
+                    opens with the USeP header.
                     <div className="text-xs mt4" style={{ opacity: 0.85 }}>
-                        In the print dialog, switch off <b>Headers and&nbsp;footers</b> so the browser's date and
-                        &ldquo;about:blank&rdquo; line stay off the page. Chrome remembers that choice.
+                        <b>Preview</b> opens the certificate without changing anything &mdash; cancel the print dialog any time and nothing
+                        is lost. <b>Confirm Release</b> marks the certificate as released and the visit complete, then opens the print
+                        window &mdash; only click it once the patient has their copy in hand (or is ready to print right now).
+                        <br />In the print dialog, switch off <b>Headers and&nbsp;footers</b> so the browser's date and &ldquo;about:blank&rdquo;
+                        line stay off the page. Chrome remembers that choice.
                     </div>
                 </div>
 
@@ -1481,11 +1482,14 @@ function ReviewMedCertModal({ cert, onClose, onReleased, showToast }) {
                 </p>
 
                 <div className="modal-footer">
-                    <button className="btn btn-outline" onClick={onClose}>
+                    <button className="btn btn-outline" disabled={saving} onClick={onClose}>
                         Cancel
                     </button>
+                    <button className="btn btn-outline" style={{ flex: 1 }} disabled={saving} onClick={handlePreview}>
+                        <i className="bi bi-eye"></i> Preview
+                    </button>
                     <button className="btn btn-primary" style={{ flex: 1 }} disabled={saving} onClick={handleRelease}>
-                        {saving ? 'Releasing…' : <><i className="bi bi-printer"></i> Release &amp; Print</>}
+                        {saving ? 'Confirming...' : <><i className="bi bi-printer"></i> Confirm Release &amp; Print</>}
                     </button>
                 </div>
             </div>
