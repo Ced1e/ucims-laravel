@@ -1,5 +1,5 @@
 import UCIMSSelect from '@/components/UCIMSSelect';
-import { ChartNoAxesCombined, Users, ShieldCheck, ClipboardCheck, PanelLeftOpen, PanelLeftClose, LogOut, ChevronDown, Check, Stethoscope, Hash } from 'lucide-react';
+import { ChartNoAxesCombined, Users, ShieldCheck, ClipboardCheck, PanelLeftOpen, PanelLeftClose, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DetailSkeleton, ListSkeleton, TableSkeletonRows, MetricSkeleton, ChartSkeleton } from '@/components/data-skeletons';
 import { localToday, validName, isCalendarDate, minBirthDate, minBirthYear } from '@/lib/registration-validation.mjs';
@@ -71,7 +71,11 @@ let chartJsPromise = null;
 
 // Diagnoses don't carry a body system, so derive one from the ICD-10 code
 // prefix. Text-only diagnoses land in "Not classified".
-const CHAPTER_ORDER = ['Infectious', 'Neoplasms', 'Blood & immunity', 'Endocrine', 'Mental health', 'Nervous', 'Eye & ear', 'Circulatory', 'Respiratory', 'Digestive', 'Skin', 'Musculoskeletal', 'Genitourinary', 'Pregnancy', 'Perinatal', 'Congenital', 'Symptoms & signs', 'Injury', 'Health services', 'Not classified', 'Other'];
+const CHAPTER_ORDER = ['Infectious', 'Neoplasms', 'Blood & immunity', 'Endocrine', 'Nervous', 'Eye & ear', 'Circulatory', 'Respiratory', 'Digestive', 'Skin', 'Musculoskeletal', 'Genitourinary', 'Pregnancy', 'Perinatal', 'Congenital', 'Symptoms & signs', 'Injury', 'Not classified', 'Other'];
+
+// Out of scope for the clinic's illness statistics: mental health (F-codes)
+// and health services / factors influencing health status (Z-codes).
+const ILLNESS_EXCLUDED_CHAPTERS = new Set(['Mental health', 'Health services']);
 
 function chapterFor(code) {
     const c = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -181,15 +185,15 @@ function AnalyticsSection({ showToast }) {
     const [staffFilter, setStaffFilter] = useState('');
     const [groupBy, setGroupBy] = useState('day');
     const [illnessQ, setIllnessQ] = useState('');
-    const [illnessMode, setIllnessMode] = useState('word');
+    const [illnessSystem, setIllnessSystem] = useState('All');
     const [conditions, setConditions] = useState([]);
     // The full active clinical staff list for the "Handled By" filter, fetched
 // --------------------------------------------------
     // in the loaded rows.
     const [staffOptions, setStaffOptions] = useState([]);
-    // All systems are shown by default so the full body-system tree is visible
-    // before the clinic has recorded much; the pill toggle hides the empty ones.
-    const [showEmptySystems, setShowEmptySystems] = useState(true);
+    // All body-system chips are shown for systems with records; empty systems
+    // join the chip row only while the toggle is on.
+    const [showEmptySystems, setShowEmptySystems] = useState(false);
     // typeof window guard: SSR renders this module in Node too.
     const [chartReady, setChartReady] = useState(() => typeof window !== 'undefined' && !!window.Chart);
 
@@ -309,6 +313,8 @@ function AnalyticsSection({ showToast }) {
             if (!resolved && !r.diagnosis && !r.icd) return;
 
             const code = String(resolved?.code || r.icd || '').toUpperCase();
+            const chapter = resolved?.chapter || chapterFor(code);
+            if (ILLNESS_EXCLUDED_CHAPTERS.has(chapter)) return;
             const key = resolved?.key || (code ? `code:${code}` : `text:${r.diagnosis.toLowerCase().replace(/\s+/g, ' ')}`);
             const name = resolved?.label || r.diagnosis || r.icd;
             const month = monthKey(r.date);
@@ -317,7 +323,7 @@ function AnalyticsSection({ showToast }) {
                 code,
                 name,
                 count: 0,
-                chapter: resolved?.chapter || chapterFor(code),
+                chapter,
                 standard: resolved?.standard ?? false,
                 months: {},
                 variants: {},
@@ -369,56 +375,22 @@ function AnalyticsSection({ showToast }) {
     // Body-system tree for the Tabbed Explorer detail pane, plus selection
     // state (kept across searches when the condition still matches).
     const [illnessTab, setIllnessTab] = useState('overview');
-    const [illnessOpen, setIllnessOpen] = useState(null);
     const [activeIllnessKey, setActiveIllnessKey] = useState(null);
 
-    const [illnessSearchOpen, setIllnessSearchOpen] = useState(false);
-
-    // Close the ICD-10 / disease toggle popover on outside click and Escape.
-    const illnessModeRef = useRef(null);
-
-    useEffect(() => {
-        if (!illnessSearchOpen) return;
-
-        const onDown = (e) => {
-            if (illnessModeRef.current && !illnessModeRef.current.contains(e.target)) {
-                setIllnessSearchOpen(false);
-            }
-        };
-        const onKey = (e) => {
-            if (e.key === 'Escape') setIllnessSearchOpen(false);
-        };
-
-        document.addEventListener('mousedown', onDown);
-        document.addEventListener('keydown', onKey);
-
-        return () => {
-            document.removeEventListener('mousedown', onDown);
-            document.removeEventListener('keydown', onKey);
-        };
-    }, [illnessSearchOpen]);
-
-    // The tree is pre-populated from the standardized catalogue: every system
-    // and condition exists before a visit references it, and recorded rows
-    // replace the placeholder with live counts. Matching runs over both the
-    // standardized aliases and the exact wording staff recorded.
+    // Ranked explorer: recorded conditions drive the list and the system
+    // chips; catalogue placeholders join only while searching or when the
+    // picked system has no records yet, so the default view stays focused
+    // on real diagnoses.
     const catalogueIndex = useMemo(
         () => new Map(conditions.map((entry) => [entry.key, entry])),
         [conditions]
     );
 
-    const illnessNodes = useMemo(() => {
-        const nodes = illnesses.rows.map((row) => ({
-            ...row,
-            recorded: true,
-            haystack: `${row.haystack} ${(catalogueIndex.get(row.key)?.aliases || []).join(' ')}`.toLowerCase(),
-        }));
-        const known = new Set(nodes.map((row) => row.key));
-
-        conditions.forEach((entry) => {
-            if (known.has(entry.key)) return;
-
-            nodes.push({
+    const cataloguePlaceholders = useMemo(() => {
+        const recorded = new Set(illnesses.rows.map((row) => row.key));
+        return conditions
+            .filter((entry) => !recorded.has(entry.key) && !ILLNESS_EXCLUDED_CHAPTERS.has(entry.chapter || 'Not classified'))
+            .map((entry) => ({
                 key: entry.key,
                 code: entry.code,
                 name: entry.label,
@@ -428,61 +400,71 @@ function AnalyticsSection({ showToast }) {
                 percent: 0,
                 months: {},
                 variants: [],
-                recorded: false,
                 haystack: `${entry.label} ${entry.code} ${(entry.aliases || []).join(' ')}`.toLowerCase(),
-            });
+            }));
+    }, [conditions, illnesses.rows]);
+
+    const searchNeedle = illnessQ.trim().toLowerCase();
+    const searching = searchNeedle.length > 0;
+
+    const rankByKey = useMemo(() => new Map(illnesses.rows.map((row, index) => [row.key, index + 1])), [illnesses.rows]);
+
+    // Chips show recorded systems, biggest workload first; empty systems join
+    // the row only while the toggle is on.
+    const illnessSystems = useMemo(() => {
+        const bySystem = new Map();
+        illnesses.rows.forEach((row) => {
+            const name = row.chapter || 'Not classified';
+            const current = bySystem.get(name) || { name, conditions: 0, cases: 0 };
+            current.conditions += 1;
+            current.cases += row.count;
+            bySystem.set(name, current);
         });
+        return [...bySystem.values()].sort(
+            (a, b) => b.cases - a.cases || a.name.localeCompare(b.name)
+        );
+    }, [illnesses.rows]);
 
-        return nodes.sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
-    }, [illnesses.rows, conditions, catalogueIndex]);
+    const emptySystemNames = useMemo(() => {
+        const seen = new Set(illnessSystems.map((system) => system.name));
+        const catalogueSystems = new Set(conditions.map((entry) => entry.chapter || 'Not classified'));
+        return [...catalogueSystems]
+            .filter((name) => !seen.has(name) && !ILLNESS_EXCLUDED_CHAPTERS.has(name))
+            .sort((a, b) => (CHAPTER_ORDER.indexOf(a) - CHAPTER_ORDER.indexOf(b)));
+    }, [illnessSystems, conditions]);
 
-    const searching = illnessQ.trim().length > 0;
+    const visibleChips = showEmptySystems
+        ? [...illnessSystems, ...emptySystemNames.map((name) => ({ name, conditions: 0, cases: 0 }))]
+        : illnessSystems;
 
     const visibleNodes = useMemo(() => {
-        const needle = illnessQ.trim().toLowerCase();
-        if (!needle) return illnessNodes;
+        const inSystem = (row) => illnessSystem === 'All' || (row.chapter || 'Not classified') === illnessSystem;
+        const matchesSearch = (row) => {
+            if (!searchNeedle) return true;
+            if (row.haystack.includes(searchNeedle)) return true;
+            if (String(row.code || '').toLowerCase().includes(searchNeedle)) return true;
+            const aliases = catalogueIndex.get(row.key)?.aliases;
+            return Array.isArray(aliases) && aliases.join(' ').toLowerCase().includes(searchNeedle);
+        };
+        let list = illnesses.rows.filter((row) => inSystem(row) && matchesSearch(row));
+        // Placeholders appear while searching or when the picked system has no
+        // records yet — never in the default view.
+        const systemHasRecords = illnesses.rows.some(inSystem);
+        if (searching || (illnessSystem !== 'All' && !systemHasRecords) || !illnesses.rows.length) {
+            const placeholders = cataloguePlaceholders.filter((row) => inSystem(row) && matchesSearch(row));
+            list = [...list, ...placeholders].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+        }
+        return list;
+    }, [illnesses.rows, cataloguePlaceholders, illnessSystem, searchNeedle, searching, catalogueIndex]);
 
-        return illnessNodes.filter((row) =>
-            illnessMode === 'code'
-                ? String(row.code || '').toLowerCase().includes(needle)
-                : row.haystack.includes(needle)
-        );
-    }, [illnessNodes, illnessQ, illnessMode]);
-
-    const illnessTree = useMemo(() => {
-        const groups = new Map();
-        visibleNodes.forEach((row) => {
-            const name = row.chapter || 'Not classified';
-            groups.set(name, [...(groups.get(name) || []), row]);
-        });
-
-        return [...groups.entries()]
-            .map(([name, items]) => ({
-                name,
-                items: [...items].sort(
-                    (a, b) => b.count - a.count || Number(b.recorded) - Number(a.recorded) || a.name.localeCompare(b.name)
-                ),
-                count: items.reduce((sum, row) => sum + row.count, 0),
-            }))
-            .sort((a, b) => b.count - a.count || (CHAPTER_ORDER.indexOf(a.name) - CHAPTER_ORDER.indexOf(b.name)));
-    }, [visibleNodes]);
-
-    const recordedSystems = illnessTree.filter((group) => group.count > 0);
-    const emptySystems = illnessTree.filter((group) => group.count === 0);
-    // Every system is visible by default; the footer pill hides systems that
-    // have no completed records yet. Searching always reveals the matches.
-    const treeSystems = showEmptySystems || searching || !illnesses.rows.length ? illnessTree : recordedSystems;
     const treeReady = conditions.length > 0 || illnesses.rows.length > 0;
 
-    const expandedSystems = illnessOpen ?? (searching
-        ? illnessTree.map((group) => group.name)
-        : (treeSystems[0] ? [treeSystems[0].name] : []));
     const activeIllness = visibleNodes.find((row) => row.key === activeIllnessKey)
-        ?? visibleNodes.find((row) => row.recorded)
+        ?? visibleNodes.find((row) => row.count > 0)
         ?? visibleNodes[0]
         ?? null;
-    const activeIllnessIndex = activeIllness && activeIllness.recorded
-        ? illnesses.rows.findIndex((row) => row.key === activeIllness.key) + 1
+    const activeIllnessIndex = activeIllness && activeIllness.count
+        ? (rankByKey.get(activeIllness.key) ?? 0)
         : 0;
     const activeMax = illnesses.rows[0]?.count ?? 1;
     const recordMonths = useMemo(
@@ -664,79 +646,30 @@ function AnalyticsSection({ showToast }) {
             <div className="card canvas-report-panel" style={{ marginBottom: 20 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12, flexWrap: 'wrap', borderBottom: '2px solid var(--border)', marginBottom: 16, paddingBottom: 10 }}>
                     <div>
-                        <div className="card-title" style={{ marginBottom: 0 }}>
+                        <h2 className="card-title" style={{ marginBottom: 0 }}>
                             Illness Statistics
-                        </div>
+                        </h2>
                         <p className="text-xs text-muted" style={{ margin: '4px 0 0' }}>
                             Conditions are grouped into standardized names and ICD-10 codes, so spelling variations count once.
                         </p>
                     </div>
-                    <div className="ill-controls">
-                        <div
-                            className="ill-mode-root"
-                            ref={illnessModeRef}
-                            onKeyDown={(e) => {
-                                if (!illnessSearchOpen) return;
-                                if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
-                                e.preventDefault();
-                                const items = Array.from(illnessModeRef.current.querySelectorAll('.ill-mode-item'));
-                                if (!items.length) return;
-                                const current = items.indexOf(document.activeElement);
-                                const delta = e.key === 'ArrowDown' ? 1 : -1;
-                                const next = items[(current + delta + items.length) % items.length];
-                                next.focus();
-                            }}
-                        >
-                            <button
-                                type="button"
-                                className="ill-mode-btn"
-                                aria-haspopup="listbox"
-                                aria-expanded={illnessSearchOpen}
-                                onClick={() => setIllnessSearchOpen((v) => !v)}
-                            >
-                                <span className="ill-mode-value">{illnessMode === 'code' ? 'ICD-10 code' : 'Disease / condition'}</span>
-                                <ChevronDown size={16} aria-hidden="true" className={illnessSearchOpen ? 'is-open' : ''} />
-                            </button>
-                            {illnessSearchOpen && (
-                                <div className="ill-mode-menu" role="listbox" aria-label="Search illnesses by">
-                                    {[{ id: 'word', label: 'Disease / condition' }, { id: 'code', label: 'ICD-10 code' }].map((option) => (
-                                        <button
-                                            key={option.id}
-                                            type="button"
-                                            role="option"
-                                            aria-selected={illnessMode === option.id}
-                                            className={`ill-mode-item${illnessMode === option.id ? ' is-active' : ''}`}
-                                            onClick={() => { setIllnessMode(option.id); setIllnessSearchOpen(false); }}
-                                        >
-                                            <span className="ill-mode-icon">
-                                                {option.id === 'code' ? <Hash size={13} aria-hidden="true" /> : <Stethoscope size={13} aria-hidden="true" />}
-                                            </span>
-                                            <span className="ill-mode-label">{option.label}</span>
-                                            {illnessMode === option.id && <Check size={14} aria-hidden="true" />}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-
-                        <input
-                            type="search"
-                            aria-label={illnessMode === 'code' ? 'Search illnesses by ICD-10 code' : 'Search illnesses by disease name'}
-                            placeholder={illnessMode === 'code' ? 'Search code, e.g. J06.9' : 'Search condition, e.g. cough'}
-                            value={illnessQ}
-                            onChange={(e) => setIllnessQ(e.target.value)}
-                            style={{ minWidth: 248, flex: '0 0 auto' }}
-                        />
-                    </div>
+                    <input
+                        type="search"
+                        className="illx-search"
+                        aria-label="Search condition or ICD-10 code"
+                        placeholder="Search a condition or ICD-10 code"
+                        value={illnessQ}
+                        onChange={(e) => setIllnessQ(e.target.value)}
+                    />
                 </div>
 
-                <div className="ill-kpi">
+                <div className="illx-kpis">
                     <div className="stat-card">
                         <div className="stat-num">{loading ? <MetricSkeleton /> : illnesses.unique}</div>
                         <div className="stat-label">Unique Conditions</div>
                     </div>
-                    <div className="stat-card">
-                        <div className="stat-num" style={{ color: 'var(--gold)' }}>{loading ? <MetricSkeleton /> : illnesses.total}</div>
+                    <div className="stat-card stat-gold">
+                        <div className="stat-num">{loading ? <MetricSkeleton /> : illnesses.total}</div>
                         <div className="stat-label">Diagnoses Recorded</div>
                     </div>
                     <div className="stat-card">
@@ -746,7 +679,7 @@ function AnalyticsSection({ showToast }) {
                         </div>
                     </div>
                     <div className="stat-card">
-                        <div className="ill-most-common" title={topIllness ? topIllness.name : undefined}>
+                        <div className="illx-most-common" title={topIllness ? topIllness.name : undefined}>
                             {loading ? <MetricSkeleton /> : topIllness ? topIllness.name : '-'}
                         </div>
                         <div className="stat-label">
@@ -758,129 +691,98 @@ function AnalyticsSection({ showToast }) {
                 {loading ? (
                     <DetailSkeleton />
                 ) : treeReady && (
-                    <div className="ill-explorer">
-                        <aside className="ill-tree" aria-label="Conditions grouped by body system">
-                            {treeSystems.map((group, index) => {
-                                const expanded = expandedSystems.includes(group.name);
-                                const groupId = `ill-group-${group.name.replace(/\s+/g, '-')}`;
+                    <>
+                    <div className="illx-chips" role="group" aria-label="Filter conditions by body system">
+                        <button
+                            type="button"
+                            className={`illx-chip${illnessSystem === 'All' ? ' is-active' : ''}`}
+                            aria-pressed={illnessSystem === 'All'}
+                            onClick={() => setIllnessSystem('All')}
+                        >
+                            All systems <b>{illnesses.unique}</b>
+                        </button>
+                        {visibleChips.map((chip) => (
+                            <button
+                                key={chip.name}
+                                type="button"
+                                className={`illx-chip${illnessSystem === chip.name ? ' is-active' : ''}${chip.cases ? '' : ' is-empty'}`}
+                                aria-pressed={illnessSystem === chip.name}
+                                onClick={() => setIllnessSystem(chip.name)}
+                            >
+                                {chip.name} <b>{chip.conditions}</b>
+                            </button>
+                        ))}
+                        {emptySystemNames.length > 0 && (
+                            <label className="illx-toggle">
+                                <input
+                                    type="checkbox"
+                                    checked={showEmptySystems}
+                                    onChange={(e) => setShowEmptySystems(e.target.checked)}
+                                />
+                                Show empty systems
+                            </label>
+                        )}
+                    </div>
 
-                                return (
-                                    <div
-                                        key={group.name}
-                                        className={`ill-group${group.count ? '' : ' is-empty'}`}
-                                        style={{ animationDelay: `${Math.min(index, 10) * 24}ms` }}
-                                    >
-                                        <button
-                                            type="button"
-                                            className={`ill-grouphead${group.count ? '' : ' is-empty'}`}
-                                            aria-expanded={expanded}
-                                            aria-controls={groupId}
-                                            id={`${groupId}-head`}
-                                            onClick={() => setIllnessOpen(expandedSystems.includes(group.name)
-                                                ? expandedSystems.filter((name) => name !== group.name)
-                                                : [...(illnessOpen ?? expandedSystems), group.name])}
-                                        >
-                                            <ChevronDown size={14} aria-hidden="true" className={expanded ? 'is-open' : ''} />
-                                            <span>{group.name}</span>
-                                            <b>{group.count}</b>
-                                        </button>
-                                        {expanded && (
-                                            <ul className="ill-items" id={groupId} role="group" aria-labelledby={`${groupId}-head`}>
-                                                {group.items.map((row) => {
-                                                    const selected = activeIllness && row.key === activeIllness.key;
-
-                                                    return (
-                                                        <li key={row.key}>
-                                                            <button
-                                                                type="button"
-                                                                className={`ill-item${selected ? ' is-selected' : ''}${row.count ? '' : ' is-empty'}`}
-                                                                aria-current={selected ? 'true' : undefined}
-                                                                onClick={() => setActiveIllnessKey(row.key)}
-                                                            >
-                                                                <span
-                                                                    className="ill-item-name"
-                                                                    title={row.standard
-                                                                        ? `${row.name}${row.count ? '' : ' - no completed record yet'}`
-                                                                        : `${row.name} - not in the standardized catalogue`}
-                                                                >
-                                                                    {!row.standard && <i className="ill-item-dot" aria-hidden="true" />}
-                                                                    {row.name}
-                                                                </span>
-                                                                <span className="ill-item-bar" aria-hidden="true">
-                                                                    <span style={{ width: row.count && activeMax ? `${Math.max(4, (row.count / activeMax) * 100)}%` : '0%' }} />
-                                                                </span>
-                                                                <em>{row.count}</em>
-                                                            </button>
-                                                        </li>
-                                                    );
-                                                })}
-                                            </ul>
-                                        )}
-                                    </div>
-                                );
-                            })}
-                            {!treeSystems.length && (
-                                <p role="status" className="ill-note">
-                                    {searching ? 'No condition matches this search.' : 'No conditions in the catalogue yet.'}
+                    <div className="illx-main">
+                        <div className="illx-list" aria-label="Conditions ranked by recorded cases">
+                            {!visibleNodes.length && (
+                                <p role="status" className="illx-empty">
+                                    {searching ? 'Nothing matches that search.' : 'No conditions in the catalogue yet.'}
                                 </p>
                             )}
-                            <div className="ill-tree-foot">
-                                <p>
-                                    {visibleNodes.filter((row) => row.recorded).length} condition{visibleNodes.filter((row) => row.recorded).length === 1 ? '' : 's'} with records
-                                    {' - '}{illnesses.total} diagnoses
-                                    {' - '}{recordedSystems.length} system{recordedSystems.length === 1 ? '' : 's'} with records
-                                </p>
-                                {emptySystems.length > 0 && !searching && !!illnesses.rows.length && (
-                                    <div className={`ill-tree-toggle${showEmptySystems ? ' is-on' : ''}`}>
-                                        <span className="ill-tree-toggle-copy">
-                                            Show systems without records
-                                            <b aria-hidden="true">{emptySystems.length}</b>
+                            {visibleNodes.map((row) => {
+                                const selected = activeIllness && row.key === activeIllness.key;
+                                const rank = row.count > 0 ? rankByKey.get(row.key) : null;
+                                return (
+                                    <button
+                                        key={row.key}
+                                        type="button"
+                                        aria-current={selected ? 'true' : undefined}
+                                        className={`illx-row${selected ? ' is-selected' : ''}${row.count ? '' : ' is-unrecorded'}`}
+                                        onClick={() => setActiveIllnessKey(row.key)}
+                                    >
+                                        <span className="illx-rank">{rank ? `#${rank}` : '-'}</span>
+                                        <span className="illx-rowmain">
+                                            <span className="illx-name" title={row.name}>
+                                                <span className="illx-name-text">{row.name}</span>
+                                                {row.code && <span className="illx-code">{row.code}</span>}
+                                            </span>
+                                            <span className="illx-bar" aria-hidden="true">
+                                                <span style={{ width: row.count && activeMax ? `${Math.max(4, (row.count / activeMax) * 100)}%` : '0%' }} />
+                                            </span>
                                         </span>
-                                        <button
-                                            type="button"
-                                            role="switch"
-                                            aria-checked={showEmptySystems}
-                                            aria-label={`Show ${emptySystems.length} body system${emptySystems.length === 1 ? '' : 's'} without records`}
-                                            title={showEmptySystems ? 'Hide systems without records' : 'Show systems without records'}
-                                            className="ill-switch"
-                                            onClick={() => setShowEmptySystems((value) => !value)}
-                                        >
-                                            <span className="ill-switch-thumb" aria-hidden="true" />
-                                        </button>
-                                    </div>
-                                )}
-                                {!illnesses.rows.length && (
-                                    <p className="ill-tree-hint">
-                                        No diagnosis has been recorded for the current filters - the full catalogue is shown.
-                                    </p>
-                                )}
-                            </div>
-                        </aside>
+                                        <span className="illx-n">
+                                            {row.count}
+                                            <small>{row.count ? `${Math.round((row.count / illnesses.total) * 100)}%` : 'no records'}</small>
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
 
-                        <section className="ill-detail" aria-live="polite">
+                        <aside className="illx-detail" aria-live="polite">
                             {activeIllness ? (
                                 <>
-                                    <div className="ill-detail-head">
-                                        <div>
-                                            <div className="ill-badges">
-                                                <span className="ill-chapter-pill">{activeIllness.chapter}</span>
-                                                <span className={`ill-std-pill${activeIllness.standard ? '' : ' is-unmapped'}`}>
-                                                    {activeIllness.standard ? 'Standardized' : 'Not standardized'}
-                                                </span>
-                                            </div>
-                                            <h3 className="ill-title">{activeIllness.name}</h3>
+                                    <div className="illx-detail-head">
+                                        <div className="illx-badges">
+                                            <span className="illx-tag">{activeIllness.chapter}</span>
+                                            <span className={`illx-tag${activeIllness.standard ? '' : ' is-unmapped'}`}>
+                                                {activeIllness.standard ? 'Standardized' : 'Not standardized'}
+                                            </span>
                                         </div>
-                                        <span className="ill-code">{activeIllness.code || '-'}</span>
+                                        <span className="illx-code-chip">{activeIllness.code || '-'}</span>
                                     </div>
+                                    <h3 className="illx-title">{activeIllness.name}</h3>
 
-                                    <div className="ill-stat-grid">
-                                        <div><strong>{activeIllness.count}</strong><span>cases</span></div>
-                                        <div><strong>{activeShare}%</strong><span>of filtered</span></div>
-                                        <div><strong>{activeIllnessIndex ? `#${activeIllnessIndex}` : '-'}</strong><span>rank by volume</span></div>
+                                    <div className="illx-stat-grid">
+                                        <div><b>{activeIllness.count}</b><span>cases</span></div>
+                                        <div><b>{activeShare}%</b><span>of all diagnoses</span></div>
+                                        <div><b>{activeIllnessIndex ? `#${activeIllnessIndex}` : '-'}</b><span>rank by volume</span></div>
                                     </div>
 
                                     <div
-                                        className="ill-tabs"
+                                        className="illx-tabs"
                                         role="tablist"
                                         aria-label="Condition detail sections"
                                         onKeyDown={(e) => {
@@ -903,54 +805,54 @@ function AnalyticsSection({ showToast }) {
                                                 className={illnessTab === name ? 'is-active' : ''}
                                                 onClick={() => setIllnessTab(name)}
                                             >
-                                                {name === 'overview' ? 'Overview' : name === 'trend' ? 'Month-by-month' : `Same system (${sameSystem.length})`}
+                                                {name === 'overview' ? 'Overview' : name === 'trend' ? 'Month by month' : `Same system (${sameSystem.length})`}
                                             </button>
                                         ))}
                                     </div>
 
-                                    <div className="ill-tabpanels">
+                                    <div className="illx-tabpanels">
                                         {illnessTab === 'overview' && (
                                             <div role="tabpanel" id="ill-tab-panel-overview" aria-labelledby="ill-tab-overview">
-                                                <div className="ill-block">
-                                                    <div className="ill-block-head"><span>Share of every diagnosis recorded</span><span>{activeShare}%</span></div>
-                                                    <span className="ill-bar" aria-hidden="true"><span style={{ width: activeIllness.count && activeMax ? `${Math.max(4, (activeIllness.count / activeMax) * 100)}%` : '0%' }} /></span>
+                                                <div className="illx-block">
+                                                    <div className="illx-block-head"><span>Share of every diagnosis</span><span>{activeShare}%</span></div>
+                                                    <span className="illx-bigbar" aria-hidden="true"><span style={{ width: activeIllness.count && activeMax ? `${Math.max(4, (activeIllness.count / activeMax) * 100)}%` : '0%' }} /></span>
                                                 </div>
-                                                <div className="ill-block">
-                                                    <div className="ill-block-head"><span>Quick takeaway</span></div>
+                                                <div className="illx-block">
+                                                    <div className="illx-block-head"><span>Quick takeaway</span></div>
                                                     {activeIllness.count ? (
-                                                        <p className="ill-note">
+                                                        <p className="illx-note">
                                                             {activeIllness.name} accounts for <b>{activeShare}%</b> of {illnesses.total} diagnoses across {illnesses.unique} condition{illnesses.unique === 1 ? '' : 's'} this period
                                                             {activeIllnessIndex === 1 ? ' - the single most common condition seen.' : ` - ranked #${activeIllnessIndex} by volume.`}
                                                         </p>
                                                     ) : (
-                                                        <p className="ill-note">
+                                                        <p className="illx-note">
                                                             <b>{activeIllness.name}</b> is predefined in the standardized catalogue but no completed visit has recorded it yet.
                                                             It will count here automatically as soon as a consultation is completed with this diagnosis.
                                                         </p>
                                                     )}
                                                 </div>
-                                                <div className="ill-block">
-                                                    <div className="ill-block-head">
+                                                <div className="illx-block">
+                                                    <div className="illx-block-head">
                                                         <span>Recorded as</span>
                                                         <span>{activeIllness.variants.length} wording{activeIllness.variants.length === 1 ? '' : 's'}</span>
                                                     </div>
                                                     {activeIllness.variants.length ? (
                                                         <>
-                                                            <div className="ill-variants">
+                                                            <div className="illx-variants">
                                                                 {activeIllness.variants.map((variant) => (
-                                                                    <span className="ill-variant" key={variant.label} title={`${variant.count} recorded entr${variant.count === 1 ? 'y' : 'ies'}`}>
+                                                                    <span className="illx-variant" key={variant.label} title={`${variant.count} recorded entr${variant.count === 1 ? 'y' : 'ies'}`}>
                                                                         {variant.label}
                                                                         <b>{variant.count}</b>
                                                                     </span>
                                                                 ))}
                                                             </div>
-                                                            <p className="ill-note">
+                                                            <p className="illx-note">
                                                                 Every wording above is counted once as <b>{activeIllness.name}</b>
                                                                 {activeIllness.code ? ` (${activeIllness.code})` : ''}, so equivalent diagnoses never split the statistics.
                                                             </p>
                                                         </>
                                                     ) : (
-                                                        <p className="ill-note">No diagnosis wording has been recorded for this condition yet.</p>
+                                                        <p className="illx-note">No diagnosis wording has been recorded for this condition yet.</p>
                                                     )}
                                                 </div>
                                             </div>
@@ -958,13 +860,13 @@ function AnalyticsSection({ showToast }) {
 
                                         {illnessTab === 'trend' && (
                                             <div role="tabpanel" id="ill-tab-panel-trend" aria-labelledby="ill-tab-trend">
-                                                <div className="ill-block">
-                                                    <div className="ill-block-head"><span>Monthly spread</span><span>{activeTrendTotal} case{activeTrendTotal === 1 ? '' : 's'} in view</span></div>
+                                                <div className="illx-block">
+                                                    <div className="illx-block-head"><span>Monthly spread</span><span>{activeTrendTotal} case{activeTrendTotal === 1 ? '' : 's'} in view</span></div>
                                                     {activeIllness.count && trendMonths.length ? (
-                                                        <div className="ill-months">
+                                                        <div className="illx-months">
                                                             {trendMonths.map((key, i) => (
-                                                                <div className="ill-month" key={key} title={`${monthShort(key)} ${String(key).slice(0, 4)}: ${activeMonthSeries[i] ?? 0} cases`}>
-                                                                    <div className="ill-month-track">
+                                                                <div className="illx-month" key={key} title={`${monthShort(key)} ${String(key).slice(0, 4)}: ${activeMonthSeries[i] ?? 0} cases`}>
+                                                                    <div className="illx-month-track">
                                                                         <span style={{ height: `${Math.max(4, ((activeMonthSeries[i] ?? 0) / activeMonthMax) * 100)}%` }} />
                                                                     </div>
                                                                     <b>{activeMonthSeries[i] ?? 0}</b>
@@ -973,39 +875,39 @@ function AnalyticsSection({ showToast }) {
                                                             ))}
                                                         </div>
                                                     ) : (
-                                                        <p className="ill-note">No dated diagnoses to chart yet.</p>
+                                                        <p className="illx-note">No dated diagnoses to chart yet.</p>
                                                     )}
                                                 </div>
-                                                <p className="ill-note">Columns scale to the busiest month in view and each prints its count, so the trend reads without colour alone. Only months present in the filtered data are shown (last {trendMonths.length}).</p>
+                                                <p className="illx-note">Columns scale to the busiest month in view and each prints its count, so the trend reads without colour alone. Only months present in the filtered data are shown (last {trendMonths.length}).</p>
                                             </div>
                                         )}
 
                                         {illnessTab === 'same' && (
                                             <div role="tabpanel" id="ill-tab-panel-same" aria-labelledby="ill-tab-same">
                                                 {sameSystem.length ? (
-                                                    <ul className="ill-same-list">
+                                                    <ul className="illx-same-list">
                                                         {sameSystem.map((row) => (
                                                             <li key={row.key}>
                                                                 <button type="button" onClick={() => setActiveIllnessKey(row.key)}>
-                                                                    <span className="ill-same-name" title={row.name}>{row.name}</span>
-                                                                    <span className="ill-same-bar"><span style={{ width: `${activeMax ? Math.max(4, (row.count / activeMax) * 100) : 0}%` }} /></span>
-                                                                    <span className="ill-same-meta"><em>{row.code || '-'}</em><b>{row.count}</b></span>
+                                                                    <span className="illx-same-name" title={row.name}>{row.name}{row.code && <span className="illx-same-code">{row.code}</span>}</span>
+                                                                    <span className="illx-same-n">{row.count}</span>
                                                                 </button>
                                                             </li>
                                                         ))}
                                                     </ul>
                                                 ) : (
-                                                    <p className="ill-note">No other {activeIllness.chapter} condition recorded for the current filters.</p>
+                                                    <p className="illx-note">No other {activeIllness.chapter} condition recorded for the current filters.</p>
                                                 )}
                                             </div>
                                         )}
                                     </div>
                                 </>
                             ) : (
-                                <p className="ill-note">No condition selected - type to filter or pick one on the left.</p>
+                                <p className="illx-note">No condition selected - type to filter or pick one on the left.</p>
                             )}
-                        </section>
+                        </aside>
                     </div>
+                    </>
                 )}
 
                 {!loading && !treeReady && (

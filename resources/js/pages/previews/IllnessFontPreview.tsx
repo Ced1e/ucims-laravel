@@ -131,7 +131,7 @@ export default function IllnessFontPreview() {
                 <footer className="ifp-foot">
                     <p>
                         Pick badge + title by number (e.g. <b>"badge 04, title 07"</b>) and I'll wire it into{' '}
-                        <code>admin-illness-explorer.css</code> for the real Reports panel. System fonts cost zero requests;&nbsp;Google fonts add one cached request to <code>fonts.googleapis.com</code>.
+                        <code>admin-illness-statistics.css</code> for the real Reports panel. System fonts cost zero requests;&nbsp;Google fonts add one cached request to <code>fonts.googleapis.com</code>.
                     </p>
                 </footer>
             </div>
