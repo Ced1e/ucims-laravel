@@ -121,6 +121,15 @@
 .clinic-heartbeat-light { offset-path: path('M10 70H130L155 42 185 108 225 18 264 120 295 55 320 70H470'); animation: clinic-heartbeat-travel 4s ease-in-out infinite alternate; filter: drop-shadow(0 0 4px #ffe6a0); }
 @keyframes clinic-heartbeat-draw { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
 @keyframes clinic-heartbeat-travel { from { offset-distance: 0%; } to { offset-distance: 100%; } }
+/* The art must still read as a heartbeat when motion is reduced or the browser
+   lacks offset-path: show the completed trace and park the tip at the end. */
+@media (prefers-reduced-motion: reduce) {
+    .clinic-heartbeat-trace { animation: none; stroke-dashoffset: 0; }
+    .clinic-heartbeat-light { animation: none; offset-distance: 100%; }
+}
+@supports not (offset-path: path("M0 0")) {
+    .clinic-heartbeat-light { display: none; }
+}
 @media (max-width: 760px) { .clinic-entry-silk .clinic-heartbeat { height: 100px; margin-top: 16px; } .clinic-entry-silk .clinic-heartbeat svg { height: 100px; } }
 
 .clinic-entry { --ucims-page-ready: 1; }
@@ -183,9 +192,14 @@
 
 .clinic-entry-wordmark small { font-size: clamp(10.5px, 1.6vh, 14px); }
 
-/* Short laptop viewports: drop the decorative heartbeat rather than squeeze it. */
+/* Short laptop viewports: keep the heartbeat visible by compacting it. Hiding
+   the art made the login look broken on common 1366x768 laptops, whose inner
+   viewport is under 700px once the browser chrome is subtracted. */
 @media (min-width: 761px) and (max-height: 700px) {
-    .clinic-entry-art, .clinic-entry-silk .clinic-entry-art { display: none; }
+    .clinic-entry-art { display: none; }
+    .clinic-entry-silk .clinic-entry-art { display: block; height: 56px; margin-top: 10px; }
+    .clinic-entry-silk .clinic-heartbeat { height: 56px; }
+    .clinic-entry-silk .clinic-heartbeat svg { height: 100%; }
     .clinic-entry-silk .clinic-entry-story h1 { font-size: clamp(26px, min(3.4vw, 4.8vh), 46px); }
 }
 
