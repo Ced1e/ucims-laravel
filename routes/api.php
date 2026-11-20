@@ -48,6 +48,7 @@ Route::prefix('v1')->middleware(['web', 'auth'])->name('api.')->group(function (
 
     Route::apiResource('medical-certificates', MedicalCertificateController::class)
         ->parameters(['medical-certificates' => 'medicalCertificate']);
+    Route::post('medical-certificates/{medicalCertificate}/cancel', [MedicalCertificateController::class, 'cancel']);
 
     Route::apiResource('lab-requests', LabRequestController::class)
         ->parameters(['lab-requests' => 'labRequest']);

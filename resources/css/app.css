@@ -320,6 +320,181 @@
     flex: 0 0 auto;
 }
 
+/* -- Account Directory: staff/patient lists and the permanent-deletion flow ---------------- */
+.acct-directory-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+
+.acct-directory-head p {
+    margin: 0;
+}
+
+.acct-directory-total {
+    flex: 0 0 auto;
+    padding: 6px 12px;
+    border: 1px solid #e8dcc0;
+    border-radius: 999px;
+    background: #fbf6e9;
+    color: #7a5a12;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+.acct-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.canvas-admin .acct-delete-btn {
+    background: #fff;
+    border: 1px solid #eed6d1;
+    color: #96261b;
+}
+
+.canvas-admin .acct-delete-btn:hover:not(:disabled) {
+    background: #fdf1ee;
+    border-color: #b8443a;
+    color: #7b1a11;
+}
+
+.canvas-admin .acct-delete-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.acct-delete-modal {
+    width: 500px;
+    border-top: 4px solid #791527;
+}
+
+.acct-delete-modal .btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.acct-delete-head {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 18px;
+}
+
+.acct-delete-icon {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: #fbeceb;
+    border: 1px solid #f0d6d2;
+    color: #96261b;
+    font-size: 20px;
+}
+
+.acct-delete-title {
+    margin: 2px 0 4px;
+    font-family: inherit;
+    font-size: 19px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    color: #650d1c;
+}
+
+.acct-delete-sub {
+    margin: 0;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #817579;
+}
+
+.acct-delete-summary {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin: 0 0 16px;
+    padding: 14px;
+    border: 1px solid #ece7e8;
+    border-radius: 10px;
+    background: #fdfbfa;
+}
+
+.acct-delete-summary dt {
+    margin-bottom: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #8d8285;
+}
+
+.acct-delete-summary dd {
+    margin: 0;
+    font-size: 13px;
+    font-weight: 600;
+    color: #342b2e;
+    overflow-wrap: anywhere;
+}
+
+.acct-delete-warning {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin: 0 0 16px;
+    padding: 12px 14px;
+    border: 1px solid #f0d6d2;
+    border-left: 4px solid #b68b34;
+    border-radius: 8px;
+    background: #fdf6f4;
+    font-size: 12px;
+    line-height: 1.55;
+    color: #6b2a22;
+}
+
+.acct-delete-warning i {
+    flex: 0 0 auto;
+    margin-top: 1px;
+    color: #b68b34;
+    font-size: 14px;
+}
+
+.acct-delete-confirm {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border: 1px solid #ece7e8;
+    border-radius: 8px;
+    background: #fff;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #342b2e;
+    cursor: pointer;
+}
+
+.acct-delete-confirm input {
+    width: 16px;
+    height: 16px;
+    margin-top: 1px;
+    flex: 0 0 auto;
+    accent-color: #791527;
+}
+
+@media (max-width: 560px) {
+    .acct-delete-summary { grid-template-columns: 1fr; }
+}
+
 /* -- UCIMSSelect: system-standard dropdown (rules follow below) --------------------------- */
 .ucims-select {
     position: relative;

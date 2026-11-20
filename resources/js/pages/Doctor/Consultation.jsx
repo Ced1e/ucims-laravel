@@ -1333,7 +1333,7 @@ function Blank({ value, onChange, width = 170, type = 'text', placeholder = '', 
     );
 }
 
-function ReviewMedCertModal({ cert, onClose, onReleased, showToast }) {
+function ReviewMedCertModal({ cert, onClose, onReleased, onCancelled, showToast }) {
     const { auth } = usePage().props;
     const patient = cert.queue?.patient;
     const [form, setForm] = useState({
@@ -1370,6 +1370,21 @@ function ReviewMedCertModal({ cert, onClose, onReleased, showToast }) {
         if (!validateForm()) return;
         printCertificate(cert, patient, form);
         showToast('Print preview opened. Nothing has been released yet.', 'success');
+    }
+
+    async function handleCancel() {
+        // Cancelling dismisses the request for good: it leaves the pending list and
+        // is deliberately not written to history (only confirmed releases are).
+        if (!window.confirm(`Cancel the certificate request for ${patientName(patient)}? It will be removed from the pending list and will not be saved in History.`)) return;
+        setSaving(true);
+        try {
+            await axios.post(`/api/v1/medical-certificates/${cert.certificate_id}/cancel`);
+            showToast('Request cancelled. It was removed from pending and not added to History.');
+            onCancelled ? onCancelled() : onClose();
+        } catch (e) {
+            showToast(requestError(e, 'Failed to cancel the request.'), 'error');
+            setSaving(false);
+        }
     }
 
     async function handleRelease() {
@@ -1410,9 +1425,9 @@ function ReviewMedCertModal({ cert, onClose, onReleased, showToast }) {
                     <i className="bi bi-info-circle"></i> <b>Status:</b> Visit is marked complete. Fill out the blanks below. The document
                     opens with the USeP header.
                     <div className="text-xs mt4" style={{ opacity: 0.85 }}>
-                        <b>Preview</b> opens the certificate without changing anything &mdash; cancel the print dialog any time and nothing
-                        is lost. <b>Confirm Release</b> marks the certificate as released and the visit complete, then opens the print
-                        window &mdash; only click it once the patient has their copy in hand (or is ready to print right now).
+                        <b>Preview</b> opens the certificate without changing anything. <b>Confirm Release</b> marks the certificate as released and the
+                        visit complete &mdash; the request leaves the pending list and is saved in History &mdash; then opens the print window. <b>Cancel</b>
+                        removes the request from pending without saving it in History.
                         <br />In the print dialog, switch off <b>Headers and&nbsp;footers</b> so the browser's date and &ldquo;about:blank&rdquo;
                         line stay off the page. Chrome remembers that choice.
                     </div>
@@ -1482,7 +1497,7 @@ function ReviewMedCertModal({ cert, onClose, onReleased, showToast }) {
                 </p>
 
                 <div className="modal-footer">
-                    <button className="btn btn-outline" disabled={saving} onClick={onClose}>
+                    <button className="btn btn-outline" disabled={saving} onClick={handleCancel}>
                         Cancel
                     </button>
                     <button className="btn btn-outline" style={{ flex: 1 }} disabled={saving} onClick={handlePreview}>
@@ -1705,6 +1720,11 @@ export default function DoctorDashboard() {
                     showToast={showToast}
                     onClose={() => setReviewCertModal(null)}
                     onReleased={() => {
+                        setReviewCertModal(null);
+                        fetchCerts();
+                        fetchHistory();
+                    }}
+                    onCancelled={() => {
                         setReviewCertModal(null);
                         fetchCerts();
                     }}

@@ -13,9 +13,12 @@ class RecordDeletionRequest extends Model
 
     protected $fillable = [
         'patient_id',
+        'patient_clinic_id',
+        'patient_name',
         'requested_by',
         'reason',
         'status',
+        'review_notes',
         'reviewed_by',
         'reviewed_at',
     ];

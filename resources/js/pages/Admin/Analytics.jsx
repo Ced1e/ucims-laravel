@@ -978,7 +978,7 @@ function AnalyticsSection({ showToast }) {
 }
 
 // --------------------------------------------------
-// Account Creation & Management
+// Account Management
 // --------------------------------------------------
 const emptyForm = (role = 'nurse') => ({
     role,
@@ -1190,6 +1190,82 @@ function ResetPasswordModal({ member, onClose, showToast }) {
     );
 }
 
+function DeleteAccountModal({ target, onClose, onDeleted, showToast }) {
+    const isPatient = target.kind === 'patient';
+    const [confirmed, setConfirmed] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+
+    async function handleDelete() {
+        if (!confirmed || deleting) return;
+        setDeleting(true);
+        try {
+            const url = isPatient ? `/api/records/patients/${target.id}` : `/api/records/staff/${target.id}`;
+            await axios.delete(url);
+            showToast(`Account for ${target.name} deleted successfully.`);
+            onDeleted(target);
+        } catch (e) {
+            showToast(errMsg(e, 'Failed to delete the account.'), 'error');
+        } finally {
+            setDeleting(false);
+        }
+    }
+
+    return (
+        <div className="modal-overlay open" onClick={(e) => e.target === e.currentTarget && onClose()}>
+            <div className="modal acct-delete-modal" role="dialog" aria-modal="true" aria-labelledby="acct-delete-title">
+                <button className="modal-close" onClick={onClose} aria-label="Close">
+                    &times;
+                </button>
+                <div className="acct-delete-head">
+                    <span className="acct-delete-icon" aria-hidden="true">
+                        <i className="bi bi-trash3"></i>
+                    </span>
+                    <div>
+                        <h2 id="acct-delete-title" className="acct-delete-title">
+                            {isPatient ? 'Delete patient account' : 'Delete staff account'}
+                        </h2>
+                        <p className="acct-delete-sub">The account is removed from the directory once confirmed.</p>
+                    </div>
+                </div>
+                <dl className="acct-delete-summary">
+                    <div>
+                        <dt>Account</dt>
+                        <dd>{target.name}</dd>
+                    </div>
+                    <div>
+                        <dt>Clinic ID</dt>
+                        <dd>{target.clinicId || '-'}</dd>
+                    </div>
+                    <div>
+                        <dt>{isPatient ? 'Patient type' : 'Role'}</dt>
+                        <dd>{isPatient ? target.role : ROLE_LABELS[target.role] || target.role}</dd>
+                    </div>
+                </dl>
+                <p className="acct-delete-warning">
+                    <i className="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                    <span>
+                        {isPatient
+                            ? 'The patient account and the clinic records linked to it (visits, consultations, prescriptions, and health records) are deleted permanently. This cannot be undone.'
+                            : 'The staff account and its profile are deleted permanently. Clinic activity linked to this staff member may also be removed. This cannot be undone.'}
+                    </span>
+                </p>
+                <label className="acct-delete-confirm">
+                    <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />
+                    <span>I understand this account will be permanently deleted.</span>
+                </label>
+                <div className="modal-footer">
+                    <button className="btn btn-outline" onClick={onClose} disabled={deleting}>
+                        Cancel
+                    </button>
+                    <button className="btn btn-danger" disabled={!confirmed || deleting} onClick={handleDelete}>
+                        {deleting ? 'Deleting...' : <><i className="bi bi-trash3"></i> Delete account</>}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
     const { auth } = usePage().props;
     const myId = auth?.user?.user_id;
@@ -1197,7 +1273,26 @@ function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
     const [creating, setCreating] = useState(false);
     const [editMember, setEditMember] = useState(null);
     const [resetMember, setResetMember] = useState(null);
+    const [deleteTarget, setDeleteTarget] = useState(null);
+    const [listTab, setListTab] = useState('staff');
+    const [patients, setPatients] = useState([]);
+    const [patientsLoading, setPatientsLoading] = useState(true);
     const [errors, setErrors] = useState({});
+
+    const fetchPatients = useCallback(async () => {
+        try {
+            const res = await axios.get('/api/records/patients', { timeout: 20000 });
+            setPatients(res.data.patients || []);
+        } catch (e) {
+            showToast(errMsg(e, 'Failed to load patient accounts.'), 'error');
+        } finally {
+            setPatientsLoading(false);
+        }
+    }, [showToast]);
+
+    useEffect(() => {
+        fetchPatients();
+    }, [fetchPatients]);
 
     // Registration-grade live validation. Only fields the admin has touched
     // show errors; clicking Create flags everything that is still wrong.
@@ -1274,8 +1369,8 @@ function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
     return (
         <>
             <div className="page-header">
-                <h1>Account Creation &amp; Management</h1>
-                <p>Manage staff accounts - nurses, doctors, and administrators.</p>
+                <h1>Account Management</h1>
+                <p>Manage staff and patient accounts, including account creation, updates, and deletion.</p>
             </div>
 
             <div className="stats-row mb16">
@@ -1292,7 +1387,7 @@ function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
                     <div className="stat-label">ADMINS</div>
                 </div>
                 <div className="stat-card">
-                    <div className="stat-num" style={{ color: 'var(--green)' }}>{patientCount ?? '-'}</div>
+                    <div className="stat-num" style={{ color: 'var(--green)' }}>{patientsLoading ? (patientCount ?? '-') : patients.length}</div>
                     <div className="stat-label">PATIENTS</div>
                 </div>
             </div>
@@ -1377,77 +1472,167 @@ function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                 <div className="card">
-                    <div className="card-title">Active Staff</div>
-                    <div className="table-wrap">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>ID</th>
-                                    <th>Name &amp; Role</th>
-                                    <th>Status</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading && (
-                                    <TableSkeletonRows columns={4} />
-                                )}
-                                {!loading && !staff.length && (
+                    <div className="acct-directory-head">
+                        <div>
+                            <div className="card-title" style={{ marginBottom: 2 }}>Account Directory</div>
+                            <p className="text-xs text-muted">Update, disable, reset the password of, or delete an account.</p>
+                        </div>
+                        <span className="acct-directory-total">{staff.length + patients.length} accounts</span>
+                    </div>
+                    <div className="tabs mb12" role="tablist" aria-label="Account type">
+                        <button
+                            type="button"
+                            role="tab"
+                            aria-selected={listTab === 'staff'}
+                            className={`tab ${listTab === 'staff' ? 'active' : ''}`}
+                            onClick={() => setListTab('staff')}
+                        >
+                            Staff Accounts ({staff.length})
+                        </button>
+                        <button
+                            type="button"
+                            role="tab"
+                            aria-selected={listTab === 'patients'}
+                            className={`tab ${listTab === 'patients' ? 'active' : ''}`}
+                            onClick={() => setListTab('patients')}
+                        >
+                            Patient Accounts ({patients.length})
+                        </button>
+                    </div>
+
+                    {listTab === 'staff' && (
+                        <div className="table-wrap">
+                            <table>
+                                <thead>
                                     <tr>
-                                        <td colSpan={4} className="text-center text-muted p16">No staff found in database.</td>
+                                        <th>ID</th>
+                                        <th>Name &amp; Role</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
                                     </tr>
-                                )}
-                                {<PaginatedItems items={staff} tableColumns={4} label="staff">{(u) => {
-                                    const isMe = String(u.id) === String(myId);
-                                    return (
-                                        <tr key={u.id} style={u.is_active ? undefined : { opacity: 0.6 }}>
-                                            <td className="text-xs fw6">{u.clinicId}</td>
-                                            <td>
-                                                <div className="fw6">
-                                                    {u.name} {isMe && <span className="text-xs text-muted">(you)</span>}
-                                                </div>
-                                                <div className="text-xs text-muted" style={{ textTransform: 'capitalize' }}>{u.role}</div>
-                                            </td>
-                                            <td>
-                                                {u.is_active ? <span className="badge b-green">Active</span> : <span className="badge b-red">Disabled</span>}
-                                            </td>
-                                            <td>
-                                                <div style={{ display: 'flex', gap: 6 }}>
-                                                    <button className="btn btn-outline btn-sm" title="Edit Profile" onClick={() => setEditMember(u)}>
-                                                        <i className="bi bi-pencil"></i>
-                                                    </button>
-                                                    <button className="btn btn-outline btn-sm" title="Reset Password" onClick={() => setResetMember(u)}>
-                                                        <i className="bi bi-key"></i>
-                                                    </button>
-                                                    {u.is_active ? (
+                                </thead>
+                                <tbody>
+                                    {loading && (
+                                        <TableSkeletonRows columns={4} />
+                                    )}
+                                    {!loading && !staff.length && (
+                                        <tr>
+                                            <td colSpan={4} className="text-center text-muted p16">No staff found in database.</td>
+                                        </tr>
+                                    )}
+                                    {<PaginatedItems items={staff} tableColumns={4} label="staff">{(u) => {
+                                        const isMe = String(u.id) === String(myId);
+                                        return (
+                                            <tr key={u.id} style={u.is_active ? undefined : { opacity: 0.6 }}>
+                                                <td className="text-xs fw6">{u.clinicId}</td>
+                                                <td>
+                                                    <div className="fw6">
+                                                        {u.name} {isMe && <span className="text-xs text-muted">(you)</span>}
+                                                    </div>
+                                                    <div className="text-xs text-muted" style={{ textTransform: 'capitalize' }}>{u.role}</div>
+                                                </td>
+                                                <td>
+                                                    {u.is_active ? <span className="badge b-green">Active</span> : <span className="badge b-red">Disabled</span>}
+                                                </td>
+                                                <td>
+                                                    <div className="acct-row-actions">
+                                                        <button className="btn btn-outline btn-sm" title="Edit Profile" onClick={() => setEditMember(u)}>
+                                                            <i className="bi bi-pencil"></i>
+                                                        </button>
+                                                        <button className="btn btn-outline btn-sm" title="Reset Password" onClick={() => setResetMember(u)}>
+                                                            <i className="bi bi-key"></i>
+                                                        </button>
+                                                        {u.is_active ? (
+                                                            <button
+                                                                className="btn btn-danger btn-sm"
+                                                                title={isMe ? "You can't disable your own account" : 'Disable Account'}
+                                                                disabled={isMe}
+                                                                onClick={() => toggleActive(u)}
+                                                            >
+                                                                <i className="bi bi-person-x"></i>
+                                                            </button>
+                                                        ) : (
+                                                            <button className="btn btn-outline btn-sm" title="Re-enable Account" onClick={() => toggleActive(u)}>
+                                                                <i className="bi bi-person-check"></i>
+                                                            </button>
+                                                        )}
                                                         <button
-                                                            className="btn btn-danger btn-sm"
-                                                            title={isMe ? "You can't disable your own account" : 'Disable Account'}
+                                                            className="btn btn-outline btn-sm acct-delete-btn"
+                                                            title={isMe ? "You can't delete your own account" : 'Delete Account'}
+                                                            aria-label={`Delete ${u.name}`}
                                                             disabled={isMe}
-                                                            onClick={() => toggleActive(u)}
+                                                            onClick={() => setDeleteTarget({ kind: 'staff', id: u.id, name: u.name, clinicId: u.clinicId, role: u.role })}
                                                         >
-                                                            <i className="bi bi-person-x"></i>
+                                                            <i className="bi bi-trash3"></i>
                                                         </button>
-                                                    ) : (
-                                                        <button className="btn btn-outline btn-sm" title="Re-enable Account" onClick={() => toggleActive(u)}>
-                                                            <i className="bi bi-person-check"></i>
-                                                        </button>
-                                                    )}
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    }}</PaginatedItems>}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
+
+                    {listTab === 'patients' && (
+                        <div className="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Name &amp; Email</th>
+                                        <th>Patient Type</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {patientsLoading && (
+                                        <TableSkeletonRows columns={4} />
+                                    )}
+                                    {!patientsLoading && !patients.length && (
+                                        <tr>
+                                            <td colSpan={4} className="text-center text-muted p16">No patient accounts found.</td>
+                                        </tr>
+                                    )}
+                                    {<PaginatedItems items={patients} tableColumns={4} label="patients">{(p) => (
+                                        <tr key={p.id}>
+                                            <td className="text-xs fw6">{p.patientId || '-'}</td>
+                                            <td>
+                                                <div className="fw6">{p.name}</div>
+                                                <div className="text-xs text-muted">{p.email || 'No email on file'}</div>
+                                            </td>
+                                            <td>
+                                                <span className="badge b-maroon">{p.patient_type || 'Patient'}</span>
+                                                {(p.college_dept || p.year_level) && (
+                                                    <div className="text-xs text-muted mt4">{[p.college_dept, p.year_level].filter(Boolean).join(' - ')}</div>
+                                                )}
+                                            </td>
+                                            <td>
+                                                <div className="acct-row-actions">
+                                                    <button
+                                                        className="btn btn-outline btn-sm acct-delete-btn"
+                                                        title="Delete Account"
+                                                        aria-label={`Delete ${p.name}`}
+                                                        onClick={() => setDeleteTarget({ kind: 'patient', id: p.id, name: p.name, clinicId: p.patientId, role: p.patient_type || 'Patient' })}
+                                                    >
+                                                        <i className="bi bi-trash3"></i>
+                                                    </button>
                                                 </div>
                                             </td>
                                         </tr>
-                                    );
-                                }}</PaginatedItems>}
-                            </tbody>
-                        </table>
-                    </div>
+                                    )}</PaginatedItems>}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </div>
 
                 <div className="card" style={{ flex: 1 }}>
                     <div className="card-title" style={{ fontSize: '.95rem' }}>
-                        <i className="bi bi-list-check"></i> Account Creation Guide
+                        <i className="bi bi-list-check"></i> Account Management Guide
                     </div>
-                    <p className="text-sm text-muted mb8">Complete each staff profile before saving. New accounts are active immediately and sign in with the Clinic ID and password you set here.</p>
+                    <p className="text-sm text-muted mb8">Complete each staff profile before saving. New accounts are active immediately and sign in with the Clinic ID and password you set here. Disabled accounts stay visible so they can be re-enabled or deleted.</p>
                     <div className="guide-list">
                         <div className="guide-row"><span className="guide-chip guide-chip--nurse">N-</span><div><div className="fw6 text-sm">Nurse</div><div className="text-xs text-muted">Triage, endorsements, and nurse services.</div></div></div>
                         <div className="guide-row"><span className="guide-chip guide-chip--doctor">D-</span><div><div className="fw6 text-sm">Doctor</div><div className="text-xs text-muted">Consultations, prescriptions, medical certificates.</div></div></div>
@@ -1459,6 +1644,7 @@ function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
                         <div className="guide-rule"><i className="bi bi-envelope"></i><span>USeP email must end in @usep.edu.ph.</span></div>
                         <div className="guide-rule"><i className="bi bi-calendar-check"></i><span>Birthdate must be a valid date within the human range (110 years max).</span></div>
                         <div className="guide-rule"><i className="bi bi-pencil"></i><span>The Edit button reuses this same validation.</span></div>
+                        <div className="guide-rule"><i className="bi bi-trash3"></i><span>Deleting an account is permanent; the account leaves the directory once you confirm.</span></div>
                     </div>
                 </div>
                 </div>
@@ -1476,6 +1662,21 @@ function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
                 />
             )}
             {resetMember && <ResetPasswordModal member={resetMember} showToast={showToast} onClose={() => setResetMember(null)} />}
+            {deleteTarget && (
+                <DeleteAccountModal
+                    target={deleteTarget}
+                    showToast={showToast}
+                    onClose={() => setDeleteTarget(null)}
+                    onDeleted={(target) => {
+                        setDeleteTarget(null);
+                        if (target.kind === 'patient') {
+                            setPatients((list) => list.filter((p) => String(p.id) !== String(target.id)));
+                        }
+                        reload();
+                        fetchPatients();
+                    }}
+                />
+            )}
         </>
     );
 }
@@ -1495,6 +1696,7 @@ const PERMISSIONS = [
     ['Medical Examination', '', '', CHECK, ''],
     ['Prescriptions', '', '', CHECK, ''],
     ['Account Creation', '', '', '', CHECK],
+    ['Account Deletion', '', '', '', CHECK],
 ];
 
 function AuthorizationSection({ staff, loading, showToast, reload }) {

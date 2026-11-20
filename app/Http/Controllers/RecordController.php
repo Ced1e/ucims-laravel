@@ -219,22 +219,24 @@ class RecordController extends Controller
 
         return DB::transaction(function () use ($data, $request) {
             // Serialize requests for this patient, even when there is no request row yet.
-            User::whereKey($data['patient_id'])->lockForUpdate()->firstOrFail();
+            $patient = User::whereKey($data['patient_id'])->lockForUpdate()->firstOrFail();
             $alreadyPending = RecordDeletionRequest::where('patient_id', $data['patient_id'])
                 ->where('status', 'pending')
                 ->exists();
-    
+
             if ($alreadyPending) {
                 return response()->json(['message' => 'A deletion request for this patient is already pending.'], 422);
             }
-    
+
             $deletionRequest = RecordDeletionRequest::create([
                 'patient_id' => $data['patient_id'],
+                'patient_clinic_id' => $patient->clinic_id,
+                'patient_name' => trim(($patient->firstname ?? '').' '.($patient->lastname ?? '')),
                 'requested_by' => $request->user()->user_id,
                 'reason' => $data['reason'],
                 'status' => 'pending',
             ]);
-    
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Deletion request submitted.',
@@ -244,29 +246,223 @@ class RecordController extends Controller
     }
 
     /**
-     * Deletion requests: admins see all of them, everyone else only their own.
+     * Deletion requests: admins and authorized staff see all of them, everyone else only their own.
      */
     public function getDeletionRequests(Request $request)
     {
         $query = RecordDeletionRequest::with([
-            'patient:user_id,clinic_id,firstname,lastname',
-            'requester:user_id,firstname,lastname',
+            'patient.pprPermanent',
+            'requester',
+            'reviewer',
         ])->orderByDesc('request_id');
 
-        if ($request->user()->role !== 'admin') {
+        if ($request->user()->role !== 'admin' && ! $request->user()->canPerform('account_deletion')) {
             $query->where('requested_by', $request->user()->user_id);
         }
 
         $requests = $query->get()->map(fn ($r) => [
             'id' => $r->request_id,
-            'patientId' => $r->patient?->clinic_id,
-            'patientName' => trim(($r->patient?->firstname ?? '').' '.($r->patient?->lastname ?? '')),
-            'requestedBy' => trim(($r->requester?->firstname ?? '').' '.($r->requester?->lastname ?? '')),
+            'patient_id' => $r->patient_id,
+            'patientId' => $r->patient?->clinic_id ?? $r->patient_clinic_id,
+            'patientName' => trim(($r->patient?->firstname ?? '').' '.($r->patient?->lastname ?? '')) ?: ($r->patient_name ?? '—'),
+            'patientDetails' => $r->patient ? [
+                'id' => $r->patient->user_id,
+                'clinic_id' => $r->patient->clinic_id,
+                'email' => $r->patient->usep_email,
+                'college_dept' => $r->patient->pprPermanent?->college_dept ?? '—',
+                'year_level' => $r->patient->pprPermanent?->year_level ?? '—',
+                'patient_type' => $r->patient->pprPermanent?->patient_type ?? 'Student',
+            ] : null,
+            'requestedBy' => trim(($r->requester?->firstname ?? '').' '.($r->requester?->lastname ?? '')) ?: 'Clinic Nurse',
+            'requestedByRole' => ucfirst($r->requester?->role ?? 'Nurse'),
             'reason' => $r->reason,
             'status' => $r->status,
+            'review_notes' => $r->review_notes,
+            'reviewedBy' => trim(($r->reviewer?->firstname ?? '').' '.($r->reviewer?->lastname ?? '')),
+            'reviewed_at' => $r->reviewed_at?->toDateTimeString(),
             'created_at' => $r->created_at?->toDateTimeString(),
         ]);
 
         return response()->json(['status' => 'success', 'requests' => $requests]);
+    }
+
+    /**
+     * Approve a patient record deletion request.
+     * Deletes the patient record and marks the request as approved.
+     */
+    public function approveDeletionRequest(Request $request, $id)
+    {
+        if (! $request->user()->canPerform('account_deletion')) {
+            return response()->json(['message' => 'Your role is not authorized to perform account deletion.'], 403);
+        }
+
+        $deletionRequest = RecordDeletionRequest::findOrFail($id);
+
+        if ($deletionRequest->status !== 'pending') {
+            return response()->json(['message' => 'This deletion request has already been processed.'], 422);
+        }
+
+        DB::transaction(function () use ($request, $deletionRequest) {
+            $patient = $deletionRequest->patient_id ? User::find($deletionRequest->patient_id) : null;
+
+            if ($patient) {
+                // Ensure snapshot info is recorded before deleting
+                $deletionRequest->patient_clinic_id = $patient->clinic_id;
+                $deletionRequest->patient_name = trim($patient->firstname.' '.$patient->lastname);
+                $deletionRequest->patient_id = null; // Detach foreign key so request history remains
+            }
+
+            $deletionRequest->status = 'approved';
+            $deletionRequest->reviewed_by = $request->user()->user_id;
+            $deletionRequest->reviewed_at = now();
+            if ($request->filled('notes')) {
+                $deletionRequest->review_notes = $request->input('notes');
+            }
+            $deletionRequest->save();
+
+            if ($patient) {
+                $patient->delete();
+            }
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Record deletion request approved. The patient record has been deleted.',
+        ]);
+    }
+
+    /**
+     * Reject a patient record deletion request.
+     * Keeps the patient record intact and marks the request as rejected.
+     */
+    public function rejectDeletionRequest(Request $request, $id)
+    {
+        if (! $request->user()->canPerform('account_deletion')) {
+            return response()->json(['message' => 'Your role is not authorized to process deletion requests.'], 403);
+        }
+
+        $deletionRequest = RecordDeletionRequest::findOrFail($id);
+
+        if ($deletionRequest->status !== 'pending') {
+            return response()->json(['message' => 'This deletion request has already been processed.'], 422);
+        }
+
+        $deletionRequest->update([
+            'status' => 'rejected',
+            'reviewed_by' => $request->user()->user_id,
+            'reviewed_at' => now(),
+            'review_notes' => $request->input('notes', null),
+        ]);
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Record deletion request rejected. The patient record remains intact.',
+        ]);
+    }
+
+    /**
+     * Delete a staff account permanently.
+     */
+    public function deleteStaff(Request $request, User $user)
+    {
+        if (! $request->user()->canPerform('account_deletion')) {
+            return response()->json(['message' => 'Your role is not authorized to perform account deletion.'], 403);
+        }
+
+        if ($user->user_id === $request->user()->user_id) {
+            return response()->json(['message' => "You cannot delete your own account."], 422);
+        }
+
+        if ($user->role === 'patient') {
+            return response()->json(['message' => 'Patient accounts cannot be deleted through this endpoint.'], 422);
+        }
+
+        $name = trim($user->firstname.' '.$user->lastname);
+
+        DB::transaction(fn () => $user->delete());
+
+        return response()->json([
+            'status' => 'success',
+            'message' => "Staff account for {$name} deleted successfully.",
+        ]);
+    }
+
+    /**
+     * Delete a patient account directly.
+     */
+    public function deletePatient(Request $request, User $patient)
+    {
+        if (! $request->user()->canPerform('account_deletion')) {
+            return response()->json(['message' => 'Your role is not authorized to perform account deletion.'], 403);
+        }
+
+        if ($patient->role !== 'patient') {
+            return response()->json(['message' => 'Only patient accounts can be deleted here.'], 422);
+        }
+
+        $name = trim($patient->firstname.' '.$patient->lastname);
+
+        DB::transaction(fn () => $patient->delete());
+
+        return response()->json([
+            'status' => 'success',
+            'message' => "Patient account for {$name} deleted successfully.",
+        ]);
+    }
+
+    /**
+     * Get role permissions configuration.
+     */
+    public function getRolePermissions()
+    {
+        $roles = ['admin', 'doctor', 'nurse', 'patient'];
+        $permissions = [
+            'account_deletion' => [],
+        ];
+
+        foreach ($roles as $role) {
+            $permissions['account_deletion'][$role] = \App\Models\RolePermission::isGranted($role, 'account_deletion');
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'permissions' => $permissions,
+        ]);
+    }
+
+    /**
+     * Update role permissions configuration.
+     */
+    public function updateRolePermissions(Request $request)
+    {
+        if ($request->user()->role !== 'admin') {
+            return response()->json(['message' => 'Only administrators can configure role permissions.'], 403);
+        }
+
+        $data = $request->validate([
+            'permission' => 'required|string|in:account_deletion',
+            'roles' => 'required|array',
+            'roles.admin' => 'required|boolean',
+            'roles.doctor' => 'required|boolean',
+            'roles.nurse' => 'required|boolean',
+            'roles.patient' => 'required|boolean',
+        ]);
+
+        foreach ($data['roles'] as $role => $isGranted) {
+            \App\Models\RolePermission::setGrant($role, $data['permission'], (bool) $isGranted);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Role permissions updated successfully.',
+            'permissions' => [
+                $data['permission'] => [
+                    'admin' => \App\Models\RolePermission::isGranted('admin', $data['permission']),
+                    'doctor' => \App\Models\RolePermission::isGranted('doctor', $data['permission']),
+                    'nurse' => \App\Models\RolePermission::isGranted('nurse', $data['permission']),
+                    'patient' => \App\Models\RolePermission::isGranted('patient', $data['permission']),
+                ],
+            ],
+        ]);
     }
 }

@@ -109,14 +109,17 @@ const source = fs.readFileSync(new URL('../resources/js/pages/Admin/Analytics.js
 // Smoke-render the account-management tab specifically (the default is the reports tab).
 const finalSource = applyTo(source).replaceAll("const [section, setSection] = useState('analytics');", "const [section, setSection] = useState('accounts');");
 
-test('Admin/Analytics page renders the account creation section', async () => {
+test('Admin/Analytics page renders the account management section', async () => {
     const js = compile(finalSource).replaceAll('"react/jsx-runtime"', JSON.stringify(jsxRuntime)).replaceAll("'react'", JSON.stringify(reactUrl));
     const mod = await import(dataUrl(js));
     const Page = mod.default;
     const html = renderToStaticMarkup(React.createElement(Page));
-    assert.ok(html.includes('Account Creation'), 'page contains the Account Creation & Management heading');
+    assert.ok(html.includes('Account Management</h1>'), 'page contains the Account Management heading');
+    assert.ok(html.includes('Manage staff and patient accounts, including account creation, updates, and deletion.'), 'page contains the updated section description');
     assert.ok(html.includes('Create Staff Account'), 'page contains the Create Staff Account card');
-    assert.ok(html.includes('Account Creation Guide'), 'page contains the guide card in the previously-empty right column');
+    assert.ok(html.includes('Account Management Guide'), 'page contains the guide card in the previously-empty right column');
+    assert.ok(html.includes('Staff Accounts'), 'page contains the staff account list tab');
+    assert.ok(html.includes('Patient Accounts'), 'page contains the patient account list tab');
     assert.ok(html.includes('Clinic ID Number'), 'page contains the clinic ID credential field');
-    console.log('RENDER OK — Account Creation page renders fully. Length:', html.length);
+    console.log('RENDER OK — Account Management page renders fully. Length:', html.length);
 });

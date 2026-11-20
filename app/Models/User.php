@@ -68,4 +68,12 @@ class User extends Authenticatable
     {
         return $this->hasOne(PprHealthQuestionnaire::class, 'patient_id', 'user_id');
     }
+
+    /**
+     * Check if the user is authorized to perform an action based on role permissions.
+     */
+    public function canPerform(string $permission): bool
+    {
+        return RolePermission::isGranted($this->role, $permission);
+    }
 }

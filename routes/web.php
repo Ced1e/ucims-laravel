@@ -244,6 +244,8 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/api/records/staff/{user}/role', [RecordController::class, 'updateStaffRole']);
         Route::put('/api/records/staff/{user}/password', [RecordController::class, 'updateStaffPassword']);
         Route::put('/api/records/staff/{user}/status', [RecordController::class, 'updateStaffStatus']);
+        Route::delete('/api/records/staff/{user}', [RecordController::class, 'deleteStaff']);
+        Route::delete('/api/records/patients/{patient}', [RecordController::class, 'deletePatient']);
     });
 });
 

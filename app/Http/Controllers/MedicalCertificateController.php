@@ -19,6 +19,12 @@ class MedicalCertificateController extends Controller
 
         $query = MedicalCertificate::with(['queue.patient'])->orderBy('certificate_id', 'desc');
 
+        // Cancelled requests are no longer pending work and never become history,
+        // so they are hidden from every list unless explicitly requested.
+        if (! $request->boolean('include_cancelled')) {
+            $query->whereNull('cancelled_at');
+        }
+
         // A patient only ever sees his/her own certificates.
         if ($request->user()->role === 'patient') {
             $query->whereHas('queue', fn ($q) => $q->where('patient_id', $request->user()->user_id));
@@ -88,6 +94,10 @@ class MedicalCertificateController extends Controller
 
         $data = $request->validated();
 
+        if ($medicalCertificate->isCancelled()) {
+            abort(422, 'This certificate request was cancelled and can no longer be processed.');
+        }
+
         if (($data['is_released'] ?? false) && ! $medicalCertificate->is_released) {
             $data['issued_by'] = $request->user()?->user_id;
             $data['issued_date'] = now();
@@ -100,6 +110,27 @@ class MedicalCertificateController extends Controller
         }
 
         return redirect()->route('medical-certificates.index')->with('success', 'Medical certificate updated.');
+    }
+
+    /**
+     * Cancel a pending request: it leaves the pending list for everyone and is
+     * deliberately kept out of history (only released certificates count).
+     */
+    public function cancel(MedicalCertificate $medicalCertificate)
+    {
+        Gate::authorize('update', $medicalCertificate);
+
+        if ($medicalCertificate->is_released) {
+            return response()->json(['message' => 'A released certificate cannot be cancelled.'], 422);
+        }
+
+        if ($medicalCertificate->isCancelled()) {
+            return response()->json(['message' => 'This request was already cancelled.'], 422);
+        }
+
+        $medicalCertificate->update(['cancelled_at' => now()]);
+
+        return response()->json(['status' => 'success', 'message' => 'Certificate request cancelled.']);
     }
 
     public function clone(MedicalCertificate $medicalCertificate, CloneRecordAction $cloner)

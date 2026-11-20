@@ -28,12 +28,19 @@ class MedicalCertificate extends Model
         'physician_name',
         'license_no',
         'exam_date',
+        'cancelled_at',
     ];
 
     protected $casts = [
         'issued_date' => 'datetime',
         'is_released' => 'boolean',
+        'cancelled_at' => 'datetime',
     ];
+
+    public function isCancelled(): bool
+    {
+        return $this->cancelled_at !== null;
+    }
 
     public function queue()
     {
