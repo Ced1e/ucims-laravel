@@ -81,6 +81,14 @@ test('Print opens the print dialog but never finalizes the request', () => {
 
     const helper = functionBody('function printCertificate(cert, patient, form)');
     assert.ok(helper.includes('writeCertificate(tab, cert, patient, form)'), 'Print uses the auto-print mode');
+
+    const html = functionBody('function certificateHtml(cert, patient, form, preview = false)');
+    assert.ok(html.includes('<div class="sheet-inner">'), 'the printable content is wrapped for scaling');
+    assert.ok(html.includes('.sheet { width: 210mm; height: 297mm; min-height: 0; margin: 0; }'), 'print is fixed to one A4 page');
+    const printScript = html.slice(html.indexOf('const printScript'), html.indexOf('const html ='));
+    assert.ok(printScript.includes('inner.scrollHeight'), 'the print fitter measures the document');
+    assert.ok(printScript.includes('pageHeight / inner.scrollHeight'), 'the print fitter scales content to the page');
+    assert.ok(printScript.includes('window.print()'), 'the print script still opens the print dialog');
 });
 
 test('the request row has Review & Process, Confirm & Release, then Cancel', () => {

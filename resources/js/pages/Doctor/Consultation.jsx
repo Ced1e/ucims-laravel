@@ -1114,7 +1114,24 @@ function certificateHtml(cert, patient, form, preview = false) {
     const printScript = `
 <script>
 (function () {
-    var run = function () { setTimeout(function () { window.print(); }, 250); };
+    // Shrink the document just enough to fit a single A4 page, then print.
+    function fit() {
+        var inner = document.querySelector('.sheet-inner');
+        if (!inner) return;
+        inner.style.transform = 'scale(1)';
+        var pageHeight = 297 * 96 / 25.4;
+        var pageWidth = 210 * 96 / 25.4;
+        var scale = Math.min(
+            pageHeight / inner.scrollHeight,
+            pageWidth / inner.scrollWidth,
+            1
+        );
+        inner.style.transform = 'scale(' + scale + ')';
+    }
+    var run = function () {
+        fit();
+        setTimeout(function () { window.print(); }, 250);
+    };
     if (document.readyState === 'complete') run();
     else window.addEventListener('load', run);
 })();
@@ -1144,10 +1161,13 @@ function certificateHtml(cert, patient, form, preview = false) {
         width: 210mm;
         min-height: 297mm;
         margin: 0 auto;
-        padding: 18mm 22mm 20mm;
+        padding: 0;
         overflow: hidden;
         background: #fff;
     }
+    /* Padding lives on the inner sheet so the print fitter can measure the
+       whole document (including its margins) against a single A4 page. */
+    .sheet-inner { width: 100%; padding: 18mm 22mm 20mm; transform-origin: top left; }
 
     /* Borderless letterhead — seal sits beside the agency text. */
     .letterhead {
@@ -1228,12 +1248,16 @@ function certificateHtml(cert, patient, form, preview = false) {
         }
     }
     @media print {
+        /* One fixed A4 page with no browser margins and no spill onto page 2. */
+        html, body { width: 210mm; height: 297mm; }
+        .sheet { width: 210mm; height: 297mm; min-height: 0; margin: 0; }
         .preview-hint { display: none; }
     }
 </style>
 </head>
 <body${preview ? ' class="preview"' : ''}>
 <div class="sheet">
+<div class="sheet-inner">
     <header class="letterhead">
         <img src="${logoUrl}" alt="USeP seal">
         <div class="agency">
@@ -1271,6 +1295,7 @@ function certificateHtml(cert, patient, form, preview = false) {
             <div class="lic">License No. ${form.license_no || '_______________'}</div>
         </div>
     </div>
+</div>
 </div>
 ${preview ? previewScript : printScript}
 </body>
