@@ -26,7 +26,7 @@ export default function Login({ status }: { status?: string }) {
             <section className="clinic-entry-visual" aria-labelledby="clinic-entry-title">
                 <Link href="/" className="clinic-entry-brand" aria-label="UCIMS home" title="Back to home">
                     <img src="/assets/img/University of Southeastern Philippines Seal.png" alt="USeP logo" />
-                    <span className="clinic-entry-wordmark"><span>University of<br />Southeastern Philippines</span><small>University Clinic</small></span>
+                    <span className="clinic-entry-wordmark"><span>University of Southeastern Philippines</span><small>University Clinic</small></span>
                 </Link>
                 <div className="clinic-entry-story">
                     <p className="clinic-entry-eyebrow">YOUR UNIVERSITY. YOUR HEALTH.</p>
