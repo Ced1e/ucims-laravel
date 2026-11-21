@@ -746,25 +746,25 @@ function AnalyticsSection({ showToast }) {
                 </div>
             </div>
 
-            <div className="analytics-chart-duo">
-                <div className="card">
-                    <div className="card-title">Overall Consultation Trends</div>
-                    <div style={{ position: 'relative', height: 250 }}>
-                        {loading && <ChartSkeleton />}{!loading && (loadError || !filtered.length) && <p role={loadError ? "alert" : undefined}>{loadError || "No consultation data for these filters."}</p>}<canvas ref={trendRef} style={{ visibility: loading || loadError || !filtered.length ? 'hidden' : 'visible' }}></canvas>
-                    </div>
+            <div className="card" style={{ marginBottom: 20 }}>
+                <div className="card-title">Overall Consultation Trends</div>
+                <div style={{ position: 'relative', height: 250 }}>
+                    {loading && <ChartSkeleton />}{!loading && (loadError || !filtered.length) && <p role={loadError ? "alert" : undefined}>{loadError || "No consultation data for these filters."}</p>}<canvas ref={trendRef} style={{ visibility: loading || loadError || !filtered.length ? 'hidden' : 'visible' }}></canvas>
                 </div>
+            </div>
+
+            <div className="analytics-chart-duo">
                 <div className="card">
                     <div className="card-title">Average Consults by Day of Week</div>
                     <div style={{ position: 'relative', height: 250 }}>
                         {loading && <ChartSkeleton />}{!loading && (loadError || !filtered.length) && <p role={loadError ? "alert" : undefined}>{loadError || "No consultation data for these filters."}</p>}<canvas ref={dayRef} style={{ visibility: loading || loadError || !filtered.length ? 'hidden' : 'visible' }}></canvas>
                     </div>
                 </div>
-            </div>
-
-            <div className="card" style={{ marginBottom: 20 }}>
-                <div className="card-title">Consultation Types Comparison</div>
-                <div style={{ position: 'relative', height: 250 }}>
-                    {loading && <ChartSkeleton />}{!loading && (loadError || !filtered.length) && <p role={loadError ? "alert" : undefined}>{loadError || "No consultation data for these filters."}</p>}<canvas ref={typeRef} style={{ visibility: loading || loadError || !filtered.length ? 'hidden' : 'visible' }}></canvas>
+                <div className="card">
+                    <div className="card-title">Consultation Types Comparison</div>
+                    <div style={{ position: 'relative', height: 250 }}>
+                        {loading && <ChartSkeleton />}{!loading && (loadError || !filtered.length) && <p role={loadError ? "alert" : undefined}>{loadError || "No consultation data for these filters."}</p>}<canvas ref={typeRef} style={{ visibility: loading || loadError || !filtered.length ? 'hidden' : 'visible' }}></canvas>
+                    </div>
                 </div>
             </div>
 
