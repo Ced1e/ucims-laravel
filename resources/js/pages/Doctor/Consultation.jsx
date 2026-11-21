@@ -1267,7 +1267,28 @@ function printCertificate(cert, patient, form) {
     return writeCertificate(printTab, cert, patient, form);
 }
 
-function MedCertListDoctor({ certs, loading, onReview }) {
+/**
+ * The ONLY operation that finalizes a request: marks it released, completes the
+ * visit and prints into the tab opened during the click gesture. Both the modal
+ * button and the list-row button go through here, so their behavior is identical
+ * regardless of which side of the interface the control sits on.
+ */
+async function finalizeCertificateRelease(cert, patient, form, printTab) {
+    await axios.put(`/api/v1/medical-certificates/${cert.certificate_id}`, {
+        findings: form.findings,
+        purpose: form.purpose,
+        physician_name: form.physician_name,
+        license_no: form.license_no,
+        exam_date: form.exam_date,
+        is_released: true,
+    });
+    if (cert.queue_id) {
+        await axios.put(`/api/v1/queues/${cert.queue_id}`, { status: 'done', time_out: nowTime() });
+    }
+    return writeCertificate(printTab, cert, patient, form);
+}
+
+function MedCertListDoctor({ certs, loading, onReview, onRelease, releasingId }) {
     return (
         <>
             <div className="page-header">
@@ -1323,9 +1344,22 @@ function MedCertListDoctor({ certs, loading, onReview }) {
                                             <span className="badge b-green">Ready for Physician</span>
                                         </td>
                                         <td>
-                                            <button className="btn btn-primary btn-sm" onClick={() => onReview(c)}>
-                                                <i className="bi bi-pencil-square"></i> Review &amp; Process
-                                            </button>
+                                            <div className="medcert-row-actions">
+                                                <button className="btn btn-primary btn-sm" onClick={() => onReview(c)}>
+                                                    <i className="bi bi-pencil-square"></i> Review &amp; Process
+                                                </button>
+                                                <button
+                                                    className="btn btn-outline btn-sm"
+                                                    disabled={releasingId != null}
+                                                    onClick={() => onRelease(c)}
+                                                    title="Final step: release this certificate and remove it from the pending list"
+                                                    aria-label={`Confirm and release certificate for ${patientName(c.queue?.patient)}`}
+                                                >
+                                                    {releasingId === c.certificate_id
+                                                        ? <><i className="bi bi-hourglass-split"></i> Confirming…</>
+                                                        : <><i className="bi bi-check2-circle"></i> Confirm &amp; Release</>}
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 )}</PaginatedItems>}
@@ -1425,18 +1459,7 @@ function ReviewMedCertModal({ cert, onClose, onReleased, onCancelled, showToast 
         if (!printTab) return;
         setSaving(true);
         try {
-            await axios.put(`/api/v1/medical-certificates/${cert.certificate_id}`, {
-                findings: form.findings,
-                purpose: form.purpose,
-                physician_name: form.physician_name,
-                license_no: form.license_no,
-                exam_date: form.exam_date,
-                is_released: true,
-            });
-            if (cert.queue_id) {
-                await axios.put(`/api/v1/queues/${cert.queue_id}`, { status: 'done', time_out: nowTime() });
-            }
-            const printed = writeCertificate(printTab, cert, patient, form);
+            const printed = await finalizeCertificateRelease(cert, patient, form, printTab);
             showToast(
                 printed
                     ? 'Certificate confirmed. Print window opened.'
@@ -1463,14 +1486,12 @@ function ReviewMedCertModal({ cert, onClose, onReleased, onCancelled, showToast 
                     <i className="bi bi-file-medical"></i> Medical Certificate Processing
                 </div>
                 <div className="alert alert-info text-sm mb16">
-                    <i className="bi bi-info-circle"></i> <b>Status:</b> Visit is marked complete. Fill out the blanks below. The document
+                    <i className="bi bi-info-circle"></i> <b>Status:</b> Pending physician release. Fill out the blanks below. The document
                     opens with the USeP header.
                     <div className="text-xs mt4" style={{ opacity: 0.85 }}>
-                        <b>Preview</b> opens the certificate without changing anything. <b>Confirm Release</b> marks the certificate as released and the
-                        visit complete &mdash; the request leaves the pending list and is saved in History &mdash; then opens the print window. <b>Cancel</b>
-                        removes the request from pending without saving it in History.
-                        <br />In the print dialog, switch off <b>Headers and&nbsp;footers</b> so the browser's date and &ldquo;about:blank&rdquo;
-                        line stay off the page. Chrome remembers that choice.
+                        <b>Preview</b> only prints the certificate &mdash; the request stays in the list and nothing is completed. <b>Confirm
+                        Release</b> is the final step: it marks the certificate as released and the visit complete, removing the request from the
+                        pending list and saving it in History. <b>Cancel</b> removes the request without saving it in History.
                     </div>
                 </div>
 
@@ -1633,6 +1654,51 @@ export default function DoctorDashboard() {
         }
     }, []);
 
+    const [releasingId, setReleasingId] = useState(null);
+
+    // Confirm & Release directly from the list row. Same finalizer as the modal,
+    // so the request is removed only after an explicit confirmation either way.
+    async function handleConfirmRelease(cert) {
+        if (releasingId != null) return;
+        const patient = cert.queue?.patient;
+        if (!cert.findings?.trim() || !cert.license_no?.trim()) {
+            showToast('Open Review & Process and enter the findings and license number first.', 'error');
+            return;
+        }
+        if (!window.confirm(`Confirm and release the medical certificate for ${patientName(patient)}? This removes the request from the pending list.`)) return;
+
+        // Open the print tab while the click gesture is still active.
+        const printTab = openPrintTab();
+        if (!printTab) return;
+
+        const form = {
+            findings: cert.findings,
+            purpose: cert.purpose || cert.diagnosis_reason || '',
+            physician_name: cert.physician_name || '',
+            license_no: cert.license_no,
+            exam_date: cert.exam_date || cert.queue?.date || new Date().toISOString().slice(0, 10),
+            affiliation: 'N/A',
+        };
+
+        setReleasingId(cert.certificate_id);
+        try {
+            const printed = await finalizeCertificateRelease(cert, patient, form, printTab);
+            showToast(
+                printed
+                    ? 'Certificate confirmed and released. Print window opened.'
+                    : 'Certificate confirmed and released. Reopen the print preview if the window closed.',
+                'success',
+            );
+            fetchCerts();
+            fetchHistory();
+        } catch (e) {
+            if (printTab && !printTab.closed) printTab.close();
+            showToast(requestError(e, 'Failed to release the certificate.'), 'error');
+        } finally {
+            setReleasingId(null);
+        }
+    }
+
     useEffect(() => {
         fetchQueue();
         fetchCerts();
@@ -1731,7 +1797,15 @@ export default function DoctorDashboard() {
                         </>
                     )}
 
-                    {section === 'medcert' && <MedCertListDoctor certs={certs} loading={certsLoading} onReview={setReviewCertModal} />}
+                    {section === 'medcert' && (
+                        <MedCertListDoctor
+                            certs={certs}
+                            loading={certsLoading}
+                            onReview={setReviewCertModal}
+                            onRelease={handleConfirmRelease}
+                            releasingId={releasingId}
+                        />
+                    )}
 
                     {section === 'labs' && <LabRequestsList labs={labs} loading={labsLoading} onAttach={setAttachLabsModal} />}
 
