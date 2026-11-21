@@ -122,9 +122,11 @@
 /* One timing curve keeps the luminous tip aligned with the reversible trace. */
 .clinic-entry-silk .clinic-heartbeat { display: block; height: 135px; }
 .clinic-heartbeat-base { opacity: .22; }
-.clinic-heartbeat-trace { stroke-dasharray: 100; animation: clinic-heartbeat-draw 2.4s ease-in-out infinite alternate; }
+/* A resting ECG runs at ~72 bpm: one sweep every 0.83s, constant speed, no
+   reverse. The QRS spike is a brief event inside that flat-line cycle. */
+.clinic-heartbeat-trace { stroke-dasharray: 100; animation: clinic-heartbeat-draw .83s linear infinite; }
 .clinic-heartbeat-halo { stroke-width: 7; filter: blur(6px); opacity: .5; }
-.clinic-heartbeat-light { offset-path: path('M10 70H130L155 42 185 108 225 18 264 120 295 55 320 70H470'); animation: clinic-heartbeat-travel 2.4s ease-in-out infinite alternate; filter: drop-shadow(0 0 4px #ffe6a0); }
+.clinic-heartbeat-light { offset-path: path('M10 70H130L155 42 185 108 225 18 264 120 295 55 320 70H470'); animation: clinic-heartbeat-travel .83s linear infinite; filter: drop-shadow(0 0 4px #ffe6a0); }
 @keyframes clinic-heartbeat-draw { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
 @keyframes clinic-heartbeat-travel { from { offset-distance: 0%; } to { offset-distance: 100%; } }
 /* The heartbeat is the login page's signature motion and runs for every
