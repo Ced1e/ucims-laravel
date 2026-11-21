@@ -90,11 +90,11 @@
 /* Burgundy Silk login: scoped to keep other entry pages independent. */
 .clinic-entry-silk .clinic-entry-visual { background: repeating-radial-gradient(ellipse at 110% -10%, transparent 0 70px, #e8cb8516 71px 72px, transparent 73px 110px), linear-gradient(145deg, #370813, #791727); }
 .clinic-entry-silk .clinic-entry-visual::after { inset: 0; width: auto; height: auto; border: 0; border-radius: 0; box-shadow: none; opacity: .12; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23fff' filter='url(%23n)' opacity='.4' d='M0 0h180v180H0z'/%3E%3C/svg%3E"); }
-.clinic-entry-silk .clinic-entry-brand { gap: 18px; font-family: Arial, sans-serif; font-size: clamp(12px, 1.35vw, 17px); font-weight: 600; line-height: 1.32; letter-spacing: -.035em; }
-.clinic-entry-silk .clinic-entry-brand img { width: 88px; height: 88px; flex-shrink: 0; }
-.clinic-entry-wordmark { display: flex; flex-direction: column; gap: 10px; }
+.clinic-entry-silk .clinic-entry-brand { gap: 20px; font-family: Arial, sans-serif; font-size: clamp(14px, 1.6vw, 20px); font-weight: 700; line-height: 1.2; letter-spacing: -.03em; }
+.clinic-entry-silk .clinic-entry-brand img { width: 104px; height: 104px; flex-shrink: 0; }
+.clinic-entry-wordmark { display: flex; flex-direction: column; gap: 6px; }
 .clinic-entry-wordmark > span { white-space: nowrap; }
-.clinic-entry-wordmark small { color: #e8cb85; font-size: 14px; font-weight: 400; letter-spacing: 0; }
+.clinic-entry-wordmark small { color: #e8cb85; font-size: clamp(12px, 1.1vw, 15px); font-weight: 500; letter-spacing: .01em; }
 .clinic-entry-silk .clinic-entry-story h1 { font-family: Arial, sans-serif; font-weight: 600; font-size: clamp(36px, 3.8vw, 60px); letter-spacing: -.05em; line-height: 1.08; }
 .clinic-entry-silk .clinic-entry-story h1 span { color: inherit; }
 .clinic-entry-silk .clinic-entry-description { color: #e8cb85; font-size: 16px; }
@@ -108,10 +108,14 @@
 .clinic-entry-silk .clinic-entry-submit:hover { filter: brightness(1.1); }
 .clinic-entry-silk .clinic-entry-help { border: 0; }
 @media (max-width: 760px) {
-    .clinic-entry-silk .clinic-entry-brand img { width: 72px; height: 72px; }
-    .clinic-entry-silk .clinic-entry-brand { font-size: clamp(10px, 3vw, 13px); gap: 14px; }
-    .clinic-entry-wordmark small { font-size: 13px; }
+    .clinic-entry-silk .clinic-entry-brand img { width: 84px; height: 84px; }
+    .clinic-entry-silk .clinic-entry-brand { font-size: clamp(11px, 3.1vw, 14px); gap: 14px; }
+    .clinic-entry-wordmark small { font-size: 12px; }
     .clinic-entry-silk .clinic-entry-story h1 { font-size: clamp(28px, 6.5vw, 44px); }
+}
+@media (min-width: 761px) and (max-width: 1100px) {
+    .clinic-entry-silk .clinic-entry-brand { font-size: clamp(13px, 1.45vw, 17px); gap: 16px; }
+    .clinic-entry-silk .clinic-entry-brand img { width: 92px; height: 92px; }
 }
 
 /* One timing curve keeps the luminous tip aligned with the reversible trace. */
@@ -182,8 +186,8 @@
     .clinic-entry-help { margin-top: clamp(10px, 2.2vh, 30px); padding-top: clamp(9px, 1.8vh, 24px); }
 
     /* Burgundy Silk sizes several pieces with higher specificity — mirror them. */
-    .clinic-entry-silk .clinic-entry-brand { gap: clamp(10px, 1.7vh, 18px); font-size: clamp(10px, 1.5vh, 15px); }
-    .clinic-entry-silk .clinic-entry-brand img { width: clamp(46px, 9vh, 84px); height: clamp(46px, 9vh, 84px); }
+    .clinic-entry-silk .clinic-entry-brand { gap: clamp(12px, 1.9vh, 20px); font-size: clamp(12px, 1.8vh, 20px); }
+    .clinic-entry-silk .clinic-entry-brand img { width: clamp(60px, 10vh, 104px); height: clamp(60px, 10vh, 104px); }
     .clinic-entry-silk .clinic-entry-story h1 { font-size: clamp(26px, min(3.8vw, 5vh), 56px); }
     .clinic-entry-silk .clinic-entry-description { font-size: clamp(12.5px, 1.9vh, 16px); }
     .clinic-entry-silk .clinic-entry-art { height: clamp(64px, 14vh, 132px); margin-top: clamp(8px, 1.8vh, 26px); }
@@ -191,7 +195,7 @@
     .clinic-entry-silk .clinic-heartbeat svg { height: 100%; }
 }
 
-.clinic-entry-wordmark small { font-size: clamp(10.5px, 1.6vh, 14px); }
+.clinic-entry-wordmark small { font-size: clamp(11px, 1.2vh, 15px); }
 
 /* Short laptop viewports: keep the heartbeat visible by compacting it. Hiding
    the art made the login look broken on common 1366x768 laptops, whose inner
