@@ -495,6 +495,18 @@ function AnalyticsSection({ showToast }) {
         const sortedDates = Object.keys(dateGroups).sort();
 
         if (trendRef.current) {
+            // Stripe-style structure recolored to UCIMS maroon/gold: a soft
+            // gradient area fill, a single clean maroon line, and restrained
+            // gridlines. Dates are shown in human form on the X axis, and a
+            // hover tooltip reveals the exact date and consultation count.
+            const gradient = trendRef.current.getContext('2d').createLinearGradient(0, 0, 0, 260);
+            gradient.addColorStop(0, 'rgba(123,17,19,0.22)');
+            gradient.addColorStop(1, 'rgba(123,17,19,0)');
+            const humanDate = (iso) => {
+                const d = parseLocal(iso);
+                return d.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+            };
+
             charts.current.trend = new Chart(trendRef.current, {
                 type: 'line',
                 data: {
@@ -504,16 +516,72 @@ function AnalyticsSection({ showToast }) {
                             label: 'Total Consultations',
                             data: sortedDates.map((d) => dateGroups[d]),
                             borderColor: '#7B1113',
-                            backgroundColor: 'rgba(123,17,19,0.1)',
-                            borderWidth: 3,
-                            tension: 0.3,
+                            backgroundColor: gradient,
+                            borderWidth: 2.5,
+                            tension: 0.35,
                             fill: true,
-                            pointBackgroundColor: '#C9A227',
-                            pointRadius: 4,
+                            pointBackgroundColor: '#fff',
+                            pointBorderColor: '#7B1113',
+                            pointBorderWidth: 2,
+                            pointRadius: 3,
+                            pointHoverRadius: 6,
+                            pointHoverBackgroundColor: '#7B1113',
+                            pointHoverBorderColor: '#fff',
+                            pointHoverBorderWidth: 2,
                         },
                     ],
                 },
-                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'nearest', intersect: false, axis: 'x' },
+                    layout: { padding: { top: 8, right: 8 } },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            align: 'end',
+                            labels: { color: '#4a4446', usePointStyle: true, pointStyle: 'circle', boxWidth: 8, padding: 14, font: { size: 11 } },
+                        },
+                        tooltip: {
+                            enabled: true,
+                            backgroundColor: '#650d1c',
+                            titleColor: '#fff',
+                            bodyColor: '#f6e9ec',
+                            borderColor: '#7B1113',
+                            borderWidth: 1,
+                            padding: 10,
+                            cornerRadius: 8,
+                            displayColors: false,
+                            callbacks: {
+                                title: (items) => humanDate(sortedDates[items[0].dataIndex]),
+                                label: (item) => ` ${item.parsed.y} consultation${item.parsed.y === 1 ? '' : 's'}`,
+                            },
+                        },
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false },
+                            border: { color: '#e3dcde' },
+                            ticks: {
+                                color: '#6b5e61',
+                                font: { size: 10 },
+                                maxRotation: 45,
+                                minRotation: 45,
+                                autoSkip: true,
+                                maxTicksLimit: 12,
+                                // Show "Nov 18, 2026" instead of the raw YYYY-MM-DD key.
+                                callback(value) { return humanDate(sortedDates[value]); },
+                            },
+                        },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(123,17,19,0.07)' },
+                            border: { display: false },
+                            ticks: { stepSize: 1, color: '#6b5e61', font: { size: 10 }, precision: 0 },
+                        },
+                    },
+                },
             });
         }
 
@@ -528,13 +596,44 @@ function AnalyticsSection({ showToast }) {
                 }
             });
             const avgData = [1, 2, 3, 4, 5].map((i) => (counts[i] === 0 ? 0 : Number((counts[i] / (occurrences[i].size || 1)).toFixed(1))));
+            // Stripe structure, UCIMS palette: donut with a maroon/gold ramp,
+            // clean point-style legend, and hover tooltips.
             charts.current.day = new Chart(dayRef.current, {
-                type: 'pie',
+                type: 'doughnut',
                 data: {
                     labels: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-                    datasets: [{ data: avgData, backgroundColor: ['#7B1113', '#9B1E20', '#C9A227', '#1A3A6B', '#2D6A2D'], borderWidth: 1 }],
+                    datasets: [{
+                        data: avgData,
+                        backgroundColor: ['#7B1113', '#9B1E20', '#C9A227', '#DFC66B', '#5c0d24'],
+                        borderColor: '#fff',
+                        borderWidth: 2,
+                        hoverOffset: 8,
+                    }],
                 },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '62%',
+                    layout: { padding: 8 },
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { color: '#4a4446', usePointStyle: true, pointStyle: 'circle', boxWidth: 8, padding: 12, font: { size: 11 } },
+                        },
+                        tooltip: {
+                            enabled: true,
+                            backgroundColor: '#650d1c',
+                            titleColor: '#fff',
+                            bodyColor: '#f6e9ec',
+                            borderColor: '#7B1113',
+                            borderWidth: 1,
+                            padding: 10,
+                            cornerRadius: 8,
+                            displayColors: false,
+                            callbacks: { label: (item) => ` ${item.parsed} avg consults/day` },
+                        },
+                    },
+                },
             });
         }
 
@@ -551,16 +650,42 @@ function AnalyticsSection({ showToast }) {
                         {
                             label: 'Count',
                             data: [t.checkup, t.medicine, t['follow-up'], t.medcert],
-                            backgroundColor: ['#7B1113', '#C9A227', '#1A3A6B', '#2D6A2D'],
-                            borderRadius: 4,
+                            backgroundColor: ['#7B1113', '#C9A227', '#9B1E20', '#DFC66B'],
+                            borderRadius: 8,
+                            borderSkipped: false,
+                            barPercentage: 0.6,
+                            hoverBackgroundColor: '#5c0d24',
                         },
                     ],
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+                    layout: { padding: { top: 8, right: 8 } },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            enabled: true,
+                            backgroundColor: '#650d1c',
+                            titleColor: '#fff',
+                            bodyColor: '#f6e9ec',
+                            borderColor: '#7B1113',
+                            borderWidth: 1,
+                            padding: 10,
+                            cornerRadius: 8,
+                            displayColors: false,
+                            callbacks: { label: (item) => ` ${item.parsed.y} consultation${item.parsed.y === 1 ? '' : 's'}` },
+                        },
+                    },
+                    scales: {
+                        x: { grid: { display: false }, border: { color: '#e3dcde' }, ticks: { color: '#6b5e61', font: { size: 10 } } },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(123,17,19,0.07)' },
+                            border: { display: false },
+                            ticks: { stepSize: 1, color: '#6b5e61', font: { size: 10 }, precision: 0 },
+                        },
+                    },
                 },
             });
         }
