@@ -49,6 +49,9 @@ test('the modal footer is Cancel / Preview / Print with no release action', () =
     assert.ok(footer.includes('> Print'), 'the button is labelled Print');
     assert.ok(!footer.includes('onClick={handleRelease}'), 'no release button in the modal');
     assert.ok(!footer.includes('Confirm Release &amp; Print'), 'the old combined label is gone');
+
+    assert.ok(modal().includes('medcert-review-modal'), 'the review modal has a compact layout class');
+    assert.ok(modal().includes('medcert-paper'), 'the in-modal certificate has a compact class');
 });
 
 test('Preview opens a non-printing, viewport-fitted certificate', () => {
@@ -85,10 +88,14 @@ test('Print opens the print dialog but never finalizes the request', () => {
     const html = functionBody('function certificateHtml(cert, patient, form, preview = false)');
     assert.ok(html.includes('<div class="sheet-inner">'), 'the printable content is wrapped for scaling');
     assert.ok(html.includes('.sheet { width: 210mm; height: 297mm; min-height: 0; margin: 0; }'), 'print is fixed to one A4 page');
+    assert.ok(html.includes('body class="${preview ? \'preview\' : \'print-mode\'}"'), 'the print tab gets its own screen-mode class');
+    assert.ok(html.includes('body.print-mode { height: 100vh; overflow: hidden; }'), 'the print tab screen view has no scroll bar');
+    assert.ok(html.includes('transform: translate(-50%, -50%) scale(var(--fit, 1))'), 'screen fit uses a CSS variable ignored by print media');
     const printScript = html.slice(html.indexOf('const printScript'), html.indexOf('const html ='));
     assert.ok(printScript.includes('inner.scrollHeight'), 'the print fitter measures the document');
     assert.ok(printScript.includes('pageHeight / inner.scrollHeight'), 'the print fitter scales content to the page');
     assert.ok(printScript.includes('window.print()'), 'the print script still opens the print dialog');
+    assert.ok(printScript.includes("document.documentElement.style.setProperty('--fit', screenScale)"), 'the print tab fits the document to the screen');
 });
 
 test('the request row has Review & Process, Confirm & Release, then Cancel', () => {

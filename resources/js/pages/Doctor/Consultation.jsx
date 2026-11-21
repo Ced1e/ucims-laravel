@@ -1117,7 +1117,8 @@ function certificateHtml(cert, patient, form, preview = false) {
     // Shrink the document just enough to fit a single A4 page, then print.
     function fit() {
         var inner = document.querySelector('.sheet-inner');
-        if (!inner) return;
+        var sheet = document.querySelector('.sheet');
+        if (!inner || !sheet) return;
         inner.style.transform = 'scale(1)';
         var pageHeight = 297 * 96 / 25.4;
         var pageWidth = 210 * 96 / 25.4;
@@ -1127,6 +1128,13 @@ function certificateHtml(cert, patient, form, preview = false) {
             1
         );
         inner.style.transform = 'scale(' + scale + ')';
+
+        var screenScale = Math.min(
+            (window.innerWidth - 24) / sheet.offsetWidth,
+            (window.innerHeight - 24) / sheet.offsetHeight,
+            1
+        );
+        document.documentElement.style.setProperty('--fit', screenScale);
     }
     var run = function () {
         fit();
@@ -1134,6 +1142,7 @@ function certificateHtml(cert, patient, form, preview = false) {
     };
     if (document.readyState === 'complete') run();
     else window.addEventListener('load', run);
+    window.addEventListener('resize', fit);
 })();
 </script>`;
 
@@ -1246,6 +1255,17 @@ function certificateHtml(cert, patient, form, preview = false) {
             padding: 6px 12px;
             border-radius: 999px;
         }
+        /* Print tab on screen: fit the sheet to the window so there is no
+           scroll bar. --fit is set by the script; print media ignores it. */
+        body.print-mode { height: 100vh; overflow: hidden; }
+        body.print-mode .sheet {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            margin: 0;
+            transform-origin: center center;
+            transform: translate(-50%, -50%) scale(var(--fit, 1));
+        }
     }
     @media print {
         /* One fixed A4 page with no browser margins and no spill onto page 2. */
@@ -1255,7 +1275,7 @@ function certificateHtml(cert, patient, form, preview = false) {
     }
 </style>
 </head>
-<body${preview ? ' class="preview"' : ''}>
+<body class="${preview ? 'preview' : 'print-mode'}">
 <div class="sheet">
 <div class="sheet-inner">
     <header class="letterhead">
@@ -1575,11 +1595,11 @@ function ReviewMedCertModal({ cert, onClose, onCancelled, showToast }) {
 
     return (
         <div className="modal-overlay open" onClick={(e) => e.target === e.currentTarget && onClose()}>
-            <div className="modal modal-lg">
+            <div className="modal modal-lg medcert-review-modal">
                 <button className="modal-close" onClick={onClose}>
                     &times;
                 </button>
-                <div className="card-title" style={{ marginBottom: 16 }}>
+                <div className="card-title" style={{ marginBottom: 10 }}>
                     <i className="bi bi-file-medical"></i> Medical Certificate Processing
                 </div>
                 <div className="alert alert-info text-sm mb16">
@@ -1592,16 +1612,7 @@ function ReviewMedCertModal({ cert, onClose, onCancelled, showToast }) {
                     </div>
                 </div>
 
-                <div
-                    style={{
-                        border: '1px solid var(--border)',
-                        borderRadius: 10,
-                        padding: '26px 30px',
-                        fontFamily: "'Times New Roman', Times, serif",
-                        lineHeight: 2.1,
-                        fontSize: '1rem',
-                    }}
-                >
+                <div className="medcert-paper">
                     <p style={{ fontWeight: 700, marginBottom: 18 }}>TO WHOM IT MAY CONCERN:</p>
 
                     <p>
@@ -1633,7 +1644,7 @@ function ReviewMedCertModal({ cert, onClose, onCancelled, showToast }) {
                         Issued Date: <b>{issuedDate}</b> at Davao City, Philippines.
                     </p>
 
-                    <div style={{ marginTop: 50, textAlign: 'right' }}>
+                    <div className="medcert-signature" style={{ marginTop: 24, textAlign: 'right' }}>
                         <Blank
                             value={form.physician_name}
                             onChange={(v) => setForm({ ...form, physician_name: v.toUpperCase() })}
