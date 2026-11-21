@@ -1397,7 +1397,7 @@ function Blank({ value, onChange, width = 170, type = 'text', placeholder = '', 
     );
 }
 
-function ReviewMedCertModal({ cert, onClose, onReleased, onCancelled, showToast }) {
+function ReviewMedCertModal({ cert, onClose, onCancelled, showToast }) {
     const { auth } = usePage().props;
     const patient = cert.queue?.patient;
     const [form, setForm] = useState({
@@ -1451,7 +1451,7 @@ function ReviewMedCertModal({ cert, onClose, onReleased, onCancelled, showToast 
         }
     }
 
-    async function handleRelease() {
+    async function handlePrint() {
         if (!validateForm()) return;
         // Open the print tab first, while the click still counts as a user gesture.
         // Opening it after the awaits below is what the browser blocks.
@@ -1459,18 +1459,27 @@ function ReviewMedCertModal({ cert, onClose, onReleased, onCancelled, showToast 
         if (!printTab) return;
         setSaving(true);
         try {
-            const printed = await finalizeCertificateRelease(cert, patient, form, printTab);
+            // Persist the physician's entries as a draft so Confirm & Release in
+            // the list can finalize with them. This never sets is_released, never
+            // completes the visit, and never removes the request from the list.
+            await axios.put(`/api/v1/medical-certificates/${cert.certificate_id}`, {
+                findings: form.findings,
+                purpose: form.purpose,
+                physician_name: form.physician_name,
+                license_no: form.license_no,
+                exam_date: form.exam_date,
+                is_released: false,
+            });
+            const printed = writeCertificate(printTab, cert, patient, form);
             showToast(
                 printed
-                    ? 'Certificate confirmed. Print window opened.'
-                    : 'Certificate confirmed and released. Reopen the print preview if the window closed.',
+                    ? 'Certificate printed. The request is still pending — use Confirm & Release in the list to finalize it.'
+                    : 'Draft saved. Reopen the print preview if the print window closed.',
                 'success',
             );
-            onReleased();
         } catch (e) {
-            // The release failed, so the placeholder tab must not stay open.
             if (printTab && !printTab.closed) printTab.close();
-            showToast(requestError(e, 'Failed to release the certificate.'), 'error');
+            showToast(requestError(e, 'Failed to save and print the certificate.'), 'error');
         } finally {
             setSaving(false);
         }
@@ -1489,9 +1498,9 @@ function ReviewMedCertModal({ cert, onClose, onReleased, onCancelled, showToast 
                     <i className="bi bi-info-circle"></i> <b>Status:</b> Pending physician release. Fill out the blanks below. The document
                     opens with the USeP header.
                     <div className="text-xs mt4" style={{ opacity: 0.85 }}>
-                        <b>Preview</b> only prints the certificate &mdash; the request stays in the list and nothing is completed. <b>Confirm
-                        Release</b> is the final step: it marks the certificate as released and the visit complete, removing the request from the
-                        pending list and saving it in History. <b>Cancel</b> removes the request without saving it in History.
+                        <b>Preview</b> opens the certificate without saving. <b>Print</b> saves your entries and prints the certificate &mdash; the
+                        request still stays in the list and nothing is completed. <b>Confirm &amp; Release</b> in the request list is the final step:
+                        it releases the certificate and removes the request from pending. <b>Cancel</b> removes the request without saving it in History.
                     </div>
                 </div>
 
@@ -1565,8 +1574,8 @@ function ReviewMedCertModal({ cert, onClose, onReleased, onCancelled, showToast 
                     <button className="btn btn-outline" style={{ flex: 1 }} disabled={saving} onClick={handlePreview}>
                         <i className="bi bi-eye"></i> Preview
                     </button>
-                    <button className="btn btn-primary" style={{ flex: 1 }} disabled={saving} onClick={handleRelease}>
-                        {saving ? 'Confirming...' : <><i className="bi bi-printer"></i> Confirm Release &amp; Print</>}
+                    <button className="btn btn-primary" style={{ flex: 1 }} disabled={saving} onClick={handlePrint}>
+                        {saving ? 'Printing...' : <><i className="bi bi-printer"></i> Print</>}
                     </button>
                 </div>
             </div>
@@ -1834,11 +1843,6 @@ export default function DoctorDashboard() {
                     cert={reviewCertModal}
                     showToast={showToast}
                     onClose={() => setReviewCertModal(null)}
-                    onReleased={() => {
-                        setReviewCertModal(null);
-                        fetchCerts();
-                        fetchHistory();
-                    }}
                     onCancelled={() => {
                         setReviewCertModal(null);
                         fetchCerts();

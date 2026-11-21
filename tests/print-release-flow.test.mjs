@@ -4,11 +4,10 @@ import fs from 'node:fs';
 
 // Regression guards for the Medical Certificate Requests workflow:
 //
-// 1. Preview/Print only generates the document. The request stays pending, the
-//    visit is not completed, and the modal stays open.
-// 2. Confirm & Release is the only finalizer. It is available both in the modal
-//    footer and beside Review & Process in the list row, and both go through the
-//    same helper so behavior is identical regardless of button position.
+// 1. The modal footer is Cancel / Preview / Print. Neither print action
+//    releases, completes, or removes the request from the pending list.
+// 2. Confirm & Release beside Review & Process in the list row is the ONLY
+//    finalizer, regardless of where a control sits in the interface.
 // 3. The print tab must be opened inside the click gesture, before any await,
 //    otherwise the browser's popup blocker silently drops it.
 
@@ -32,13 +31,26 @@ function functionBody(name) {
     throw new Error(`Unbalanced braces after ${name}`);
 }
 
-// Comments state the intent ("no axios", etc.), so strip them before checking
-// what the code actually does.
 function codeOnly(body) {
     return body.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 }
 
-test('Preview/print only generates the document and never releases the request', () => {
+const modal = () => source.slice(
+    source.indexOf('function ReviewMedCertModal'),
+    source.indexOf('export default function DoctorDashboard'),
+);
+
+test('the modal footer is Cancel / Preview / Print with no release action', () => {
+    const footer = functionBody('function ReviewMedCertModal').slice(-1600);
+
+    assert.ok(footer.includes('onClick={handlePreview}'), 'Preview button is present');
+    assert.ok(footer.includes('onClick={handlePrint}'), 'Print button is present');
+    assert.ok(footer.includes('> Print'), 'the button is labelled Print');
+    assert.ok(!footer.includes('onClick={handleRelease}'), 'no release button in the modal');
+    assert.ok(!footer.includes('Confirm Release &amp; Print'), 'the old combined label is gone');
+});
+
+test('Preview only prints — no save, no release, no list refresh', () => {
     const body = codeOnly(functionBody('function handlePreview()'));
 
     assert.ok(body.includes('printCertificate('), 'Preview opens the printable certificate');
@@ -47,62 +59,59 @@ test('Preview/print only generates the document and never releases the request',
     }
 });
 
+test('Print saves a draft but never releases the request', () => {
+    const body = codeOnly(functionBody('async function handlePrint()'));
+
+    assert.ok(body.includes('axios.put('), 'Print persists the entered fields');
+    assert.ok(body.includes('is_released: false'), 'the save is explicitly a draft, not a release');
+    assert.ok(body.includes('writeCertificate('), 'Print writes the printed document');
+    assert.ok(!body.includes('is_released: true'), 'Print cannot mark the certificate released');
+    assert.ok(!body.includes('finalizeCertificateRelease('), 'Print does not call the finalizer');
+    assert.ok(!body.includes('fetchCerts()'), 'Print does not refresh/clear the pending list');
+});
+
 test('Confirm & Release sits beside Review & Process in the request row', () => {
     const list = source.slice(source.indexOf('function MedCertListDoctor'), source.indexOf('function Blank'));
 
     assert.ok(list.includes('medcert-row-actions'), 'the actions cell wraps both row buttons');
     assert.ok(list.includes('onReview(c)'), 'Review & Process is in the row');
     assert.ok(list.includes('onRelease(c)'), 'Confirm & Release is also in the row');
-
-    const modal = source.slice(source.indexOf('function ReviewMedCertModal'), source.indexOf('export default function DoctorDashboard'));
-    assert.ok(modal.includes('onClick={handlePreview}'), 'the modal keeps its Preview button');
-    assert.ok(modal.includes('onClick={handleRelease}'), 'the modal keeps its Confirm Release button');
 });
 
-test('both release buttons share the same finalizer', () => {
+test('only the row Confirm & Release finalizes the request', () => {
     const helper = codeOnly(functionBody('async function finalizeCertificateRelease'));
     assert.ok(helper.includes('is_released: true'), 'shared finalizer marks the certificate released');
     assert.ok(helper.includes("status: 'done'"), 'shared finalizer completes the visit');
-    assert.ok(helper.includes('writeCertificate('), 'shared finalizer prints the certificate');
 
-    for (const name of ['async function handleRelease()', 'async function handleConfirmRelease(cert)']) {
-        const body = codeOnly(functionBody(name));
-        assert.ok(body.includes('finalizeCertificateRelease('), `${name} delegates to the shared finalizer`);
-    }
+    const row = codeOnly(functionBody('async function handleConfirmRelease(cert)'));
+    assert.ok(row.includes('finalizeCertificateRelease('), 'the row button delegates to the finalizer');
+    assert.ok(row.includes('fetchCerts()'), 'the row button refreshes the pending list');
+
+    assert.ok(!modal().includes('finalizeCertificateRelease'), 'the modal cannot finalize a request');
 });
 
-test('both release paths open the print tab before awaiting the API', () => {
-    for (const name of ['async function handleRelease()', 'async function handleConfirmRelease(cert)']) {
+test('both print and release open the print tab before awaiting the API', () => {
+    for (const name of ['async function handlePrint()', 'async function handleConfirmRelease(cert)']) {
         const body = functionBody(name);
         const tab = body.indexOf('openPrintTab()');
         const firstAwait = body.indexOf('await ');
 
         assert.ok(tab > -1, `${name} opens a print tab`);
-        assert.ok(firstAwait > -1, `${name} still saves the certificate`);
+        assert.ok(firstAwait > -1, `${name} makes a request`);
         assert.ok(tab < firstAwait, `${name} must open the tab before its first await`);
     }
 });
 
-test('a failed release closes the placeholder print tab', () => {
-    for (const name of ['async function handleRelease()', 'async function handleConfirmRelease(cert)']) {
+test('a failed save or release closes the placeholder print tab', () => {
+    for (const name of ['async function handlePrint()', 'async function handleConfirmRelease(cert)']) {
         const body = functionBody(name);
         const catchBlock = body.slice(body.indexOf('catch (e)'));
         assert.ok(catchBlock.includes('printTab.close()'), `${name} closes the leftover print tab on failure`);
     }
 });
 
-test('printCertificate opens its own tab so Preview keeps working', () => {
-    const body = functionBody('function printCertificate(cert, patient, form)');
-    assert.ok(body.includes('openPrintTab()'), 'printCertificate opens a tab synchronously');
-    assert.ok(body.includes('writeCertificate('), 'printCertificate writes the certificate into that tab');
-});
-
 test('the obsolete print-dialog tip is gone', () => {
-    const modal = source.slice(source.indexOf('function ReviewMedCertModal'), source.indexOf('export default function DoctorDashboard'));
-    assert.ok(!modal.includes('Headers and&nbsp;footers'), 'no headers/footers tip in the alert');
-    assert.ok(!modal.includes('about:blank'), 'no about:blank tip in the alert');
-    assert.ok(
-        modal.includes('Pending physician release'),
-        'the alert still explains Pending / Preview / Confirm Release / Cancel',
-    );
+    assert.ok(!modal().includes('Headers and&nbsp;footers'), 'no headers/footers tip in the alert');
+    assert.ok(!modal().includes('about:blank'), 'no about:blank tip in the alert');
+    assert.ok(modal().includes('Pending physician release'), 'the alert still explains the workflow');
 });
