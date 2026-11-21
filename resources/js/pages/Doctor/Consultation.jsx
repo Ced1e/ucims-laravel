@@ -1078,7 +1078,7 @@ function ExamSummaryModal({ visit, onClose }) {
 // ─────────────────────────────────────────────────────────────
 // MedCert Requests — Doctor view (review, finalize, release, print)
 // ─────────────────────────────────────────────────────────────
-function certificateHtml(cert, patient, form) {
+function certificateHtml(cert, patient, form, preview = false) {
     const formatDt = (d) => (d ? new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '_________________');
     const today = new Date();
     const dayOfMonth = today.getDate();
@@ -1087,6 +1087,38 @@ function certificateHtml(cert, patient, form) {
             : dayOfMonth % 10 === 3 && dayOfMonth !== 13 ? 'rd' : 'th';
     // Transparent seal (no black square behind it) — logo.png has an opaque black matte.
     const logoUrl = `${window.location.origin}/assets/img/University%20of%20Southeastern%20Philippines%20Seal.png`;
+
+    // Preview scales the A4 sheet down to the browser viewport so the whole
+    // certificate is visible at once. It never calls window.print().
+    const previewScript = `
+<div class="preview-hint">Preview only &mdash; nothing has been printed or released. Close this tab to return.</div>
+<script>
+(function () {
+    function fit() {
+        var sheet = document.querySelector('.sheet');
+        if (!sheet) return;
+        sheet.style.transform = 'scale(1)';
+        var scale = Math.min(
+            (window.innerWidth - 32) / sheet.offsetWidth,
+            (window.innerHeight - 32) / sheet.offsetHeight
+        );
+        if (scale > 1) scale = 1;
+        sheet.style.transform = 'translate(-50%, -50%) scale(' + scale + ')';
+    }
+    if (document.readyState === 'complete') fit();
+    else window.addEventListener('load', fit);
+    window.addEventListener('resize', fit);
+})();
+</script>`;
+
+    const printScript = `
+<script>
+(function () {
+    var run = function () { setTimeout(function () { window.print(); }, 250); };
+    if (document.readyState === 'complete') run();
+    else window.addEventListener('load', run);
+})();
+</script>`;
 
     const html = `<!DOCTYPE html>
 <html>
@@ -1174,10 +1206,33 @@ function certificateHtml(cert, patient, form) {
     @media screen {
         body { background: #e9e6e7; }
         .sheet { box-shadow: 0 8px 30px rgba(0,0,0,.18); margin: 16px auto; }
+        /* Preview: pin the sheet to one viewport so nothing needs scrolling. */
+        body.preview { height: 100vh; overflow: hidden; }
+        body.preview .sheet {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            margin: 0;
+            transform-origin: center center;
+        }
+        body.preview .preview-hint {
+            position: fixed;
+            left: 50%;
+            bottom: 12px;
+            transform: translateX(-50%);
+            font: 12px Arial, Helvetica, sans-serif;
+            color: #6f6467;
+            background: #ffffffdd;
+            padding: 6px 12px;
+            border-radius: 999px;
+        }
+    }
+    @media print {
+        .preview-hint { display: none; }
     }
 </style>
 </head>
-<body>
+<body${preview ? ' class="preview"' : ''}>
 <div class="sheet">
     <header class="letterhead">
         <img src="${logoUrl}" alt="USeP seal">
@@ -1217,13 +1272,7 @@ function certificateHtml(cert, patient, form) {
         </div>
     </div>
 </div>
-<script>
-    (function () {
-        var run = function () { setTimeout(function () { window.print(); }, 250); };
-        if (document.readyState === 'complete') run();
-        else window.addEventListener('load', run);
-    })();
-</script>
+${preview ? previewScript : printScript}
 </body>
 </html>`;
 
@@ -1236,35 +1285,42 @@ function certificateHtml(cert, patient, form) {
  * after an awaited API call is silently blocked. The placeholder keeps the
  * blank tab from looking broken while the release request is in flight.
  */
-function openPrintTab() {
-    const printTab = window.open('', '_blank');
-    if (!printTab) {
-        alert('Please allow pop-ups for this site to print the certificate.');
+function openCertificateTab(placeholder = 'Preparing the medical certificate&hellip;') {
+    const tab = window.open('', '_blank');
+    if (!tab) {
+        alert('Please allow pop-ups for this site to open the medical certificate.');
         return null;
     }
-    printTab.document.open();
-    printTab.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Medical Certificate</title></head><body style="margin:0;height:100vh;display:grid;place-items:center;font-family:system-ui,sans-serif;color:#666"><p>Preparing the medical certificate&hellip;</p></body></html>');
-    printTab.document.close();
-    return printTab;
+    tab.document.open();
+    tab.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Medical Certificate</title></head><body style="margin:0;height:100vh;display:grid;place-items:center;font-family:system-ui,sans-serif;color:#666"><p>${placeholder}</p></body></html>`);
+    tab.document.close();
+    return tab;
 }
 
-function writeCertificate(printTab, cert, patient, form) {
-    if (!printTab || printTab.closed) return false;
-    printTab.document.open();
-    printTab.document.write(certificateHtml(cert, patient, form));
-    printTab.document.close();
+function writeCertificate(tab, cert, patient, form, preview = false) {
+    if (!tab || tab.closed) return false;
+    tab.document.open();
+    tab.document.write(certificateHtml(cert, patient, form, preview));
+    tab.document.close();
     try {
-        printTab.focus();
+        tab.focus();
     } catch {
         // Some browsers refuse focus on a background tab; printing still works.
     }
     return true;
 }
 
+// Preview only renders the sheet to fit the viewport — no print dialog.
+function previewCertificate(cert, patient, form) {
+    const tab = openCertificateTab('Preparing the certificate preview&hellip;');
+    if (!tab) return false;
+    return writeCertificate(tab, cert, patient, form, true);
+}
+
 function printCertificate(cert, patient, form) {
-    const printTab = openPrintTab();
-    if (!printTab) return false;
-    return writeCertificate(printTab, cert, patient, form);
+    const tab = openCertificateTab();
+    if (!tab) return false;
+    return writeCertificate(tab, cert, patient, form);
 }
 
 /**
@@ -1439,8 +1495,8 @@ function ReviewMedCertModal({ cert, onClose, onCancelled, showToast }) {
         // Print preview only — opens the certificate for viewing/printing WITHOUT
         // releasing it or completing the visit. The request stays in the queue.
         if (!validateForm()) return;
-        printCertificate(cert, patient, form);
-        showToast('Print preview opened. Nothing has been released yet.', 'success');
+        previewCertificate(cert, patient, form);
+        showToast('Preview opened in a new tab. Nothing has been printed or released.', 'success');
     }
 
     async function handleCancel() {
@@ -1462,7 +1518,7 @@ function ReviewMedCertModal({ cert, onClose, onCancelled, showToast }) {
         if (!validateForm()) return;
         // Open the print tab first, while the click still counts as a user gesture.
         // Opening it after the awaits below is what the browser blocks.
-        const printTab = openPrintTab();
+        const printTab = openCertificateTab();
         if (!printTab) return;
         setSaving(true);
         try {
