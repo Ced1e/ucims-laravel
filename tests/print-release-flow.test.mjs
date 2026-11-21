@@ -7,7 +7,8 @@ import fs from 'node:fs';
 // 1. The modal footer is Cancel / Preview / Print. Neither print action
 //    releases, completes, or removes the request from the pending list.
 // 2. Confirm & Release beside Review & Process in the list row is the ONLY
-//    finalizer, regardless of where a control sits in the interface.
+//    finalizer, and it does NOT open a print dialog — it just releases the
+//    certificate and clears it from the pending list.
 // 3. The print tab must be opened inside the click gesture, before any await,
 //    otherwise the browser's popup blocker silently drops it.
 
@@ -16,8 +17,6 @@ const source = fs.readFileSync(new URL('../resources/js/pages/Doctor/Consultatio
 function functionBody(name) {
     const start = source.indexOf(name);
     assert.ok(start > -1, `${name} exists in Consultation.jsx`);
-    // The body's opening brace is the last '{' on the signature line (handles
-    // both `fn() {` and `fn({ a, b }) {`).
     const lineEnd = source.indexOf('\n', start);
     const open = start + source.slice(start, lineEnd).lastIndexOf('{');
     let depth = 0;
@@ -54,7 +53,7 @@ test('Preview only prints — no save, no release, no list refresh', () => {
     const body = codeOnly(functionBody('function handlePreview()'));
 
     assert.ok(body.includes('printCertificate('), 'Preview opens the printable certificate');
-    for (const forbidden of ['axios', 'onReleased', 'onCancelled', 'is_released', 'setSaving', 'fetchCerts', 'finalizeCertificateRelease']) {
+    for (const forbidden of ['axios', 'onReleased', 'onCancelled', 'is_released', 'setSaving', 'fetchCerts', 'releaseCertificate']) {
         assert.ok(!body.includes(forbidden), `handlePreview must not call or touch ${forbidden}`);
     }
 });
@@ -66,7 +65,7 @@ test('Print saves a draft but never releases the request', () => {
     assert.ok(body.includes('is_released: false'), 'the save is explicitly a draft, not a release');
     assert.ok(body.includes('writeCertificate('), 'Print writes the printed document');
     assert.ok(!body.includes('is_released: true'), 'Print cannot mark the certificate released');
-    assert.ok(!body.includes('finalizeCertificateRelease('), 'Print does not call the finalizer');
+    assert.ok(!body.includes('releaseCertificate('), 'Print does not call the release finalizer');
     assert.ok(!body.includes('fetchCerts()'), 'Print does not refresh/clear the pending list');
 });
 
@@ -78,35 +77,36 @@ test('Confirm & Release sits beside Review & Process in the request row', () => 
     assert.ok(list.includes('onRelease(c)'), 'Confirm & Release is also in the row');
 });
 
-test('only the row Confirm & Release finalizes the request', () => {
-    const helper = codeOnly(functionBody('async function finalizeCertificateRelease'));
-    assert.ok(helper.includes('is_released: true'), 'shared finalizer marks the certificate released');
-    assert.ok(helper.includes("status: 'done'"), 'shared finalizer completes the visit');
+test('Confirm & Release finalizes the request without printing again', () => {
+    const helper = codeOnly(functionBody('async function releaseCertificate'));
+    assert.ok(helper.includes('is_released: true'), 'release helper marks the certificate released');
+    assert.ok(helper.includes("status: 'done'"), 'release helper completes the visit');
+    assert.ok(!helper.includes('writeCertificate'), 'release helper must not print');
 
     const row = codeOnly(functionBody('async function handleConfirmRelease(cert)'));
-    assert.ok(row.includes('finalizeCertificateRelease('), 'the row button delegates to the finalizer');
+    assert.ok(row.includes('releaseCertificate('), 'the row button delegates to the release helper');
     assert.ok(row.includes('fetchCerts()'), 'the row button refreshes the pending list');
-
-    assert.ok(!modal().includes('finalizeCertificateRelease'), 'the modal cannot finalize a request');
-});
-
-test('both print and release open the print tab before awaiting the API', () => {
-    for (const name of ['async function handlePrint()', 'async function handleConfirmRelease(cert)']) {
-        const body = functionBody(name);
-        const tab = body.indexOf('openPrintTab()');
-        const firstAwait = body.indexOf('await ');
-
-        assert.ok(tab > -1, `${name} opens a print tab`);
-        assert.ok(firstAwait > -1, `${name} makes a request`);
-        assert.ok(tab < firstAwait, `${name} must open the tab before its first await`);
+    for (const forbidden of ['openPrintTab', 'printTab', 'writeCertificate', 'printCertificate']) {
+        assert.ok(!row.includes(forbidden), `Confirm & Release must not open a print dialog (${forbidden})`);
     }
+    assert.ok(!modal().includes('releaseCertificate'), 'the modal cannot finalize a request');
 });
 
-test('a failed save or release closes the placeholder print tab', () => {
+test('Print opens the print tab before awaiting the API', () => {
+    const body = functionBody('async function handlePrint()');
+    const tab = body.indexOf('openPrintTab()');
+    const firstAwait = body.indexOf('await ');
+
+    assert.ok(tab > -1, 'handlePrint opens a print tab');
+    assert.ok(firstAwait > -1, 'handlePrint makes a request');
+    assert.ok(tab < firstAwait, 'handlePrint must open the tab before its first await');
+});
+
+test('a failed save or release reports the error', () => {
     for (const name of ['async function handlePrint()', 'async function handleConfirmRelease(cert)']) {
         const body = functionBody(name);
         const catchBlock = body.slice(body.indexOf('catch (e)'));
-        assert.ok(catchBlock.includes('printTab.close()'), `${name} closes the leftover print tab on failure`);
+        assert.ok(catchBlock.includes("'error'"), `${name} reports failures as an error toast`);
     }
 });
 

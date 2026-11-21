@@ -1268,12 +1268,11 @@ function printCertificate(cert, patient, form) {
 }
 
 /**
- * The ONLY operation that finalizes a request: marks it released, completes the
- * visit and prints into the tab opened during the click gesture. Both the modal
- * button and the list-row button go through here, so their behavior is identical
- * regardless of which side of the interface the control sits on.
+ * The ONLY operation that finalizes a request: marks it released and completes
+ * the visit. It deliberately does NOT print — printing is done beforehand via
+ * the modal's Preview/Print buttons. Confirm & Release just clears the request.
  */
-async function finalizeCertificateRelease(cert, patient, form, printTab) {
+async function releaseCertificate(cert, form) {
     await axios.put(`/api/v1/medical-certificates/${cert.certificate_id}`, {
         findings: form.findings,
         purpose: form.purpose,
@@ -1285,7 +1284,6 @@ async function finalizeCertificateRelease(cert, patient, form, printTab) {
     if (cert.queue_id) {
         await axios.put(`/api/v1/queues/${cert.queue_id}`, { status: 'done', time_out: nowTime() });
     }
-    return writeCertificate(printTab, cert, patient, form);
 }
 
 function MedCertListDoctor({ certs, loading, onReview, onRelease, releasingId }) {
@@ -1665,8 +1663,8 @@ export default function DoctorDashboard() {
 
     const [releasingId, setReleasingId] = useState(null);
 
-    // Confirm & Release directly from the list row. Same finalizer as the modal,
-    // so the request is removed only after an explicit confirmation either way.
+    // Confirm & Release is the final step only. It never opens a print dialog —
+    // printing was done earlier with Preview/Print in Review & Process.
     async function handleConfirmRelease(cert) {
         if (releasingId != null) return;
         const patient = cert.queue?.patient;
@@ -1675,10 +1673,6 @@ export default function DoctorDashboard() {
             return;
         }
         if (!window.confirm(`Confirm and release the medical certificate for ${patientName(patient)}? This removes the request from the pending list.`)) return;
-
-        // Open the print tab while the click gesture is still active.
-        const printTab = openPrintTab();
-        if (!printTab) return;
 
         const form = {
             findings: cert.findings,
@@ -1691,17 +1685,11 @@ export default function DoctorDashboard() {
 
         setReleasingId(cert.certificate_id);
         try {
-            const printed = await finalizeCertificateRelease(cert, patient, form, printTab);
-            showToast(
-                printed
-                    ? 'Certificate confirmed and released. Print window opened.'
-                    : 'Certificate confirmed and released. Reopen the print preview if the window closed.',
-                'success',
-            );
+            await releaseCertificate(cert, form);
+            showToast('Certificate confirmed and released. It was removed from the pending list.', 'success');
             fetchCerts();
             fetchHistory();
         } catch (e) {
-            if (printTab && !printTab.closed) printTab.close();
             showToast(requestError(e, 'Failed to release the certificate.'), 'error');
         } finally {
             setReleasingId(null);
