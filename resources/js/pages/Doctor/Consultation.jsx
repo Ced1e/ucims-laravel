@@ -1078,7 +1078,7 @@ function ExamSummaryModal({ visit, onClose }) {
 // ─────────────────────────────────────────────────────────────
 // MedCert Requests — Doctor view (review, finalize, release, print)
 // ─────────────────────────────────────────────────────────────
-function printCertificate(cert, patient, form) {
+function certificateHtml(cert, patient, form) {
     const formatDt = (d) => (d ? new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '_________________');
     const today = new Date();
     const dayOfMonth = today.getDate();
@@ -1227,14 +1227,44 @@ function printCertificate(cert, patient, form) {
 </body>
 </html>`;
 
+    return html;
+}
+
+/**
+ * Open the print tab immediately, while the click gesture is still active.
+ * Browsers only permit window.open() during a user gesture, so a tab opened
+ * after an awaited API call is silently blocked. The placeholder keeps the
+ * blank tab from looking broken while the release request is in flight.
+ */
+function openPrintTab() {
     const printTab = window.open('', '_blank');
     if (!printTab) {
         alert('Please allow pop-ups for this site to print the certificate.');
-        return;
+        return null;
     }
     printTab.document.open();
-    printTab.document.write(html);
+    printTab.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Medical Certificate</title></head><body style="margin:0;height:100vh;display:grid;place-items:center;font-family:system-ui,sans-serif;color:#666"><p>Preparing the medical certificate&hellip;</p></body></html>');
     printTab.document.close();
+    return printTab;
+}
+
+function writeCertificate(printTab, cert, patient, form) {
+    if (!printTab || printTab.closed) return false;
+    printTab.document.open();
+    printTab.document.write(certificateHtml(cert, patient, form));
+    printTab.document.close();
+    try {
+        printTab.focus();
+    } catch {
+        // Some browsers refuse focus on a background tab; printing still works.
+    }
+    return true;
+}
+
+function printCertificate(cert, patient, form) {
+    const printTab = openPrintTab();
+    if (!printTab) return false;
+    return writeCertificate(printTab, cert, patient, form);
 }
 
 function MedCertListDoctor({ certs, loading, onReview }) {
@@ -1389,6 +1419,10 @@ function ReviewMedCertModal({ cert, onClose, onReleased, onCancelled, showToast 
 
     async function handleRelease() {
         if (!validateForm()) return;
+        // Open the print tab first, while the click still counts as a user gesture.
+        // Opening it after the awaits below is what the browser blocks.
+        const printTab = openPrintTab();
+        if (!printTab) return;
         setSaving(true);
         try {
             await axios.put(`/api/v1/medical-certificates/${cert.certificate_id}`, {
@@ -1402,10 +1436,17 @@ function ReviewMedCertModal({ cert, onClose, onReleased, onCancelled, showToast 
             if (cert.queue_id) {
                 await axios.put(`/api/v1/queues/${cert.queue_id}`, { status: 'done', time_out: nowTime() });
             }
-            printCertificate(cert, patient, form);
-            showToast('Certificate confirmed. Print window opened.');
+            const printed = writeCertificate(printTab, cert, patient, form);
+            showToast(
+                printed
+                    ? 'Certificate confirmed. Print window opened.'
+                    : 'Certificate confirmed and released. Reopen the print preview if the window closed.',
+                'success',
+            );
             onReleased();
         } catch (e) {
+            // The release failed, so the placeholder tab must not stay open.
+            if (printTab && !printTab.closed) printTab.close();
             showToast(requestError(e, 'Failed to release the certificate.'), 'error');
         } finally {
             setSaving(false);

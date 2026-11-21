@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use App\Http\Requests\StoreRecordDeletionRequest;
 use App\Models\RecordDeletionRequest;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class RecordController extends Controller
@@ -407,6 +408,121 @@ class RecordController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => "Patient account for {$name} deleted successfully.",
+        ]);
+    }
+
+    /**
+     * Accounts created five or more years ago. Used by the clinic's retention
+     * rule: the admin reviews the list, then deletes in batches.
+     */
+    public function getOldAccounts(Request $request)
+    {
+        if (! $request->user()->canPerform('account_deletion')) {
+            return response()->json(['message' => 'Your role is not authorized to view aging accounts.'], 403);
+        }
+
+        $cutoff = now()->subYears(5);
+
+        $accounts = User::where('created_at', '<=', $cutoff)
+            ->with(['pprPermanent', 'staffProfile'])
+            ->orderBy('created_at')
+            ->get()
+            ->map(function (User $user) {
+                // The users table runs without Eloquent timestamps, so created_at
+                // arrives as a raw string and has to be parsed here.
+                $created = Carbon::parse($user->created_at);
+                $age = $created->diff(now());
+
+                return [
+                    'id' => $user->user_id,
+                    'kind' => $user->role === 'patient' ? 'patient' : 'staff',
+                    'clinicId' => $user->clinic_id,
+                    'name' => trim(($user->firstname ?? '').' '.($user->lastname ?? '')),
+                    'email' => $user->usep_email,
+                    'role' => $user->role,
+                    'patient_type' => $user->pprPermanent?->patient_type,
+                    'created_at' => $created->toDateString(),
+                    'age_years' => $age->y,
+                    'age_months' => $age->m,
+                    'age_days' => $age->d,
+                    'age_total_days' => (int) $created->diffInDays(now()),
+                    'age_label' => sprintf('%d yr%s, %d mo%s, %d day%s',
+                        $age->y, $age->y === 1 ? '' : 's',
+                        $age->m, $age->m === 1 ? '' : 's',
+                        $age->d, $age->d === 1 ? '' : 's'),
+                ];
+            });
+
+        return response()->json([
+            'status' => 'success',
+            'cutoff' => $cutoff->toDateString(),
+            'count' => $accounts->count(),
+            'accounts' => $accounts,
+        ]);
+    }
+
+    /**
+     * Permanently delete a batch of accounts that are at least five years old.
+     * Every row is re-checked server-side; younger accounts and the signed-in
+     * admin's own account are skipped instead of being deleted.
+     */
+    public function batchDeleteAccounts(Request $request)
+    {
+        if (! $request->user()->canPerform('account_deletion')) {
+            return response()->json(['message' => 'Your role is not authorized to perform account deletion.'], 403);
+        }
+
+        $data = $request->validate([
+            'accounts' => 'required|array|min:1|max:500',
+            'accounts.*.kind' => 'required|in:patient,staff',
+            'accounts.*.id' => 'required|integer',
+        ]);
+
+        $cutoff = now()->subYears(5);
+        $deleted = 0;
+        $skipped = [];
+
+        DB::transaction(function () use ($data, $request, $cutoff, &$deleted, &$skipped) {
+            foreach ($data['accounts'] as $row) {
+                $user = User::find($row['id']);
+
+                if (! $user) {
+                    $skipped[] = ['id' => $row['id'], 'reason' => 'Account not found.'];
+                    continue;
+                }
+
+                if ($user->user_id === $request->user()->user_id) {
+                    $skipped[] = ['id' => $user->user_id, 'reason' => 'You cannot delete your own account.'];
+                    continue;
+                }
+
+                if ($row['kind'] === 'patient' && $user->role !== 'patient') {
+                    $skipped[] = ['id' => $user->user_id, 'reason' => 'Not a patient account.'];
+                    continue;
+                }
+
+                if ($row['kind'] === 'staff' && $user->role === 'patient') {
+                    $skipped[] = ['id' => $user->user_id, 'reason' => 'Not a staff account.'];
+                    continue;
+                }
+
+                if ($user->created_at && Carbon::parse($user->created_at)->gt($cutoff)) {
+                    $skipped[] = ['id' => $user->user_id, 'reason' => 'Account is younger than five years.'];
+                    continue;
+                }
+
+                $user->delete();
+                $deleted++;
+            }
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'message' => $deleted === 1
+                ? '1 account deleted permanently.'
+                : "{$deleted} accounts deleted permanently.",
+            'deleted' => $deleted,
+            'skipped' => $skipped,
         ]);
     }
 
