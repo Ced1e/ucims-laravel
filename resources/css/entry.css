@@ -122,17 +122,14 @@
 /* One timing curve keeps the luminous tip aligned with the reversible trace. */
 .clinic-entry-silk .clinic-heartbeat { display: block; height: 135px; }
 .clinic-heartbeat-base { opacity: .22; }
-.clinic-heartbeat-trace { stroke-dasharray: 100; animation: clinic-heartbeat-draw 4s ease-in-out infinite alternate; }
+.clinic-heartbeat-trace { stroke-dasharray: 100; animation: clinic-heartbeat-draw 2.4s ease-in-out infinite alternate; }
 .clinic-heartbeat-halo { stroke-width: 7; filter: blur(6px); opacity: .5; }
-.clinic-heartbeat-light { offset-path: path('M10 70H130L155 42 185 108 225 18 264 120 295 55 320 70H470'); animation: clinic-heartbeat-travel 4s ease-in-out infinite alternate; filter: drop-shadow(0 0 4px #ffe6a0); }
+.clinic-heartbeat-light { offset-path: path('M10 70H130L155 42 185 108 225 18 264 120 295 55 320 70H470'); animation: clinic-heartbeat-travel 2.4s ease-in-out infinite alternate; filter: drop-shadow(0 0 4px #ffe6a0); }
 @keyframes clinic-heartbeat-draw { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
 @keyframes clinic-heartbeat-travel { from { offset-distance: 0%; } to { offset-distance: 100%; } }
-/* The art must still read as a heartbeat when motion is reduced or the browser
-   lacks offset-path: show the completed trace and park the tip at the end. */
-@media (prefers-reduced-motion: reduce) {
-    .clinic-heartbeat-trace { animation: none; stroke-dashoffset: 0; }
-    .clinic-heartbeat-light { animation: none; offset-distance: 100%; }
-}
+/* The heartbeat is the login page's signature motion and runs for every
+   visitor, including those with reduced-motion enabled. Older browsers
+   without offset-path simply show the static trace with no travelling dot. */
 @supports not (offset-path: path("M0 0")) {
     .clinic-heartbeat-light { display: none; }
 }
