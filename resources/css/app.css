@@ -762,6 +762,25 @@
     }
 }
 
+/* -- Reports: trend line and day-of-week doughnut side by side ---------------------------- */
+.analytics-chart-duo {
+    display: grid;
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+    gap: 20px;
+    align-items: stretch;
+    margin-bottom: 20px;
+}
+
+.analytics-chart-duo > .card {
+    min-width: 0;
+}
+
+@media (max-width: 1100px) {
+    .analytics-chart-duo {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
 /* -- UCIMSSelect: system-standard dropdown (rules follow below) --------------------------- */
 .ucims-select {
     position: relative;
