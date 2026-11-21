@@ -1286,7 +1286,7 @@ async function releaseCertificate(cert, form) {
     }
 }
 
-function MedCertListDoctor({ certs, loading, onReview, onRelease, releasingId }) {
+function MedCertListDoctor({ certs, loading, onReview, onRelease, onCancel, busyId }) {
     return (
         <>
             <div className="page-header">
@@ -1348,14 +1348,23 @@ function MedCertListDoctor({ certs, loading, onReview, onRelease, releasingId })
                                                 </button>
                                                 <button
                                                     className="btn btn-outline btn-sm"
-                                                    disabled={releasingId != null}
+                                                    disabled={busyId != null}
                                                     onClick={() => onRelease(c)}
-                                                    title="Final step: release this certificate and remove it from the pending list"
+                                                    title="Final step: release this certificate, save it to History and remove it from Pending"
                                                     aria-label={`Confirm and release certificate for ${patientName(c.queue?.patient)}`}
                                                 >
-                                                    {releasingId === c.certificate_id
+                                                    {busyId === c.certificate_id
                                                         ? <><i className="bi bi-hourglass-split"></i> Confirming…</>
                                                         : <><i className="bi bi-check2-circle"></i> Confirm &amp; Release</>}
+                                                </button>
+                                                <button
+                                                    className="btn btn-outline btn-sm medcert-cancel-btn"
+                                                    disabled={busyId != null}
+                                                    onClick={() => onCancel(c)}
+                                                    title="Remove this request from Pending without saving it to History"
+                                                    aria-label={`Cancel certificate request for ${patientName(c.queue?.patient)}`}
+                                                >
+                                                    <i className="bi bi-x-circle"></i> Cancel
                                                 </button>
                                             </div>
                                         </td>
@@ -1661,12 +1670,12 @@ export default function DoctorDashboard() {
         }
     }, []);
 
-    const [releasingId, setReleasingId] = useState(null);
+    const [busyId, setBusyId] = useState(null);
 
     // Confirm & Release is the final step only. It never opens a print dialog —
     // printing was done earlier with Preview/Print in Review & Process.
     async function handleConfirmRelease(cert) {
-        if (releasingId != null) return;
+        if (busyId != null) return;
         const patient = cert.queue?.patient;
         if (!cert.findings?.trim() || !cert.license_no?.trim()) {
             showToast('Open Review & Process and enter the findings and license number first.', 'error');
@@ -1683,16 +1692,35 @@ export default function DoctorDashboard() {
             affiliation: 'N/A',
         };
 
-        setReleasingId(cert.certificate_id);
+        setBusyId(cert.certificate_id);
         try {
             await releaseCertificate(cert, form);
-            showToast('Certificate confirmed and released. It was removed from the pending list.', 'success');
+            showToast('Certificate confirmed and released. It was saved to History and removed from Pending.', 'success');
             fetchCerts();
             fetchHistory();
         } catch (e) {
             showToast(requestError(e, 'Failed to release the certificate.'), 'error');
         } finally {
-            setReleasingId(null);
+            setBusyId(null);
+        }
+    }
+
+    // Cancel only removes the request from Pending. It never releases, prints
+    // or touches History — the server marks it cancelled and hides it everywhere.
+    async function handleCancelRequest(cert) {
+        if (busyId != null) return;
+        const patient = cert.queue?.patient;
+        if (!window.confirm(`Cancel the medical certificate request for ${patientName(patient)}? It will be removed from Pending and will not be saved to History.`)) return;
+
+        setBusyId(cert.certificate_id);
+        try {
+            await axios.post(`/api/v1/medical-certificates/${cert.certificate_id}/cancel`);
+            showToast('Request cancelled. It was removed from Pending and not saved to History.', 'success');
+            fetchCerts();
+        } catch (e) {
+            showToast(requestError(e, 'Failed to cancel the request.'), 'error');
+        } finally {
+            setBusyId(null);
         }
     }
 
@@ -1800,7 +1828,8 @@ export default function DoctorDashboard() {
                             loading={certsLoading}
                             onReview={setReviewCertModal}
                             onRelease={handleConfirmRelease}
-                            releasingId={releasingId}
+                            onCancel={handleCancelRequest}
+                            busyId={busyId}
                         />
                     )}
 
