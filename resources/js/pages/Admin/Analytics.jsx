@@ -1266,6 +1266,195 @@ function DeleteAccountModal({ target, onClose, onDeleted, showToast }) {
     );
 }
 
+function ReviewDeletionRequestModal({ request, mode, onClose, onDone, showToast }) {
+    const approving = mode === 'approve';
+    const [notes, setNotes] = useState('');
+    const [saving, setSaving] = useState(false);
+
+    async function submit() {
+        setSaving(true);
+        try {
+            const { data } = await axios.post(`/api/records/deletion-requests/${request.id}/${mode}`, { notes });
+            showToast(data.message || (approving ? 'Request approved.' : 'Request rejected.'));
+            onDone();
+        } catch (e) {
+            showToast(errMsg(e, 'Failed to update the deletion request.'), 'error');
+        } finally {
+            setSaving(false);
+        }
+    }
+
+    return (
+        <div className="modal-overlay open" onClick={(e) => e.target === e.currentTarget && !saving && onClose()}>
+            <div className="modal acct-delete-modal" role="dialog" aria-modal="true" aria-labelledby="req-review-title">
+                <button className="modal-close" onClick={onClose} aria-label="Close" disabled={saving}>
+                    &times;
+                </button>
+                <div className="acct-delete-head">
+                    <span className={`acct-delete-icon ${approving ? 'acct-delete-icon--approve' : 'acct-delete-icon--reject'}`} aria-hidden="true">
+                        <i className={`bi ${approving ? 'bi-check2-circle' : 'bi-x-circle'}`}></i>
+                    </span>
+                    <div>
+                        <h2 id="req-review-title" className="acct-delete-title">
+                            {approving ? 'Approve deletion request' : 'Reject deletion request'}
+                        </h2>
+                        <p className="acct-delete-sub">
+                            {approving
+                                ? 'The patient account and every clinic record linked to it will be deleted permanently.'
+                                : 'The patient record stays intact. The request is closed and kept for the audit trail.'}
+                        </p>
+                    </div>
+                </div>
+
+                <dl className="acct-delete-summary">
+                    <div>
+                        <dt>Patient</dt>
+                        <dd>{request.patientName || '—'}</dd>
+                    </div>
+                    <div>
+                        <dt>Clinic ID</dt>
+                        <dd>{request.patientId || '—'}</dd>
+                    </div>
+                    <div>
+                        <dt>Requested by</dt>
+                        <dd>{request.requestedBy || '—'}{request.requestedByRole ? ` (${request.requestedByRole})` : ''}</dd>
+                    </div>
+                </dl>
+
+                <div className="acct-review-reason">
+                    <div className="info-lbl">Reason given</div>
+                    <p>{request.reason || 'No reason recorded.'}</p>
+                </div>
+
+                <div className="field">
+                    <label htmlFor="review-notes">Review notes (optional)</label>
+                    <textarea
+                        id="review-notes"
+                        rows={3}
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder={approving ? 'Why the record is cleared for deletion…' : 'Why the request is being rejected…'}
+                    />
+                </div>
+
+                <div className="modal-footer">
+                    <button className="btn btn-outline" onClick={onClose} disabled={saving}>
+                        Cancel
+                    </button>
+                    <button className={`btn ${approving ? 'btn-danger' : 'btn-primary'}`} disabled={saving} onClick={submit}>
+                        {saving
+                            ? 'Saving…'
+                            : approving
+                                ? <><i className="bi bi-trash3"></i> Approve &amp; delete record</>
+                                : <><i className="bi bi-x-circle"></i> Reject request</>}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function BatchDeleteAccountsModal({ accounts, onClose, onDeleted, showToast }) {
+    const [confirmed, setConfirmed] = useState(false);
+    const [deleting, setDeleting] = useState(false);
+    const count = accounts.length;
+    const preview = accounts.slice(0, 5);
+    const rest = count - preview.length;
+
+    async function handleDelete() {
+        if (!confirmed || deleting) return;
+        setDeleting(true);
+        try {
+            const { data } = await axios.post('/api/records/accounts/batch-delete', {
+                accounts: accounts.map((a) => ({ kind: a.kind, id: a.id })),
+            });
+            showToast(data.message || `${count} accounts deleted permanently.`);
+            onDeleted(data);
+        } catch (e) {
+            showToast(errMsg(e, 'Failed to delete the selected accounts.'), 'error');
+        } finally {
+            setDeleting(false);
+        }
+    }
+
+    return (
+        <div className="modal-overlay open" onClick={(e) => e.target === e.currentTarget && !deleting && onClose()}>
+            <div className="modal acct-delete-modal" role="dialog" aria-modal="true" aria-labelledby="batch-delete-title">
+                <button className="modal-close" onClick={onClose} aria-label="Close" disabled={deleting}>
+                    &times;
+                </button>
+                <div className="acct-delete-head">
+                    <span className="acct-delete-icon" aria-hidden="true">
+                        <i className="bi bi-trash3"></i>
+                    </span>
+                    <div>
+                        <h2 id="batch-delete-title" className="acct-delete-title">
+                            Delete {count} aging account{count === 1 ? '' : 's'}
+                        </h2>
+                        <p className="acct-delete-sub">
+                            These accounts are at least five years old. Deleting them also removes their linked clinic records.
+                        </p>
+                    </div>
+                </div>
+
+                <div className="acct-batch-list">
+                    {preview.map((a) => (
+                        <div key={`${a.kind}:${a.id}`} className="acct-batch-row">
+                            <span className={`badge ${a.kind === 'patient' ? 'b-maroon' : 'b-blue'}`}>
+                                {a.kind === 'patient' ? 'Patient' : 'Staff'}
+                            </span>
+                            <span className="fw6">{a.name}</span>
+                            <span className="text-xs text-muted">{a.clinicId || '—'}</span>
+                            <span className="text-xs text-muted acct-batch-age">{a.age_label}</span>
+                        </div>
+                    ))}
+                    {rest > 0 && <div className="acct-batch-more">and {rest} more account{rest === 1 ? '' : 's'}…</div>}
+                </div>
+
+                <p className="acct-delete-warning">
+                    <i className="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+                    <span>This permanently deletes the selected accounts and their linked records. This cannot be undone.</span>
+                </p>
+
+                <label className="acct-delete-confirm">
+                    <input type="checkbox" checked={confirmed} onChange={(e) => setConfirmed(e.target.checked)} />
+                    <span>I understand these {count} account{count === 1 ? '' : 's'} will be permanently deleted.</span>
+                </label>
+
+                <div className="modal-footer">
+                    <button className="btn btn-outline" onClick={onClose} disabled={deleting}>
+                        Cancel
+                    </button>
+                    <button className="btn btn-danger" disabled={!confirmed || deleting} onClick={handleDelete}>
+                        {deleting ? 'Deleting…' : <><i className="bi bi-trash3"></i> Delete {count} account{count === 1 ? '' : 's'}</>}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+const REQUEST_BADGE = {
+    pending: { cls: 'b-gold', label: 'Pending review' },
+    approved: { cls: 'b-green', label: 'Approved' },
+    rejected: { cls: 'b-gray', label: 'Rejected' },
+};
+
+function agingKey(account) {
+    return `${account.kind}:${account.id}`;
+}
+
+function agingMatches(account, query, kind, minYears) {
+    const q = String(query || '').trim().toLowerCase();
+    const name = String(account.name || '').toLowerCase();
+    const clinicId = String(account.clinicId || '').toLowerCase();
+    const email = String(account.email || '').toLowerCase();
+
+    return (!q || name.includes(q) || clinicId.includes(q) || email.includes(q))
+        && (!kind || account.kind === kind)
+        && (Number(account.age_years) || 0) >= minYears;
+}
+
 function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
     const { auth } = usePage().props;
     const myId = auth?.user?.user_id;
@@ -1275,9 +1464,33 @@ function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
     const [resetMember, setResetMember] = useState(null);
     const [deleteTarget, setDeleteTarget] = useState(null);
     const [listTab, setListTab] = useState('staff');
+    const [errors, setErrors] = useState({});
+
+    // Staff and patient directories
     const [patients, setPatients] = useState([]);
     const [patientsLoading, setPatientsLoading] = useState(true);
-    const [errors, setErrors] = useState({});
+    const [staffQuery, setStaffQuery] = useState('');
+    const [staffRole, setStaffRole] = useState('');
+    const [staffStatus, setStaffStatus] = useState('');
+    const [patientQuery, setPatientQuery] = useState('');
+    const [patientType, setPatientType] = useState('');
+
+    // Deletion requests raised by nurses (and other staff)
+    const [requests, setRequests] = useState([]);
+    const [requestsLoading, setRequestsLoading] = useState(true);
+    const [requestQuery, setRequestQuery] = useState('');
+    const [requestStatus, setRequestStatus] = useState('pending');
+    const [reviewRequest, setReviewRequest] = useState(null); // { request, mode }
+
+    // Accounts five years old or older
+    const [oldAccounts, setOldAccounts] = useState([]);
+    const [oldLoading, setOldLoading] = useState(true);
+    const [agingCutoff, setAgingCutoff] = useState('');
+    const [agingQuery, setAgingQuery] = useState('');
+    const [agingKind, setAgingKind] = useState('');
+    const [agingMinYears, setAgingMinYears] = useState(5);
+    const [selectedAging, setSelectedAging] = useState(() => new Set());
+    const [batchOpen, setBatchOpen] = useState(false);
 
     const fetchPatients = useCallback(async () => {
         try {
@@ -1290,9 +1503,34 @@ function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
         }
     }, [showToast]);
 
+    const fetchRequests = useCallback(async () => {
+        try {
+            const res = await axios.get('/api/records/deletion-requests', { timeout: 20000 });
+            setRequests(res.data.requests || []);
+        } catch (e) {
+            showToast(errMsg(e, 'Failed to load deletion requests.'), 'error');
+        } finally {
+            setRequestsLoading(false);
+        }
+    }, [showToast]);
+
+    const fetchOldAccounts = useCallback(async () => {
+        try {
+            const res = await axios.get('/api/records/old-accounts', { timeout: 20000 });
+            setOldAccounts(res.data.accounts || []);
+            setAgingCutoff(res.data.cutoff || '');
+        } catch (e) {
+            showToast(errMsg(e, 'Failed to load aging accounts.'), 'error');
+        } finally {
+            setOldLoading(false);
+        }
+    }, [showToast]);
+
     useEffect(() => {
         fetchPatients();
-    }, [fetchPatients]);
+        fetchRequests();
+        fetchOldAccounts();
+    }, [fetchPatients, fetchRequests, fetchOldAccounts]);
 
     // Registration-grade live validation. Only fields the admin has touched
     // show errors; clicking Create flags everything that is still wrong.
@@ -1366,11 +1604,132 @@ function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
         }
     }
 
+    // ---- Directory filters -------------------------------------------------
+    const filteredStaff = useMemo(() => {
+        const q = staffQuery.trim().toLowerCase();
+        return staff.filter((u) => {
+            const matchQuery = !q
+                || String(u.name || '').toLowerCase().includes(q)
+                || String(u.clinicId || '').toLowerCase().includes(q);
+            const matchRole = !staffRole || u.role === staffRole;
+            const matchStatus = !staffStatus
+                || (staffStatus === 'active' ? Boolean(u.is_active) : !u.is_active);
+            return matchQuery && matchRole && matchStatus;
+        });
+    }, [staff, staffQuery, staffRole, staffStatus]);
+
+    const patientTypes = useMemo(
+        () => [...new Set(patients.map((p) => p.patient_type).filter(Boolean))].sort(),
+        [patients],
+    );
+
+    const filteredPatients = useMemo(() => {
+        const q = patientQuery.trim().toLowerCase();
+        return patients.filter((p) => {
+            const matchQuery = !q
+                || String(p.name || '').toLowerCase().includes(q)
+                || String(p.patientId || '').toLowerCase().includes(q)
+                || String(p.email || '').toLowerCase().includes(q);
+            const matchType = !patientType || p.patient_type === patientType;
+            return matchQuery && matchType;
+        });
+    }, [patients, patientQuery, patientType]);
+
+    const pendingRequestCount = useMemo(
+        () => requests.filter((r) => r.status === 'pending').length,
+        [requests],
+    );
+
+    const filteredRequests = useMemo(() => {
+        const q = requestQuery.trim().toLowerCase();
+        return requests.filter((r) => {
+            const matchQuery = !q
+                || String(r.patientName || '').toLowerCase().includes(q)
+                || String(r.patientId || '').toLowerCase().includes(q)
+                || String(r.requestedBy || '').toLowerCase().includes(q)
+                || String(r.reason || '').toLowerCase().includes(q);
+            const matchStatus = !requestStatus || r.status === requestStatus;
+            return matchQuery && matchStatus;
+        });
+    }, [requests, requestQuery, requestStatus]);
+
+    const filteredAging = useMemo(
+        () => oldAccounts.filter((a) => agingMatches(a, agingQuery, agingKind, agingMinYears)),
+        [oldAccounts, agingQuery, agingKind, agingMinYears],
+    );
+
+    const selectedAccounts = useMemo(
+        () => oldAccounts.filter((a) => selectedAging.has(agingKey(a))),
+        [oldAccounts, selectedAging],
+    );
+
+    const allAgingSelected = filteredAging.length > 0
+        && filteredAging.every((a) => selectedAging.has(agingKey(a)));
+
+    // Keep the selection honest when the filters change: a hidden account must
+    // never ride along into a batch delete.
+    useEffect(() => {
+        setSelectedAging((previous) => {
+            if (!previous.size) return previous;
+            const next = new Set(
+                [...previous].filter((key) => {
+                    const account = oldAccounts.find((a) => agingKey(a) === key);
+                    return account && agingMatches(account, agingQuery, agingKind, agingMinYears);
+                }),
+            );
+            return next.size === previous.size ? previous : next;
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [oldAccounts, agingQuery, agingKind, agingMinYears]);
+
+    function toggleAging(account) {
+        const key = agingKey(account);
+        setSelectedAging((previous) => {
+            const next = new Set(previous);
+            if (next.has(key)) next.delete(key);
+            else next.add(key);
+            return next;
+        });
+    }
+
+    function toggleAllAging() {
+        setSelectedAging((previous) => {
+            const next = new Set(previous);
+            if (allAgingSelected) filteredAging.forEach((a) => next.delete(agingKey(a)));
+            else filteredAging.forEach((a) => next.add(agingKey(a)));
+            return next;
+        });
+    }
+
+    function refreshActive() {
+        if (listTab === 'staff') reload();
+        else if (listTab === 'patients') fetchPatients();
+        else if (listTab === 'requests') fetchRequests();
+        else fetchOldAccounts();
+    }
+
+    function afterRequestReviewed() {
+        setReviewRequest(null);
+        fetchRequests();
+        fetchPatients();
+        fetchOldAccounts();
+        reload();
+    }
+
+    function afterBatchDeleted() {
+        setBatchOpen(false);
+        setSelectedAging(new Set());
+        // The modal already announced how many accounts were deleted.
+        fetchOldAccounts();
+        fetchPatients();
+        reload();
+    }
+
     return (
         <>
             <div className="page-header">
                 <h1>Account Management</h1>
-                <p>Manage staff and patient accounts, including account creation, updates, and deletion.</p>
+                <p>Manage staff and patient accounts, review deletion requests, and clear accounts that are five years or older.</p>
             </div>
 
             <div className="stats-row mb16">
@@ -1390,9 +1749,13 @@ function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
                     <div className="stat-num" style={{ color: 'var(--green)' }}>{patientsLoading ? (patientCount ?? '-') : patients.length}</div>
                     <div className="stat-label">PATIENTS</div>
                 </div>
+                <div className="stat-card">
+                    <div className="stat-num" style={{ color: '#8a5a12' }}>{oldLoading ? '-' : oldAccounts.length}</div>
+                    <div className="stat-label">AGING 5+ YRS</div>
+                </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.3fr) minmax(0,1fr)', gap: 20, alignItems: 'stretch' }}>
+            <div className="acct-top-grid">
                 <div className="card">
                     <div className="card-title">Create Staff Account</div>
                     <div className="tabs mb16">
@@ -1470,37 +1833,80 @@ function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
                     </button>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                 <div className="card">
-                    <div className="acct-directory-head">
-                        <div>
-                            <div className="card-title" style={{ marginBottom: 2 }}>Account Directory</div>
-                            <p className="text-xs text-muted">Update, disable, reset the password of, or delete an account.</p>
-                        </div>
-                        <span className="acct-directory-total">{staff.length + patients.length} accounts</span>
+                    <div className="card-title" style={{ fontSize: '.95rem' }}>
+                        <i className="bi bi-list-check"></i> Account Management Guide
                     </div>
-                    <div className="tabs mb12" role="tablist" aria-label="Account type">
-                        <button
-                            type="button"
-                            role="tab"
-                            aria-selected={listTab === 'staff'}
-                            className={`tab ${listTab === 'staff' ? 'active' : ''}`}
-                            onClick={() => setListTab('staff')}
-                        >
-                            Staff Accounts ({staff.length})
-                        </button>
-                        <button
-                            type="button"
-                            role="tab"
-                            aria-selected={listTab === 'patients'}
-                            className={`tab ${listTab === 'patients' ? 'active' : ''}`}
-                            onClick={() => setListTab('patients')}
-                        >
-                            Patient Accounts ({patients.length})
-                        </button>
+                    <p className="text-sm text-muted mb8">Complete each staff profile before saving. New accounts are active immediately and sign in with the Clinic ID and password you set here. Disabled accounts stay visible so they can be re-enabled or deleted.</p>
+                    <div className="guide-list">
+                        <div className="guide-row"><span className="guide-chip guide-chip--nurse">N-</span><div><div className="fw6 text-sm">Nurse</div><div className="text-xs text-muted">Triage, endorsements, and nurse services.</div></div></div>
+                        <div className="guide-row"><span className="guide-chip guide-chip--doctor">D-</span><div><div className="fw6 text-sm">Doctor</div><div className="text-xs text-muted">Consultations, prescriptions, medical certificates.</div></div></div>
+                        <div className="guide-row"><span className="guide-chip guide-chip--admin">A-</span><div><div className="fw6 text-sm">Administrator</div><div className="text-xs text-muted">Reports, account management and clinic administration.</div></div></div>
                     </div>
+                    <div className="guide-rules">
+                        <div className="guide-rule"><i className="bi bi-shield-check"></i><span>Password must be at least 8 characters.</span></div>
+                        <div className="guide-rule"><i className="bi bi-phone"></i><span>Mobile: exactly 11 digits, format 09XXXXXXXXX.</span></div>
+                        <div className="guide-rule"><i className="bi bi-envelope"></i><span>USeP email must end in @usep.edu.ph.</span></div>
+                        <div className="guide-rule"><i className="bi bi-calendar-check"></i><span>Birthdate must be a valid date within the human range (110 years max).</span></div>
+                        <div className="guide-rule"><i className="bi bi-pencil"></i><span>The Edit button reuses this same validation.</span></div>
+                        <div className="guide-rule"><i className="bi bi-trash3"></i><span>Deleting an account is permanent; the account leaves the directory once you confirm.</span></div>
+                        <div className="guide-rule"><i className="bi bi-clock-history"></i><span>Accounts at least five years old move to Aging Accounts for batch deletion.</span></div>
+                    </div>
+                </div>
+            </div>
 
-                    {listTab === 'staff' && (
+            <div className="card acct-directory-card">
+                <div className="acct-directory-head">
+                    <div>
+                        <div className="card-title" style={{ marginBottom: 2 }}>Account Directory</div>
+                        <p className="text-xs text-muted">Search, filter, review deletion requests, and clear accounts that are due for retention cleanup.</p>
+                    </div>
+                    <span className="acct-directory-total">{staff.length + patients.length} accounts</span>
+                </div>
+
+                <div className="tabs acct-tabs" role="tablist" aria-label="Account directory view">
+                    <button type="button" role="tab" aria-selected={listTab === 'staff'} className={`tab ${listTab === 'staff' ? 'active' : ''}`} onClick={() => setListTab('staff')}>
+                        Staff Accounts <span className="tab-count">{staff.length}</span>
+                    </button>
+                    <button type="button" role="tab" aria-selected={listTab === 'patients'} className={`tab ${listTab === 'patients' ? 'active' : ''}`} onClick={() => setListTab('patients')}>
+                        Patient Accounts <span className="tab-count">{patients.length}</span>
+                    </button>
+                    <button type="button" role="tab" aria-selected={listTab === 'requests'} className={`tab ${listTab === 'requests' ? 'active' : ''}`} onClick={() => setListTab('requests')}>
+                        Deletion Requests <span className={`tab-count ${pendingRequestCount ? 'tab-count--alert' : ''}`}>{pendingRequestCount}</span>
+                    </button>
+                    <button type="button" role="tab" aria-selected={listTab === 'aging'} className={`tab ${listTab === 'aging' ? 'active' : ''}`} onClick={() => setListTab('aging')}>
+                        Aging Accounts <span className="tab-count">{oldAccounts.length}</span>
+                    </button>
+                </div>
+
+                {listTab === 'staff' && (
+                    <>
+                        <div className="dir-toolbar">
+                            <div className="dir-search">
+                                <i className="bi bi-search" aria-hidden="true"></i>
+                                <input type="search" placeholder="Search name or Clinic ID…" aria-label="Search staff accounts" value={staffQuery} onChange={(e) => setStaffQuery(e.target.value)} />
+                            </div>
+                            <div className="dir-filter">
+                                <UCIMSSelect value={staffRole} onChange={(e) => setStaffRole(e.target.value)} title="Filter by role">
+                                    <option value="">All roles</option>
+                                    <option value="nurse">Nurse</option>
+                                    <option value="doctor">Doctor</option>
+                                    <option value="admin">Administrator</option>
+                                </UCIMSSelect>
+                            </div>
+                            <div className="dir-filter">
+                                <UCIMSSelect value={staffStatus} onChange={(e) => setStaffStatus(e.target.value)} title="Filter by status">
+                                    <option value="">All statuses</option>
+                                    <option value="active">Active</option>
+                                    <option value="disabled">Disabled</option>
+                                </UCIMSSelect>
+                            </div>
+                            <button type="button" className="btn btn-outline btn-sm" onClick={refreshActive} title="Reload staff accounts">
+                                <i className="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                            <span className="dir-count">{filteredStaff.length} of {staff.length}</span>
+                        </div>
+
                         <div className="table-wrap">
                             <table>
                                 <thead>
@@ -1515,12 +1921,14 @@ function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
                                     {loading && (
                                         <TableSkeletonRows columns={4} />
                                     )}
-                                    {!loading && !staff.length && (
+                                    {!loading && !filteredStaff.length && (
                                         <tr>
-                                            <td colSpan={4} className="text-center text-muted p16">No staff found in database.</td>
+                                            <td colSpan={4} className="text-center text-muted p16">
+                                                {staff.length ? 'No staff match this search or filter.' : 'No staff found in database.'}
+                                            </td>
                                         </tr>
                                     )}
-                                    {<PaginatedItems items={staff} tableColumns={4} label="staff">{(u) => {
+                                    {<PaginatedItems items={filteredStaff} tableColumns={4} label="staff">{(u) => {
                                         const isMe = String(u.id) === String(myId);
                                         return (
                                             <tr key={u.id} style={u.is_active ? undefined : { opacity: 0.6 }}>
@@ -1573,9 +1981,28 @@ function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
                                 </tbody>
                             </table>
                         </div>
-                    )}
+                    </>
+                )}
 
-                    {listTab === 'patients' && (
+                {listTab === 'patients' && (
+                    <>
+                        <div className="dir-toolbar">
+                            <div className="dir-search">
+                                <i className="bi bi-search" aria-hidden="true"></i>
+                                <input type="search" placeholder="Search name, Clinic ID or email…" aria-label="Search patient accounts" value={patientQuery} onChange={(e) => setPatientQuery(e.target.value)} />
+                            </div>
+                            <div className="dir-filter">
+                                <UCIMSSelect value={patientType} onChange={(e) => setPatientType(e.target.value)} title="Filter by patient type">
+                                    <option value="">All patient types</option>
+                                    {patientTypes.map((t) => <option key={t} value={t}>{t}</option>)}
+                                </UCIMSSelect>
+                            </div>
+                            <button type="button" className="btn btn-outline btn-sm" onClick={refreshActive} title="Reload patient accounts">
+                                <i className="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                            <span className="dir-count">{filteredPatients.length} of {patients.length}</span>
+                        </div>
+
                         <div className="table-wrap">
                             <table>
                                 <thead>
@@ -1590,12 +2017,14 @@ function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
                                     {patientsLoading && (
                                         <TableSkeletonRows columns={4} />
                                     )}
-                                    {!patientsLoading && !patients.length && (
+                                    {!patientsLoading && !filteredPatients.length && (
                                         <tr>
-                                            <td colSpan={4} className="text-center text-muted p16">No patient accounts found.</td>
+                                            <td colSpan={4} className="text-center text-muted p16">
+                                                {patients.length ? 'No patients match this search or filter.' : 'No patient accounts found.'}
+                                            </td>
                                         </tr>
                                     )}
-                                    {<PaginatedItems items={patients} tableColumns={4} label="patients">{(p) => (
+                                    {<PaginatedItems items={filteredPatients} tableColumns={4} label="patients">{(p) => (
                                         <tr key={p.id}>
                                             <td className="text-xs fw6">{p.patientId || '-'}</td>
                                             <td>
@@ -1625,29 +2054,229 @@ function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
                                 </tbody>
                             </table>
                         </div>
-                    )}
-                </div>
+                    </>
+                )}
 
-                <div className="card" style={{ flex: 1 }}>
-                    <div className="card-title" style={{ fontSize: '.95rem' }}>
-                        <i className="bi bi-list-check"></i> Account Management Guide
-                    </div>
-                    <p className="text-sm text-muted mb8">Complete each staff profile before saving. New accounts are active immediately and sign in with the Clinic ID and password you set here. Disabled accounts stay visible so they can be re-enabled or deleted.</p>
-                    <div className="guide-list">
-                        <div className="guide-row"><span className="guide-chip guide-chip--nurse">N-</span><div><div className="fw6 text-sm">Nurse</div><div className="text-xs text-muted">Triage, endorsements, and nurse services.</div></div></div>
-                        <div className="guide-row"><span className="guide-chip guide-chip--doctor">D-</span><div><div className="fw6 text-sm">Doctor</div><div className="text-xs text-muted">Consultations, prescriptions, medical certificates.</div></div></div>
-                        <div className="guide-row"><span className="guide-chip guide-chip--admin">A-</span><div><div className="fw6 text-sm">Administrator</div><div className="text-xs text-muted">Reports, account management and clinic administration.</div></div></div>
-                    </div>
-                    <div className="guide-rules">
-                        <div className="guide-rule"><i className="bi bi-shield-check"></i><span>Password must be at least 8 characters.</span></div>
-                        <div className="guide-rule"><i className="bi bi-phone"></i><span>Mobile: exactly 11 digits, format 09XXXXXXXXX.</span></div>
-                        <div className="guide-rule"><i className="bi bi-envelope"></i><span>USeP email must end in @usep.edu.ph.</span></div>
-                        <div className="guide-rule"><i className="bi bi-calendar-check"></i><span>Birthdate must be a valid date within the human range (110 years max).</span></div>
-                        <div className="guide-rule"><i className="bi bi-pencil"></i><span>The Edit button reuses this same validation.</span></div>
-                        <div className="guide-rule"><i className="bi bi-trash3"></i><span>Deleting an account is permanent; the account leaves the directory once you confirm.</span></div>
-                    </div>
-                </div>
-                </div>
+                {listTab === 'requests' && (
+                    <>
+                        <div className="dir-toolbar">
+                            <div className="dir-search">
+                                <i className="bi bi-search" aria-hidden="true"></i>
+                                <input type="search" placeholder="Search patient, requester or reason…" aria-label="Search deletion requests" value={requestQuery} onChange={(e) => setRequestQuery(e.target.value)} />
+                            </div>
+                            <div className="dir-filter">
+                                <UCIMSSelect value={requestStatus} onChange={(e) => setRequestStatus(e.target.value)} title="Filter by request status">
+                                    <option value="pending">Pending review</option>
+                                    <option value="approved">Approved</option>
+                                    <option value="rejected">Rejected</option>
+                                    <option value="">All statuses</option>
+                                </UCIMSSelect>
+                            </div>
+                            <button type="button" className="btn btn-outline btn-sm" onClick={refreshActive} title="Reload deletion requests">
+                                <i className="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                            <span className="dir-count">{filteredRequests.length} of {requests.length}</span>
+                        </div>
+
+                        <p className="acct-muted-note mb12">
+                            <i className="bi bi-info-circle"></i> Nurse and staff requests for patient-record deletion land here. Approving removes the patient account; rejecting keeps the record and closes the request.
+                        </p>
+
+                        <div className="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Patient</th>
+                                        <th>Reason</th>
+                                        <th>Requested By</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {requestsLoading && <TableSkeletonRows columns={6} />}
+                                    {!requestsLoading && !filteredRequests.length && (
+                                        <tr>
+                                            <td colSpan={6} className="text-center text-muted p16">
+                                                {requests.length ? 'No deletion requests match this filter.' : 'No deletion requests have been submitted yet.'}
+                                            </td>
+                                        </tr>
+                                    )}
+                                    {<PaginatedItems items={filteredRequests} tableColumns={6} label="deletion requests">{(r) => {
+                                        const badge = REQUEST_BADGE[r.status] || { cls: 'b-gray', label: r.status };
+                                        return (
+                                            <tr key={r.id}>
+                                                <td className="text-xs" style={{ whiteSpace: 'nowrap' }}>{(r.created_at || '').slice(0, 16)}</td>
+                                                <td>
+                                                    <div className="fw6">{r.patientName || '—'}</div>
+                                                    <div className="text-xs text-muted">{r.patientId || ''}</div>
+                                                </td>
+                                                <td className="text-sm req-reason">{r.reason}</td>
+                                                <td>
+                                                    <div className="text-xs fw6">{r.requestedBy || '—'}</div>
+                                                    <div className="text-xs text-muted">{r.requestedByRole || ''}</div>
+                                                </td>
+                                                <td>
+                                                    <span className={`badge ${badge.cls}`}>{badge.label}</span>
+                                                    {r.reviewedBy && (
+                                                        <div className="text-xs text-muted mt4">by {r.reviewedBy}</div>
+                                                    )}
+                                                    {r.review_notes && (
+                                                        <div className="text-xs text-muted mt4">“{r.review_notes}”</div>
+                                                    )}
+                                                </td>
+                                                <td>
+                                                    {r.status === 'pending' ? (
+                                                        <div className="acct-row-actions">
+                                                            <button className="btn btn-primary btn-sm" onClick={() => setReviewRequest({ request: r, mode: 'approve' })} title="Approve and delete the patient record">
+                                                                <i className="bi bi-check2"></i> Approve
+                                                            </button>
+                                                            <button className="btn btn-outline btn-sm" onClick={() => setReviewRequest({ request: r, mode: 'reject' })} title="Reject the request">
+                                                                <i className="bi bi-x"></i> Reject
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <span className="text-xs text-muted">Reviewed</span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    }}</PaginatedItems>}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
+                )}
+
+                {listTab === 'aging' && (
+                    <>
+                        <p className="acct-muted-note mb12">
+                            <i className="bi bi-hourglass-split"></i> The clinic clears records once they are five years old. Ages are counted from the account creation date
+                            {agingCutoff ? `; the current cutoff is ${agingCutoff}.` : '.'}
+                        </p>
+
+                        <div className="dir-toolbar">
+                            <div className="dir-search">
+                                <i className="bi bi-search" aria-hidden="true"></i>
+                                <input type="search" placeholder="Search name, Clinic ID or email…" aria-label="Search aging accounts" value={agingQuery} onChange={(e) => setAgingQuery(e.target.value)} />
+                            </div>
+                            <div className="dir-filter">
+                                <UCIMSSelect value={agingKind} onChange={(e) => setAgingKind(e.target.value)} title="Filter by account type">
+                                    <option value="">All account types</option>
+                                    <option value="patient">Patient accounts</option>
+                                    <option value="staff">Staff accounts</option>
+                                </UCIMSSelect>
+                            </div>
+                            <div className="dir-filter">
+                                <UCIMSSelect value={String(agingMinYears)} onChange={(e) => setAgingMinYears(Number(e.target.value))} title="Minimum account age">
+                                    <option value="5">5+ years old</option>
+                                    <option value="6">6+ years old</option>
+                                    <option value="8">8+ years old</option>
+                                    <option value="10">10+ years old</option>
+                                </UCIMSSelect>
+                            </div>
+                            <button type="button" className="btn btn-outline btn-sm" onClick={refreshActive} title="Reload aging accounts">
+                                <i className="bi bi-arrow-clockwise"></i> Refresh
+                            </button>
+                            <span className="dir-count">{filteredAging.length} of {oldAccounts.length}</span>
+                        </div>
+
+                        {selectedAging.size > 0 && (
+                            <div className="dir-bulkbar">
+                                <i className="bi bi-check2-square" aria-hidden="true"></i>
+                                <span><b>{selectedAccounts.length}</b> account{selectedAccounts.length === 1 ? '' : 's'} selected</span>
+                                <span className="acct-muted-note">Only accounts five years or older are included.</span>
+                                <span className="spacer" />
+                                <button type="button" className="btn btn-outline btn-sm" onClick={() => setSelectedAging(new Set())}>Clear</button>
+                                <button type="button" className="btn btn-danger btn-sm" onClick={() => setBatchOpen(true)}>
+                                    <i className="bi bi-trash3"></i> Delete selected
+                                </button>
+                            </div>
+                        )}
+
+                        <div className="table-wrap">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th className="acct-cb">
+                                            <input
+                                                type="checkbox"
+                                                className="acct-check"
+                                                checked={allAgingSelected}
+                                                onChange={toggleAllAging}
+                                                aria-label="Select all filtered aging accounts"
+                                                title="Select all filtered accounts"
+                                            />
+                                        </th>
+                                        <th>ID</th>
+                                        <th>Account</th>
+                                        <th>Type</th>
+                                        <th>Created</th>
+                                        <th>Age</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {oldLoading && <TableSkeletonRows columns={7} />}
+                                    {!oldLoading && !filteredAging.length && (
+                                        <tr>
+                                            <td colSpan={7} className="text-center text-muted p16">
+                                                {oldAccounts.length
+                                                    ? 'No aging accounts match this search or filter.'
+                                                    : 'No accounts are five years or older yet.'}
+                                            </td>
+                                        </tr>
+                                    )}
+                                    {<PaginatedItems items={filteredAging} tableColumns={7} label="aging accounts">{(a) => {
+                                        const key = agingKey(a);
+                                        return (
+                                            <tr key={key}>
+                                                <td className="acct-cb">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="acct-check"
+                                                        checked={selectedAging.has(key)}
+                                                        onChange={() => toggleAging(a)}
+                                                        aria-label={`Select ${a.name}`}
+                                                    />
+                                                </td>
+                                                <td className="text-xs fw6">{a.clinicId || '—'}</td>
+                                                <td>
+                                                    <div className="fw6">{a.name}</div>
+                                                    <div className="text-xs text-muted">{a.email || 'No email on file'}</div>
+                                                </td>
+                                                <td>
+                                                    <span className={`badge ${a.kind === 'patient' ? 'b-maroon' : 'b-blue'}`}>
+                                                        {a.kind === 'patient' ? (a.patient_type || 'Patient') : (ROLE_LABELS[a.role] || a.role)}
+                                                    </span>
+                                                    <div className="text-xs text-muted mt4">{a.kind === 'patient' ? 'Patient account' : 'Staff account'}</div>
+                                                </td>
+                                                <td className="text-xs" style={{ whiteSpace: 'nowrap' }}>{a.created_at}</td>
+                                                <td className="acct-age">
+                                                    {a.age_label}
+                                                    <small>{a.age_total_days.toLocaleString()} days old</small>
+                                                </td>
+                                                <td>
+                                                    <div className="acct-row-actions">
+                                                        <button
+                                                            className="btn btn-outline btn-sm acct-delete-btn"
+                                                            title="Delete this account"
+                                                            aria-label={`Delete ${a.name}`}
+                                                            onClick={() => setDeleteTarget({ kind: a.kind, id: a.id, name: a.name, clinicId: a.clinicId, role: a.kind === 'patient' ? (a.patient_type || 'Patient') : a.role })}
+                                                        >
+                                                            <i className="bi bi-trash3"></i>
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    }}</PaginatedItems>}
+                                </tbody>
+                            </table>
+                        </div>
+                    </>
+                )}
             </div>
 
             {editMember && (
@@ -1672,9 +2301,33 @@ function AccountsSection({ staff, loading, patientCount, showToast, reload }) {
                         if (target.kind === 'patient') {
                             setPatients((list) => list.filter((p) => String(p.id) !== String(target.id)));
                         }
+                        setSelectedAging((previous) => {
+                            const next = new Set(previous);
+                            next.delete(`${target.kind}:${target.id}`);
+                            return next;
+                        });
                         reload();
                         fetchPatients();
+                        fetchOldAccounts();
+                        fetchRequests();
                     }}
+                />
+            )}
+            {reviewRequest && (
+                <ReviewDeletionRequestModal
+                    request={reviewRequest.request}
+                    mode={reviewRequest.mode}
+                    showToast={showToast}
+                    onClose={() => setReviewRequest(null)}
+                    onDone={afterRequestReviewed}
+                />
+            )}
+            {batchOpen && (
+                <BatchDeleteAccountsModal
+                    accounts={selectedAccounts}
+                    showToast={showToast}
+                    onClose={() => setBatchOpen(false)}
+                    onDeleted={afterBatchDeleted}
                 />
             )}
         </>

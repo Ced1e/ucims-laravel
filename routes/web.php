@@ -246,6 +246,10 @@ Route::middleware(['auth'])->group(function () {
         Route::put('/api/records/staff/{user}/status', [RecordController::class, 'updateStaffStatus']);
         Route::delete('/api/records/staff/{user}', [RecordController::class, 'deleteStaff']);
         Route::delete('/api/records/patients/{patient}', [RecordController::class, 'deletePatient']);
+        Route::get('/api/records/old-accounts', [RecordController::class, 'getOldAccounts']);
+        Route::post('/api/records/accounts/batch-delete', [RecordController::class, 'batchDeleteAccounts']);
+        Route::post('/api/records/deletion-requests/{id}/approve', [RecordController::class, 'approveDeletionRequest']);
+        Route::post('/api/records/deletion-requests/{id}/reject', [RecordController::class, 'rejectDeletionRequest']);
     });
 });
 
